@@ -2,13 +2,33 @@
 
 Este es un proyecto frontend desarrollado con **Next.js 15** para una tesis universitaria. El proyecto utiliza las tecnologías más modernas de desarrollo web.
 
+## 🏗️ Detalle de Arquitectura
+
+![Frontend Architecture Diagram](frontend_architecture.png)
+
+### Tabla de Componentes
+
+| Capa / Componente   | Stack                             | Responsabilidad Principal                   |
+| ------------------- | --------------------------------- | ------------------------------------------- |
+| **UI & Routing**    | Next.js 15 (App Router), React 19 | Renderizado SSR/RSC, rutas nested, layouts  |
+| **Estado**          | Context API + Redux Toolkit       | Gestión de estado global y lógica asíncrona |
+| **Estilos**         | Tailwind CSS 4                    | Diseño utility‑first, theming responsive    |
+| **Autenticación**   | `@supabase/auth‑helpers`          | Login social, JWT, protección de rutas      |
+| **Consumo API**     | fetch / Axios                     | Requests a Supabase DB y Backend Node       |
+| **Build & Hosting** | Vercel (Edge Functions / CDN)     | CI/CD, deployments preview, dominios        |
+| **Testing**         | Playwright + Jest                 | Pruebas e2e y unitarias                     |
+| **Lint & Quality**  | ESLint, Prettier                  | Estilo y calidad de código                  |
+
 ## 🚀 Tecnologías Utilizadas
 
-- **Next.js 15.3.4** - Framework de React con App Router
-- **React 19** - Biblioteca de JavaScript para interfaces de usuario
-- **TypeScript 5** - Superset tipado de JavaScript
-- **Tailwind CSS 4** - Framework de CSS utility-first
-- **ESLint** - Herramienta de análisis de código estático
+- **Next.js 15.3.4** – Framework React con App Router y RSC
+- **React 19** – Biblioteca de interfaces de usuario
+- **TypeScript 5** – Tipado estático
+- **Tailwind CSS 4** – Utility‑first CSS
+- **Redux Toolkit + Redux** – Gestión de estado y lógica asíncrona
+- **supabase-js** – Cliente JS para BD, Auth
+- **ESLint + Prettier** – Lint y formato de código
+- **Playwright + Jest** – Testing e2e y unitario
 
 ## 📋 Requisitos Previos
 
