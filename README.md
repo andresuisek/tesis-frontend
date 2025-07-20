@@ -4,7 +4,7 @@ Este es un proyecto frontend desarrollado con **Next.js 15** para una tesis univ
 
 ## 🏗️ Detalle de Arquitectura
 
-![Frontend Architecture Diagram](frontend_architecture.png)
+![Frontend Architecture Diagram](frontend_architecture_1.png)
 
 ### Tabla de Componentes
 
