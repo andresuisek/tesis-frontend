@@ -86,32 +86,19 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Actividades Recientes */}
+        {/* Distribución de Gastos */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividades Recientes</h3>
-          <div className="space-y-4">
-            <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Nueva venta registrada</p>
-                <p className="text-xs text-gray-500">Hace 2 horas</p>
-              </div>
-            </div>
-            <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Retención procesada</p>
-                <p className="text-xs text-gray-500">Hace 4 horas</p>
-              </div>
-            </div>
-            <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-              <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Compra registrada</p>
-                <p className="text-xs text-gray-500">Hace 6 horas</p>
-              </div>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución de Gastos</h3>
+          <PieChart
+            data={[
+              { label: 'Servicios Profesionales', value: 8500, color: '#3b82f6' },
+              { label: 'Gastos Administrativos', value: 4200, color: '#10b981' },
+              { label: 'Suministros de Oficina', value: 2800, color: '#f59e0b' },
+              { label: 'Servicios Básicos', value: 1900, color: '#ef4444' },
+              { label: 'Otros', value: 1056, color: '#8b5cf6' },
+            ]}
+            size={220}
+          />
         </div>
       </div>
 
