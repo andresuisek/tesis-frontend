@@ -72,9 +72,16 @@ export default function DashboardPage() {
         {/* Gráfico de Ventas Mensuales */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Ventas Mensuales</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Gráfico de ventas mensuales</p>
-          </div>
+          <BarChart
+            data={[
+              { label: 'Ene', value: 18500, color: '#3b82f6' },
+              { label: 'Feb', value: 22300, color: '#3b82f6' },
+              { label: 'Mar', value: 24532, color: '#1d4ed8' },
+              { label: 'Abr', value: 19800, color: '#3b82f6' },
+              { label: 'May', value: 26700, color: '#3b82f6' },
+              { label: 'Jun', value: 21400, color: '#3b82f6' },
+            ]}
+          />
         </div>
 
         {/* Actividades Recientes */}
