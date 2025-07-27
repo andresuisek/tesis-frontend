@@ -69,7 +69,7 @@ Opciones:
 
 ¿Te ayudo con el formulario de devolución?`,
 
-  'gastos': `📋 **Análisis de Gastos por Rubro**
+  'gastos': `��� **Análisis de Gastos por Rubro**
 
 **Total Gastos:** $18,456.00
 
@@ -341,22 +341,58 @@ Puedo ayudarte con información sobre:
           </div>
         </div>
 
-        {/* Predefined Queries */}
+        {/* Banner informativo y consultas predefinidas */}
         {messages.length === 1 && (
-          <div className="p-4 border-b border-gray-200">
-            <p className="text-sm text-gray-600 mb-3">💡 Consultas frecuentes:</p>
-            <div className="flex flex-wrap gap-2">
-              {predefinedQueries.map((query, index) => (
-                <button
-                  key={index}
-                  onClick={() => handlePredefinedQuery(query)}
-                  className="px-3 py-1 text-xs bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors duration-200"
-                >
-                  {query}
-                </button>
-              ))}
+          <>
+            {/* Banner de capacidades */}
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
+              <div className="flex items-center mb-3">
+                <div className="p-2 bg-blue-100 rounded-full mr-3">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">🚀 Potenciado con IA Avanzada</h3>
+                  <p className="text-sm text-gray-600">Conectado a todos tus datos fiscales en tiempo real</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                  <span className="text-gray-700">Análisis de ventas</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                  <span className="text-gray-700">Cálculos tributarios</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mr-2"></div>
+                  <span className="text-gray-700">Predicciones fiscales</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
+                  <span className="text-gray-700">Reportes automáticos</span>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Consultas predefinidas */}
+            <div className="p-4 border-b border-gray-200">
+              <p className="text-sm text-gray-600 mb-3">💡 Prueba estas consultas:</p>
+              <div className="flex flex-wrap gap-2">
+                {predefinedQueries.map((query, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePredefinedQuery(query)}
+                    className="px-3 py-2 text-xs bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 shadow-sm"
+                  >
+                    {query}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         {/* Messages */}
