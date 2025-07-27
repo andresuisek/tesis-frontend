@@ -1,161 +1,253 @@
-# Proyecto Frontend - Tesis
+# SRI Digital - Sistema de Gestión Tributaria
 
-Este es un proyecto frontend desarrollado con **Next.js 15** para una tesis universitaria. El proyecto utiliza las tecnologías más modernas de desarrollo web.
+Sistema web para la gestión tributaria de contribuyentes en Ecuador, desarrollado con Next.js 15, React 19 y TypeScript.
 
-## 🏗️ Detalle de Arquitectura
+## 🚀 Características Principales
 
-![Frontend Architecture Diagram](frontend_architecture_1.png)
+### 📊 Dashboard
+- Resumen de métricas tributarias
+- Visualización de ventas, compras y retenciones
+- Obligaciones tributarias próximas
+- Actividades recientes del sistema
 
-### Tabla de Componentes
+### 👥 Registro de Usuarios
+- Gestión de contribuyentes con datos del RUC
+- Carga manual o desde PDF del SRI
+- Campos obligatorios según normativa ecuatoriana
+- Clasificación de obligaciones tributarias
 
-| Capa / Componente   | Stack                             | Responsabilidad Principal                   |
-| ------------------- | --------------------------------- | ------------------------------------------- |
-| **UI & Routing**    | Next.js 15 (App Router), React 19 | Renderizado SSR/RSC, rutas nested, layouts  |
-| **Estado**          | Context API + Redux Toolkit       | Gestión de estado global y lógica asíncrona |
-| **Estilos**         | Tailwind CSS 4                    | Diseño utility‑first, theming responsive    |
-| **Autenticación**   | `@supabase/auth‑helpers`          | Login social, JWT, protección de rutas      |
-| **Consumo API**     | fetch / Axios                     | Requests a Supabase DB y Backend Node       |
-| **Build & Hosting** | Vercel (Edge Functions / CDN)     | CI/CD, deployments preview, dominios        |
-| **Testing**         | Playwright + Jest                 | Pruebas e2e y unitarias                     |
-| **Lint & Quality**  | ESLint, Prettier                  | Estilo y calidad de código                  |
+### 🧾 Registro de Ventas
+- Gestión de facturas y documentos de venta
+- Cálculo automático de IVA (0%, 8%, 15%)
+- Totales automáticos
+- Exportación de datos para declaraciones
 
-## 🚀 Tecnologías Utilizadas
+### 📋 Registro de Retenciones
+- Gestión de retenciones de IVA e Impuesto a la Renta
+- Porcentajes predefinidos según normativa
+- Comprobantes de retención
+- Cálculos automáticos
 
-- **Next.js 15.3.4** – Framework React con App Router y RSC
-- **React 19** – Biblioteca de interfaces de usuario
-- **TypeScript 5** – Tipado estático
-- **Tailwind CSS 4** – Utility‑first CSS
-- **Redux Toolkit + Redux** – Gestión de estado y lógica asíncrona
-- **supabase-js** – Cliente JS para BD, Auth
-- **ESLint + Prettier** – Lint y formato de código
-- **Playwright + Jest** – Testing e2e y unitario
+### 🛒 Registro de Compras
+- Clasificación por rubros contables
+- Gastos deducibles para Impuesto a la Renta
+- Análisis por categorías
+- Control de crédito tributario
 
-## 📋 Requisitos Previos
+### 🧮 Liquidación de Impuestos
+- Cálculo automático de IVA a pagar/favor
+- Liquidación de Impuesto a la Renta
+- Generación de declaraciones
+- Fechas de vencimiento
 
-Antes de ejecutar este proyecto, asegúrate de tener instalado:
+### 🤖 Asistente Virtual
+- Chatbot integrado para consultas
+- Respuestas sobre normativa tributaria
+- Guías paso a paso
+- Soporte en lenguaje natural
 
-- **Node.js** (versión 18.18 o superior)
-- **npm** (viene incluido con Node.js)
+## 🛠️ Tecnologías Utilizadas
 
-Puedes verificar si tienes Node.js instalado ejecutando:
-
-```bash
-node --version
-npm --version
-```
-
-## 🛠️ Instalación
-
-1. **Clona el repositorio**:
-
-```bash
-git clone https://github.com/andresuisek/tesis-frontend.git
-cd tesis-frontend
-```
-
-2. **Instala las dependencias**:
-
-```bash
-npm install
-```
-
-## 🚀 Cómo Ejecutar el Proyecto
-
-### Modo Desarrollo
-
-Para ejecutar el proyecto en modo desarrollo:
-
-```bash
-npm run dev
-```
-
-El proyecto se ejecutará en [http://localhost:3000](http://localhost:3000)
-
-### Compilación para Producción
-
-Para compilar el proyecto para producción:
-
-```bash
-npm run build
-```
-
-### Ejecutar en Modo Producción
-
-Para ejecutar la versión compilada:
-
-```bash
-npm run start
-```
+- **Frontend**: Next.js 15 con App Router
+- **UI**: React 19 con TypeScript
+- **Estilos**: Tailwind CSS 4
+- **Iconos**: Heroicons (SVG)
+- **Fuentes**: Geist Sans & Geist Mono
 
 ## 📁 Estructura del Proyecto
 
 ```
-tesis-frontend/
-├── src/
-│   └── app/
-│       ├── globals.css      # Estilos globales
-│       ├── layout.tsx       # Layout principal
-│       ├── page.tsx         # Página principal
-│       └── favicon.ico      # Icono de la aplicación
-├── public/                  # Archivos estáticos
-├── package.json            # Dependencias y scripts
-├── next.config.ts          # Configuración de Next.js
-├── tailwind.config.ts      # Configuración de Tailwind CSS
-├── tsconfig.json           # Configuración de TypeScript
-└── README.md               # Este archivo
+src/
+├── app/                    # App Router de Next.js
+│   ├── dashboard/          # Dashboard principal
+│   ├── usuarios/           # Registro de contribuyentes
+│   ├── ventas/            # Gestión de ventas
+│   ├── retenciones/       # Gestión de retenciones
+│   ├── compras/           # Gestión de compras
+│   ├── liquidacion/       # Liquidación de impuestos
+│   ├── layout.tsx         # Layout raíz
+│   ├── page.tsx           # Página de inicio
+│   └── globals.css        # Estilos globales
+└── components/
+    ├── layout/            # Componentes de layout
+    │   ├── Sidebar.tsx    # Navegación lateral
+    │   ├── Header.tsx     # Encabezado
+    │   └── MainLayout.tsx # Layout principal
+    ├── ui/                # Componentes UI reutilizables
+    │   └── FormComponents.tsx # Inputs, botones, cards
+    └── chatbot/           # Asistente virtual
+        └── Chatbot.tsx    # Componente del chatbot
 ```
 
-## 🧪 Scripts Disponibles
+## 🎨 Diseño y UI
 
-- `npm run dev` - Inicia el servidor de desarrollo
-- `npm run build` - Compila el proyecto para producción
-- `npm run start` - Ejecuta la versión compilada
-- `npm run lint` - Ejecuta ESLint para verificar el código
+### Colores del Sistema
+- **Azul SRI**: Colores corporativos del SRI Ecuador
+- **Azul Primario**: `#1e3a8a` (sri-blue)
+- **Azul Claro**: `#3b82f6` (sri-light-blue)
+- **Azul Oscuro**: `#1e40af` (sri-dark-blue)
+- **Azul Acento**: `#0ea5e9` (sri-accent)
 
-## 🔧 Desarrollo
+### Componentes
+- Navegación lateral colapsable
+- Tarjetas informativas (cards)
+- Formularios responsivos
+- Tablas con paginación
+- Chatbot flotante
 
-### Agregar Nuevas Páginas
+## 🔧 Instalación y Desarrollo
 
-Para agregar nuevas páginas, crea archivos `page.tsx` en el directorio `src/app/`:
+### Prerrequisitos
+- Node.js 18+ 
+- npm, yarn o pnpm
 
+### Instalación
+```bash
+# Clonar el repositorio
+git clone [URL_DEL_REPOSITORIO]
+
+# Instalar dependencias
+npm install
+
+# Ejecutar en modo desarrollo
+npm run dev
 ```
-src/app/
-├── page.tsx          # Página principal (/)
-├── about/
-│   └── page.tsx      # Página "about" (/about)
-└── contact/
-    └── page.tsx      # Página "contact" (/contact)
+
+### Scripts Disponibles
+```bash
+npm run dev     # Desarrollo con Turbopack
+npm run build   # Construcción para producción
+npm run start   # Servidor de producción
+npm run lint    # Linting con ESLint
 ```
 
-### Estilos
+## 📋 Módulos del Sistema
 
-El proyecto utiliza **Tailwind CSS**. Puedes:
+### 1. Registro de Usuario
+**Campos obligatorios según SRI:**
+- Nombre y apellido
+- RUC (Primary Key)
+- Estado (Activo/Inactivo)
+- Obligado a llevar contabilidad
+- Agente de retención
+- Teléfono, correo, dirección
+- Actividades económicas
+- Obligaciones tributarias (Mensual/Semestral/RIMPE)
 
-- Usar clases de Tailwind directamente en tus componentes
-- Modificar `src/app/globals.css` para estilos globales
-- Crear archivos CSS modules si necesitas estilos específicos
+### 2. Registro de Ventas
+**Campos para declaraciones:**
+- RUC del cliente
+- Razón social
+- Fecha de emisión
+- Tipo y número de comprobante
+- Subtotales por tarifa IVA (0%, 8%, 15%)
+- IVA calculado automáticamente
+- Total de la transacción
 
-## 🐛 Solución de Problemas
+### 3. Registro de Retenciones
+**Tipos de retención:**
+- **IVA**: 30% (servicios), 70% (construcción), 100% (bienes 0%)
+- **Renta**: 1% (intereses), 2% (servicios), 8% (construcción), 10% (transporte)
 
-### El proyecto no se inicia
+### 4. Registro de Compras
+**Clasificación por rubros:**
+- Gastos administrativos
+- Gastos de ventas
+- Costo de ventas
+- Activos fijos
+- Servicios profesionales
+- Otros gastos deducibles
 
-1. Verifica que Node.js esté instalado correctamente
-2. Elimina `node_modules` y `package-lock.json`, luego ejecuta `npm install`
-3. Verifica que no haya errores en la consola
+### 5. Liquidaci��n de Impuestos
+**Cálculos automáticos:**
+- IVA a pagar = IVA ventas - IVA compras - Retenciones IVA
+- Base Renta = Ingresos - Gastos deducibles
+- Impuesto Renta = Base × 2% (personas naturales)
 
-### Errores de TypeScript
+## 🤖 Asistente Virtual
 
-- Revisa que todos los tipos estén correctamente definidos
-- Ejecuta `npm run lint` para verificar errores
+El chatbot integrado puede ayudar con:
+- Consultas sobre normativa tributaria
+- Explicación de procedimientos
+- Fechas de vencimiento
+- Tipos de retenciones
+- Clasificación de rubros contables
+- Guías paso a paso
 
-### Puerto ocupado
+**Comandos útiles:**
+- `ayuda` - Lista de temas disponibles
+- `iva` - Información sobre IVA
+- `retenciones` - Tipos de retenciones
+- `fechas` - Fechas de vencimiento
+- `rubros` - Clasificación contable
 
-Si el puerto 3000 está ocupado, Next.js automáticamente usará el siguiente puerto disponible (3001, 3002, etc.)
+## 📅 Obligaciones Tributarias
 
-## 👨‍💻 Desarrollado para Tesis
+### Fechas de Vencimiento
+- **IVA Mensual**: 28 del mes siguiente
+- **Retenciones**: 28 del mes siguiente
+- **Impuesto a la Renta**: Según 9no dígito del RUC
+- **Anexos**: Marzo del año siguiente
 
-Este proyecto fue creado como parte de una tesis universitaria, utilizando las mejores prácticas de desarrollo frontend moderno.
+### Tarifas de IVA Ecuador
+- **0%**: Productos de canasta básica, medicinas, servicios básicos
+- **8%**: Servicios digitales (desde 2025)
+- **15%**: Servicios y productos gravados en general
+
+## 🔒 Seguridad y Validaciones
+
+- Validación de RUC ecuatoriano
+- Campos obligatorios según normativa
+- Cálculos automáticos para evitar errores
+- Respaldos de formularios
+- Validación de formatos de fecha y moneda
+
+## 🚀 Deployment
+
+### Netlify (Recomendado)
+```bash
+npm run build
+# Subir carpeta .next a Netlify
+```
+
+### Vercel
+```bash
+vercel --prod
+```
+
+### Docker
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+## 🤝 Contribución
+
+1. Fork del proyecto
+2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+## 📞 Soporte
+
+Para soporte técnico o consultas:
+- Email: andres.ontiveros24@gmail.com
+- Documentación: [Wiki del proyecto]
+- Issues: [GitHub Issues]
 
 ---
 
-**Nota**: Para cualquier duda sobre el proyecto, consulta la documentación oficial de las tecnologías utilizadas o contacta al desarrollador.
+**Desarrollado por Andrés Ontiveros - Tesis de Grado 2025**
+
+*Sistema diseñado para cumplir con la normativa tributaria del Ecuador según el SRI (Servicio de Rentas Internas).*
