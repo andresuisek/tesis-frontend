@@ -1,4 +1,6 @@
 import MainLayout from '@/components/layout/MainLayout';
+import BarChart from '@/components/charts/BarChart';
+import PieChart from '@/components/charts/PieChart';
 
 export default function DashboardPage() {
   return (
