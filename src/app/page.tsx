@@ -22,7 +22,7 @@ export default function Home() {
       <div className="text-center">
         <div className="mx-auto w-24 h-24 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
           <div className="text-blue-600 font-bold text-2xl">
-            TaxSys
+            SoftaxA
           </div>
         </div>
         <h1 className="text-white text-2xl font-bold mb-2">Sistema Tributario Digital</h1>
