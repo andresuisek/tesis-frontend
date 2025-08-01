@@ -139,7 +139,8 @@ export default function RegistroPage() {
       // Set cookie for middleware
       document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
 
-      router.push('/dashboard');
+      // Usar window.location para forzar la redirección
+      window.location.href = '/dashboard';
     } catch (err) {
       setError('Error al crear la cuenta. Inténtalo de nuevo.');
     } finally {
