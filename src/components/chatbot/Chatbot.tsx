@@ -118,10 +118,10 @@ export default function Chatbot() {
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
       {/* Header */}
-      <div className="sri-header p-4 rounded-t-lg flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center">
           <div className="bg-white text-blue-600 font-bold text-sm px-2 py-1 rounded">
-            SRI
+            TaxSys
           </div>
           <span className="ml-2 text-white text-sm font-medium">Asistente Virtual</span>
         </div>
