@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TaxSys Pro - Sistema de Gestión Tributaria",
+  title: "SoftaxA Pro - Sistema de Gestión Tributaria",
   description: "Sistema de gestión tributaria digital. Registro de usuarios, ventas, retenciones y liquidaciones de impuestos para tesis universitaria.",
 };
 
