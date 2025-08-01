@@ -111,19 +111,33 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="mt-6 px-3">
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <li key={item.name}>
                 <Link
                   href={item.href}
-                  className={`sidebar-nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center' : ''}`}
+                  className={`flex items-center px-3 py-3 text-gray-300 hover:text-white hover:bg-gray-700 transition-all duration-200 rounded-lg group relative ${
+                    isActive ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg' : ''
+                  } ${isCollapsed ? 'justify-center' : ''}`}
                   title={isCollapsed ? item.name : ''}
                 >
-                  {item.icon}
+                  <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
+                    {item.icon}
+                  </div>
                   {!isCollapsed && (
-                    <span className="ml-3 text-sm font-medium">{item.name}</span>
+                    <span className="ml-3 text-sm font-medium transition-all duration-200">{item.name}</span>
+                  )}
+                  {isActive && !isCollapsed && (
+                    <div className="absolute right-2 w-2 h-2 bg-white rounded-full"></div>
+                  )}
+
+                  {/* Tooltip for collapsed state */}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      {item.name}
+                    </div>
                   )}
                 </Link>
               </li>
