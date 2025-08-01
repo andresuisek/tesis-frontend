@@ -34,6 +34,10 @@ export default function LoginPage() {
       if (formData.email === 'admin@sri.gob.ec' && formData.password === 'admin123') {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userEmail', formData.email);
+
+        // Set cookie for middleware
+        document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
+
         router.push('/dashboard');
       } else {
         throw new Error('Credenciales incorrectas');
