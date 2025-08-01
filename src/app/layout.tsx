@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SRI Digital - Sistema de Gestión Tributaria",
-  description: "Sistema de gestión tributaria digital para el SRI Ecuador. Registro de usuarios, ventas, retenciones y liquidaciones de impuestos.",
+  title: "TaxSys Pro - Sistema de Gestión Tributaria",
+  description: "Sistema de gestión tributaria digital. Registro de usuarios, ventas, retenciones y liquidaciones de impuestos para tesis universitaria.",
 };
 
 export default function RootLayout({
