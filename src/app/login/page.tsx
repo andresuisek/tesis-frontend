@@ -31,15 +31,19 @@ export default function LoginPage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (formData.email === 'admin@taxsys.com' && formData.password === 'admin123') {
+      if (formData.email === 'admin@softaxa.com' && formData.password === 'admin123') {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userEmail', formData.email);
 
         // Set cookie for middleware
-        document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
+        document.cookie = 'isAuthenticated=true; path=/; max-age=86400; secure=false; samesite=lax';
 
-        // Usar window.location para forzar la redirección
-        window.location.href = '/dashboard';
+        console.log('Login exitoso, redirigiendo...');
+
+        // Usar setTimeout para asegurar que los datos se guarden antes de la redirección
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 100);
       } else {
         throw new Error('Credenciales incorrectas');
       }
