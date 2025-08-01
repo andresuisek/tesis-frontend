@@ -2,6 +2,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import BarChart from '@/components/charts/BarChart';
 import PieChart from '@/components/charts/PieChart';
 import LineChart from '@/components/charts/LineChart';
+import AuthCheck from '@/components/AuthCheck';
 
 export default function DashboardPage() {
   return (
@@ -174,7 +175,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Obligaciones Tributarias Próximas */}
+      {/* Obligaciones Tributarias Pr��ximas */}
       <div className="mt-8">
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Obligaciones Tributarias Próximas</h3>
