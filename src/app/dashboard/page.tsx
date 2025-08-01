@@ -1,13 +1,49 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import BarChart from '@/components/charts/BarChart';
 import PieChart from '@/components/charts/PieChart';
 import LineChart from '@/components/charts/LineChart';
-import AuthCheck from '@/components/AuthCheck';
 
 export default function DashboardPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      console.log('Dashboard - checking auth:', isAuthenticated);
+      
+      if (isAuthenticated !== 'true') {
+        console.log('No autenticado, redirigiendo al login...');
+        router.push('/login');
+      } else {
+        console.log('Usuario autenticado, mostrando dashboard');
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mb-4 shadow-lg">
+            <div className="text-white font-bold text-lg">SoftaxA</div>
+          </div>
+          <p className="text-gray-600 mb-4">Cargando dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AuthCheck>
-      <MainLayout 
+    <MainLayout 
       title="Dashboard" 
       subtitle="Resumen general del sistema de gestión tributaria"
     >
@@ -77,7 +113,7 @@ export default function DashboardPage() {
         {/* Gráfico de Ventas Mensuales */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Ventas Mensuales</h3>
-          <BarChart
+          <BarChart 
             data={[
               { label: 'Ene', value: 18500, color: '#3b82f6' },
               { label: 'Feb', value: 22300, color: '#3b82f6' },
@@ -92,7 +128,7 @@ export default function DashboardPage() {
         {/* Distribución de Gastos */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución de Gastos</h3>
-          <PieChart
+          <PieChart 
             data={[
               { label: 'Servicios Profesionales', value: 8500, color: '#3b82f6' },
               { label: 'Gastos Administrativos', value: 4200, color: '#10b981' },
@@ -111,7 +147,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendencia de Utilidades (Últimos 6 meses)</h3>
-            <LineChart
+            <LineChart 
               data={[
                 { label: 'Oct', value: 4200 },
                 { label: 'Nov', value: 4800 },
@@ -176,7 +212,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Obligaciones Tributarias Pr��ximas */}
+      {/* Obligaciones Tributarias Próximas */}
       <div className="mt-8">
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Obligaciones Tributarias Próximas</h3>
@@ -236,7 +272,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      </MainLayout>
-    </AuthCheck>
+    </MainLayout>
   );
 }
