@@ -31,7 +31,7 @@ export default function LoginPage() {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (formData.email === 'admin@sri.gob.ec' && formData.password === 'admin123') {
+      if (formData.email === 'admin@taxsys.com' && formData.password === 'admin123') {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userEmail', formData.email);
 
