@@ -135,7 +135,10 @@ export default function RegistroPage() {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userEmail', formData.email);
       localStorage.setItem('userData', JSON.stringify(formData));
-      
+
+      // Set cookie for middleware
+      document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
+
       router.push('/dashboard');
     } catch (err) {
       setError('Error al crear la cuenta. Inténtalo de nuevo.');
