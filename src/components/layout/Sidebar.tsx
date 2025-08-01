@@ -76,25 +76,37 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className={`bg-white h-screen border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`bg-gradient-to-b from-gray-900 to-gray-800 h-screen border-r border-gray-700 transition-all duration-300 shadow-xl ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
-      <div className="sri-header p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 flex items-center justify-between shadow-lg">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
-          <div className="bg-white text-blue-600 font-bold text-xl px-3 py-1 rounded">
+          <div className="bg-white text-blue-600 font-bold text-xl px-3 py-2 rounded-lg shadow-md">
             SRI
           </div>
           {!isCollapsed && (
-            <span className="ml-3 text-sm font-medium">Digital</span>
+            <span className="ml-3 text-white text-lg font-semibold">Digital</span>
           )}
         </div>
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-white hover:bg-blue-700 p-1 rounded"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-          </svg>
-        </button>
+        {!isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="text-white hover:bg-blue-800 p-2 rounded-lg transition-all duration-200 hover:scale-110"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+        {isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="absolute top-4 right-2 text-white hover:bg-blue-800 p-1 rounded-lg transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
