@@ -81,7 +81,7 @@ export default function Sidebar() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 flex items-center justify-between shadow-lg">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
           <div className="bg-white text-blue-600 font-bold text-lg px-3 py-2 rounded-lg shadow-md">
-            TaxSys
+            SoftaxA
           </div>
           {!isCollapsed && (
             <span className="ml-3 text-white text-lg font-semibold">Pro</span>
