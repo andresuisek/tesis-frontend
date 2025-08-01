@@ -38,7 +38,8 @@ export default function LoginPage() {
         // Set cookie for middleware
         document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
 
-        router.push('/dashboard');
+        // Usar window.location para forzar la redirección
+        window.location.href = '/dashboard';
       } else {
         throw new Error('Credenciales incorrectas');
       }
