@@ -49,7 +49,7 @@ export default function Chatbot() {
     }
 
     if (lowerMessage.includes('liquidación') || lowerMessage.includes('declaración')) {
-      return 'Para la liquidación de impuestos:\n1. Ve a "Liquidación de Impuestos"\n2. Selecciona el período\n3. El sistema calculará automáticamente:\n   • IVA a pagar/favor\n   • Impuesto a la Renta\n   • Créditos tributarios\n\n¿Necesitas ayuda con algún cálculo específico?';
+      return 'Para la liquidación de impuestos:\n1. Ve a "Liquidación de Impuestos"\n2. Selecciona el período\n3. El sistema calculará automáticamente:\n   • IVA a pagar/favor\n   • Impuesto a la Renta\n   • Créditos tributarios\n\n¿Necesitas ayuda con algún cálculo espec��fico?';
     }
 
     if (lowerMessage.includes('usuario') || lowerMessage.includes('registro')) {
@@ -121,7 +121,7 @@ export default function Chatbot() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center">
           <div className="bg-white text-blue-600 font-bold text-sm px-2 py-1 rounded">
-            TaxSys
+            SoftaxA
           </div>
           <span className="ml-2 text-white text-sm font-medium">Asistente Virtual</span>
         </div>
