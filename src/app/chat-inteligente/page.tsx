@@ -69,7 +69,7 @@ Opciones:
 
 ¿Te ayudo con el formulario de devolución?`,
 
-  'gastos': `��� **Análisis de Gastos por Rubro**
+  'gastos': `📋 **Análisis de Gastos por Rubro**
 
 **Total Gastos:** $18,456.00
 
@@ -329,10 +329,10 @@ Puedo ayudarte con información sobre:
     >
       <div className="h-[calc(100vh-140px)] flex flex-col bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Chat Header */}
-        <div className="sri-header p-4 rounded-t-lg">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg">
           <div className="flex items-center">
             <div className="bg-white text-blue-600 font-bold text-lg px-3 py-1 rounded">
-              SRI
+              TaxSys
             </div>
             <div className="ml-3">
               <h2 className="text-white font-semibold">Asistente Tributario IA</h2>
