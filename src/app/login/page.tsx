@@ -181,7 +181,7 @@ export default function LoginPage() {
         {/* Demo Credentials */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-xs text-blue-800 font-medium mb-2">🔐 Credenciales de demo:</p>
-          <p className="text-xs text-blue-700">Email: admin@taxsys.com</p>
+          <p className="text-xs text-blue-700">Email: admin@softaxa.com</p>
           <p className="text-xs text-blue-700">Contraseña: admin123</p>
         </div>
       </div>
