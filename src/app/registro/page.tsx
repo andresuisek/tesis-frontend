@@ -162,8 +162,8 @@ export default function RegistroPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mx-auto w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-            <div className="bg-white text-blue-600 font-bold text-2xl px-3 py-2 rounded-lg">
-              SRI
+            <div className="bg-white text-blue-600 font-bold text-xl px-3 py-2 rounded-lg">
+              TaxSys
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear Cuenta</h1>
