@@ -332,7 +332,7 @@ Puedo ayudarte con información sobre:
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg">
           <div className="flex items-center">
             <div className="bg-white text-blue-600 font-bold text-lg px-3 py-1 rounded">
-              TaxSys
+              SoftaxA
             </div>
             <div className="ml-3">
               <h2 className="text-white font-semibold">Asistente Tributario IA</h2>
