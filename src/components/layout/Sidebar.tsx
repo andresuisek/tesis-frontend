@@ -147,21 +147,27 @@ export default function Sidebar() {
       </nav>
 
       {/* User Info */}
-      {!isCollapsed && (
-        <div className="absolute bottom-4 left-3 right-3">
-          <div className="bg-gray-50 rounded-lg p-3">
+      <div className="absolute bottom-4 left-3 right-3">
+        {!isCollapsed ? (
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg">
             <div className="flex items-center">
-              <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-medium shadow-md">
                 AO
               </div>
               <div className="ml-3">
-                <p className="text-xs font-medium text-gray-900">Andrés Ontiveros</p>
-                <p className="text-xs text-gray-500">Administrador</p>
+                <p className="text-sm font-medium text-white">Andrés Ontiveros</p>
+                <p className="text-xs text-gray-400">Administrador</p>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex justify-center">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-sm font-medium shadow-lg">
+              AO
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
