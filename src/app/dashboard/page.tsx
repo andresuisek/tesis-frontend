@@ -6,7 +6,8 @@ import AuthCheck from '@/components/AuthCheck';
 
 export default function DashboardPage() {
   return (
-    <MainLayout 
+    <AuthCheck>
+      <MainLayout 
       title="Dashboard" 
       subtitle="Resumen general del sistema de gestión tributaria"
     >
@@ -235,6 +236,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
+      </MainLayout>
+    </AuthCheck>
   );
 }
