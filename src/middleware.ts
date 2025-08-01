@@ -3,8 +3,13 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Rutas públicas que no requieren autenticación
-  const publicPaths = ['/login', '/registro'];
+  const publicPaths = ['/login', '/registro', '/'];
   const pathname = request.nextUrl.pathname;
+
+  // Si está en la ruta raíz, permitir que el componente page.tsx maneje la redirección
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
 
   // Si está en una ruta pública, permitir acceso
   if (publicPaths.includes(pathname)) {
@@ -20,7 +25,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Si está autenticado y trata de acceder a login/registro, redirigir al dashboard
-  if (isAuthenticated && publicPaths.includes(pathname)) {
+  if (isAuthenticated && (pathname === '/login' || pathname === '/registro')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
