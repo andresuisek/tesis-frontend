@@ -80,11 +80,11 @@ export default function Sidebar() {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 flex items-center justify-between shadow-lg">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
-          <div className="bg-white text-blue-600 font-bold text-xl px-3 py-2 rounded-lg shadow-md">
-            SRI
+          <div className="bg-white text-blue-600 font-bold text-lg px-3 py-2 rounded-lg shadow-md">
+            TaxSys
           </div>
           {!isCollapsed && (
-            <span className="ml-3 text-white text-lg font-semibold">Digital</span>
+            <span className="ml-3 text-white text-lg font-semibold">Pro</span>
           )}
         </div>
         {!isCollapsed && (
