@@ -367,12 +367,12 @@ export default function VentasPage() {
           </div>
         </Card>
 
-        {/* Información sobre obtención de datos del SRI */}
-        <Card title="Información del SRI">
+        {/* Información sobre obtención de datos tributarios */}
+        <Card title="Información Tributaria">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-semibold text-yellow-900 mb-2">Pasos para obtener información de ventas desde el SRI:</h4>
+            <h4 className="font-semibold text-yellow-900 mb-2">Pasos para obtener información de ventas desde el portal tributario:</h4>
             <ol className="text-sm text-yellow-800 space-y-1 list-decimal list-inside">
-              <li>Ingresar al portal web del SRI (www.sri.gob.ec)</li>
+              <li>Ingresar al portal web tributario oficial</li>
               <li>Acceder con su clave de seguridad</li>
               <li>Ir a "Facturación Electrónica" &gt; "Comprobantes electrónicos recibidos"</li>
               <li>Seleccionar el período de consulta</li>
