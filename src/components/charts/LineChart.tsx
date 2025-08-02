@@ -119,7 +119,7 @@ export default function LineChart({ data, title, height = 200, color = '#3b82f6'
                   fill="transparent"
                   className="cursor-pointer"
                 >
-                  <title>${item.value.toFixed(0)} - {item.label}</title>
+                  <title>${Math.round(item.value)} - {item.label}</title>
                 </circle>
 
                 {/* X-axis label */}
