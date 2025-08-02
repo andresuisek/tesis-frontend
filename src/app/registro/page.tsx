@@ -129,23 +129,15 @@ export default function RegistroPage() {
     setError('');
 
     try {
-      // Simulación de registro
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Simulación de registro para demo
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userEmail', formData.email);
       localStorage.setItem('userData', JSON.stringify(formData));
 
-      // Set cookie for middleware
-      document.cookie = 'isAuthenticated=true; path=/; max-age=86400'; // 24 hours
-
-      // Set cookie for middleware
-      document.cookie = 'isAuthenticated=true; path=/; max-age=86400; secure=false; samesite=lax';
-
-      // Usar window.location para forzar la redirección
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 100);
+      // Redirigir directamente al dashboard
+      window.location.href = '/dashboard';
     } catch (err) {
       setError('Error al crear la cuenta. Inténtalo de nuevo.');
     } finally {
