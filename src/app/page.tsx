@@ -22,6 +22,7 @@ export default function Home() {
           />
         </div>
         <h1 className="text-white text-2xl font-bold mb-2">Sistema Tributario Digital</h1>
+        <p className="text-blue-100 text-sm mb-4">Universidad Internacional SEK</p>
         <p className="text-blue-100 mb-6">Cargando aplicación...</p>
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
