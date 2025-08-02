@@ -8,9 +8,21 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle }: HeaderProps) {
-  const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Datos simulados para demo
+  const user = {
+    nombreApellido: 'Usuario Demo',
+    email: 'admin@softaxa.com',
+    ruc: '0962428348001'
+  };
+
+  const logout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
+    window.location.href = '/login';
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
