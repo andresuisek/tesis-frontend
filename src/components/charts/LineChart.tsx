@@ -17,14 +17,17 @@ export default function LineChart({ data, title, height = 200, color = '#3b82f6'
   const chartPadding = 40;
   const chartWidth = 400;
   const pointRadius = 4;
+  const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
 
   const getXPosition = (index: number) => {
-    return chartPadding + (index * (chartWidth - chartPadding * 2)) / (data.length - 1);
+    const pos = chartPadding + (index * (chartWidth - chartPadding * 2)) / (data.length - 1);
+    return Math.round(pos * 100) / 100; // Round to 2 decimal places
   };
 
   const getYPosition = (value: number) => {
     const normalizedValue = valueRange > 0 ? (value - minValue) / valueRange : 0.5;
-    return height - (normalizedValue * height) + chartPadding;
+    const pos = height - (normalizedValue * height) + chartPadding;
+    return Math.round(pos * 100) / 100; // Round to 2 decimal places
   };
 
   const pathData = data.map((item, index) => {
@@ -64,7 +67,7 @@ export default function LineChart({ data, title, height = 200, color = '#3b82f6'
                   fontSize="10"
                   fill="#6b7280"
                 >
-                  ${(value / 1000).toFixed(0)}k
+                  ${Math.round(value / 1000)}k
                 </text>
               </g>
             );
@@ -72,7 +75,7 @@ export default function LineChart({ data, title, height = 200, color = '#3b82f6'
 
           {/* Area under the line */}
           <defs>
-            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor={color} stopOpacity="0.3" />
               <stop offset="100%" stopColor={color} stopOpacity="0.05" />
             </linearGradient>
@@ -80,7 +83,7 @@ export default function LineChart({ data, title, height = 200, color = '#3b82f6'
 
           <path
             d={`${pathData} L ${getXPosition(data.length - 1)} ${height + chartPadding} L ${getXPosition(0)} ${height + chartPadding} Z`}
-            fill="url(#areaGradient)"
+            fill={`url(#${gradientId})`}
           />
 
           {/* Main line */}
