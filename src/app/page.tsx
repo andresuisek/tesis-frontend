@@ -7,14 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar si está autenticado
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
-    }
+    // Para demo: siempre redirigir al login
+    router.push('/login');
   }, [router]);
 
   return (
