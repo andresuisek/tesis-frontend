@@ -11,9 +11,9 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, title, subtitle }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-col ml-64">
         <Header title={title} subtitle={subtitle} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           {children}
