@@ -24,44 +24,29 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Verificar que los campos tengan algo escrito
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError('Por favor completa todos los campos');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
-    console.log('Intentando login con:', formData.email, formData.password);
-
-    // Simulación de autenticación
+    // Simulación de login - funciona con cualquier credencial
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (formData.email === 'admin@softaxa.com' && formData.password === 'admin123') {
-        console.log('Credenciales correctas, guardando datos...');
+      // Guardar datos para mantener la sesión
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userEmail', formData.email);
 
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userEmail', formData.email);
+      // Redirigir directamente al dashboard
+      window.location.href = '/dashboard';
 
-        // Set cookie for middleware
-        document.cookie = 'isAuthenticated=true; path=/; max-age=86400; secure=false; samesite=lax';
-
-        console.log('Datos guardados:', {
-          localStorage: localStorage.getItem('isAuthenticated'),
-          email: localStorage.getItem('userEmail')
-        });
-
-        console.log('Login exitoso, redirigiendo...');
-
-        // Usar setTimeout para asegurar que los datos se guarden antes de la redirección
-        setTimeout(() => {
-          console.log('Ejecutando redirección...');
-          window.location.href = '/dashboard';
-        }, 200);
-      } else {
-        console.log('Credenciales incorrectas');
-        throw new Error('Credenciales incorrectas');
-      }
     } catch (err) {
-      console.error('Error en login:', err);
-      setError('Email o contraseña incorrectos');
-    } finally {
+      setError('Error al iniciar sesión');
       setIsLoading(false);
     }
   };
@@ -132,7 +117,7 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                placeholder="••••��•••"
+                placeholder="••••••••"
                 required
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
