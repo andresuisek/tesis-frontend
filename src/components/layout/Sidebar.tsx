@@ -76,7 +76,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className={`bg-gradient-to-b from-gray-900 to-gray-800 h-screen border-r border-gray-700 transition-all duration-300 shadow-xl relative ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`bg-gradient-to-b from-gray-900 to-gray-800 h-screen border-r border-gray-700 transition-all duration-300 shadow-xl fixed left-0 top-0 z-40 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 flex items-center justify-between shadow-lg">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
