@@ -45,10 +45,12 @@ export default function AuthCheck({ children }: AuthCheckProps) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-            <div className="text-white font-bold text-lg">
-              SoftaxA
-            </div>
+          <div className="mx-auto w-24 h-16 bg-white rounded-xl flex items-center justify-center mb-4 shadow-lg border-2 border-gray-100">
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2Ff0451246846a40baae39ad411a7b4867%2Fc5e2557623b347548bfbe225119d3175?format=webp&width=800"
+              alt="UISEK Logo"
+              className="h-10 w-auto object-contain"
+            />
           </div>
           <p className="text-gray-600 mb-4">Verificando autenticación...</p>
           <div className="flex justify-center">
