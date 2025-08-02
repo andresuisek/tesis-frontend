@@ -236,6 +236,21 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer académico */}
+      <div className="mt-8 text-center">
+        <div className="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets%2Ff0451246846a40baae39ad411a7b4867%2Fc5e2557623b347548bfbe225119d3175?format=webp&width=800"
+            alt="UISEK Logo"
+            className="h-6 w-auto object-contain mr-3"
+          />
+          <div className="text-left">
+            <p className="text-sm font-semibold text-gray-900">Universidad Internacional SEK</p>
+            <p className="text-xs text-gray-600">Proyecto de Tesis - Sistema de Gestión Tributaria</p>
+          </div>
+        </div>
+      </div>
     </MainLayout>
   );
 }
