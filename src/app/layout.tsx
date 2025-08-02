@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SoftaxA Pro - Sistema de Gestión Tributaria",
-  description: "Sistema de gestión tributaria digital. Registro de usuarios, ventas, retenciones y liquidaciones de impuestos para tesis universitaria.",
+  title: "UISEK - Sistema de Gestión Tributaria",
+  description: "Sistema de gestión tributaria digital - Universidad Internacional SEK. Proyecto de tesis para registro de usuarios, ventas, retenciones y liquidaciones de impuestos.",
 };
 
 export default function RootLayout({
