@@ -49,7 +49,7 @@ export default function Chatbot() {
     }
 
     if (lowerMessage.includes('liquidación') || lowerMessage.includes('declaración')) {
-      return 'Para la liquidación de impuestos:\n1. Ve a "Liquidación de Impuestos"\n2. Selecciona el período\n3. El sistema calculará automáticamente:\n   • IVA a pagar/favor\n   • Impuesto a la Renta\n   • Créditos tributarios\n\n¿Necesitas ayuda con algún cálculo espec��fico?';
+      return 'Para la liquidación de impuestos:\n1. Ve a "Liquidación de Impuestos"\n2. Selecciona el período\n3. El sistema calculará automáticamente:\n   • IVA a pagar/favor\n   • Impuesto a la Renta\n   • Créditos tributarios\n\n¿Necesitas ayuda con algún cálculo específico?';
     }
 
     if (lowerMessage.includes('usuario') || lowerMessage.includes('registro')) {
@@ -120,8 +120,12 @@ export default function Chatbot() {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center">
-          <div className="bg-white text-blue-600 font-bold text-sm px-2 py-1 rounded">
-            SoftaxA
+          <div className="bg-white rounded p-1 flex items-center justify-center">
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2Ff0451246846a40baae39ad411a7b4867%2Fc5e2557623b347548bfbe225119d3175?format=webp&width=800"
+              alt="UISEK"
+              className="h-4 w-auto object-contain"
+            />
           </div>
           <span className="ml-2 text-white text-sm font-medium">Asistente Virtual</span>
         </div>
