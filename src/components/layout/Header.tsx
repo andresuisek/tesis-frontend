@@ -11,11 +11,12 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Datos simulados para demo
+  // Datos del usuario
   const user = {
-    nombreApellido: 'Usuario Demo',
+    nombreApellido: 'Andrés Ontiveros',
     email: 'admin@uisek.edu.ec',
-    ruc: '0962428348001'
+    ruc: '0962428348001',
+    rol: 'Administrador'
   };
 
   const logout = () => {
