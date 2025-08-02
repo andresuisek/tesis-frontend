@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   title: string;
