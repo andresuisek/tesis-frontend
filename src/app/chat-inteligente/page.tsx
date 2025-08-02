@@ -331,8 +331,12 @@ Puedo ayudarte con información sobre:
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 rounded-t-lg">
           <div className="flex items-center">
-            <div className="bg-white text-blue-600 font-bold text-lg px-3 py-1 rounded">
-              SoftaxA
+            <div className="bg-white rounded-lg p-2 flex items-center justify-center">
+              <img
+                src="https://cdn.builder.io/api/v1/image/assets%2Ff0451246846a40baae39ad411a7b4867%2Fc5e2557623b347548bfbe225119d3175?format=webp&width=800"
+                alt="UISEK"
+                className="h-6 w-auto object-contain"
+              />
             </div>
             <div className="ml-3">
               <h2 className="text-white font-semibold">Asistente Tributario IA</h2>
