@@ -340,7 +340,7 @@ Puedo ayudarte con información sobre:
             </div>
             <div className="ml-3">
               <h2 className="text-white font-semibold">Asistente Tributario IA</h2>
-              <p className="text-blue-100 text-sm">Consulta inteligente de datos fiscales</p>
+              <p className="text-blue-100 text-sm">Universidad Internacional SEK</p>
             </div>
           </div>
         </div>
