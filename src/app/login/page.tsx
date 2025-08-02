@@ -65,10 +65,12 @@ export default function LoginPage() {
       <div className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-            <div className="bg-white text-blue-600 font-bold text-xl px-3 py-2 rounded-lg">
-              SoftaxA
-            </div>
+          <div className="mx-auto w-32 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg border-2 border-gray-100">
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2Ff0451246846a40baae39ad411a7b4867%2Fc5e2557623b347548bfbe225119d3175?format=webp&width=800"
+              alt="UISEK Logo"
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Bienvenido</h1>
           <p className="text-gray-600">Sistema de gestión tributaria digital</p>
