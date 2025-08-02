@@ -14,7 +14,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
   // Datos simulados para demo
   const user = {
     nombreApellido: 'Usuario Demo',
-    email: 'admin@softaxa.com',
+    email: 'admin@uisek.edu.ec',
     ruc: '0962428348001'
   };
 
