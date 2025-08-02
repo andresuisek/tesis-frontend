@@ -8,39 +8,7 @@ import PieChart from '@/components/charts/PieChart';
 import LineChart from '@/components/charts/LineChart';
 
 export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const isAuthenticated = localStorage.getItem('isAuthenticated');
-      console.log('Dashboard - checking auth:', isAuthenticated);
-      
-      if (isAuthenticated !== 'true') {
-        console.log('No autenticado, redirigiendo al login...');
-        router.push('/login');
-      } else {
-        console.log('Usuario autenticado, mostrando dashboard');
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-            <div className="text-white font-bold text-lg">SoftaxA</div>
-          </div>
-          <p className="text-gray-600 mb-4">Cargando dashboard...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+  // Sin verificación de autenticación - acceso directo
 
   return (
     <MainLayout 
