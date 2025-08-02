@@ -151,7 +151,7 @@ export default function Sidebar() {
       </nav>
 
       {/* User Info */}
-      <div className="absolute bottom-4 left-3 right-3">
+      <div className="absolute bottom-4 left-3 right-3 z-10">
         {!isCollapsed ? (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg">
             <div className="flex items-center">
