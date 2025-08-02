@@ -98,6 +98,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
                     {user?.nombreApellido || 'Usuario'}
                   </p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-xs text-blue-600 font-medium">{user?.rol || 'Usuario'}</p>
                   {user?.ruc && (
                     <p className="text-xs text-gray-500">RUC: {user.ruc}</p>
                   )}
