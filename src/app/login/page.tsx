@@ -192,10 +192,10 @@ export default function LoginPage() {
             <p className="text-sm text-blue-800 font-semibold">Credenciales de Acceso</p>
           </div>
           <div className="bg-white rounded-md p-3 border">
-            <p className="text-sm text-gray-700 mb-1"><span className="font-medium">Email:</span> admin@softaxa.com</p>
+            <p className="text-sm text-gray-700 mb-1"><span className="font-medium">Email:</span> admin@uisek.edu.ec</p>
             <p className="text-sm text-gray-700"><span className="font-medium">Contraseña:</span> admin123</p>
           </div>
-          <p className="text-xs text-blue-600 mt-2 italic">💡 Usa estas credenciales para acceder al sistema</p>
+          <p className="text-xs text-blue-600 mt-2 italic">📚 Proyecto de Tesis - UISEK</p>
         </div>
       </div>
     </div>
