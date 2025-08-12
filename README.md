@@ -1,161 +1,275 @@
-# Proyecto Frontend - Tesis
+# Sistema de Gestión Tributaria
 
-Este es un proyecto frontend desarrollado con **Next.js 15** para una tesis universitaria. El proyecto utiliza las tecnologías más modernas de desarrollo web.
+Un sistema completo desarrollado en Next.js para la gestión de obligaciones tributarias empresariales, construido con las mejores prácticas y tecnologías modernas.
 
-## 🏗️ Detalle de Arquitectura
+## 🚀 Características Principales
 
-![Frontend Architecture Diagram](frontend_architecture_1.png)
+### Módulos Implementados
 
-### Tabla de Componentes
+- **📊 Dashboard**: Panel principal con métricas y estadísticas
+- **💰 Gestión de Ventas**: Registro y control de facturas de venta
+- **🛒 Gestión de Compras**: Administración de facturas de proveedores
+- **📋 Retenciones**: Cálculo y emisión de comprobantes de retención
+- **🧮 Liquidación de Impuestos**: Cálculo automático de IVA y Renta
+- **🏢 Consulta RUC**: Validación y consulta de datos tributarios
+- **👥 Gestión de Usuarios**: Control de acceso y permisos
+- **🤖 Chatbot Tributario**: Asistente virtual para consultas
+- **⚙️ Configuración**: Personalización del sistema
 
-| Capa / Componente   | Stack                             | Responsabilidad Principal                   |
-| ------------------- | --------------------------------- | ------------------------------------------- |
-| **UI & Routing**    | Next.js 15 (App Router), React 19 | Renderizado SSR/RSC, rutas nested, layouts  |
-| **Estado**          | Context API + Redux Toolkit       | Gestión de estado global y lógica asíncrona |
-| **Estilos**         | Tailwind CSS 4                    | Diseño utility‑first, theming responsive    |
-| **Autenticación**   | `@supabase/auth‑helpers`          | Login social, JWT, protección de rutas      |
-| **Consumo API**     | fetch / Axios                     | Requests a Supabase DB y Backend Node       |
-| **Build & Hosting** | Vercel (Edge Functions / CDN)     | CI/CD, deployments preview, dominios        |
-| **Testing**         | Playwright + Jest                 | Pruebas e2e y unitarias                     |
-| **Lint & Quality**  | ESLint, Prettier                  | Estilo y calidad de código                  |
+### Tecnologías Utilizadas
 
-## 🚀 Tecnologías Utilizadas
+- **Frontend**: Next.js 15, React 19, TypeScript 5
+- **Estilos**: Tailwind CSS 4, shadcn/ui
+- **Componentes**: Radix UI, Lucide React
+- **Tablas**: TanStack Table
+- **Temas**: next-themes (modo claro/oscuro)
+- **Notificaciones**: Sonner
 
-- **Next.js 15.3.4** – Framework React con App Router y RSC
-- **React 19** – Biblioteca de interfaces de usuario
-- **TypeScript 5** – Tipado estático
-- **Tailwind CSS 4** – Utility‑first CSS
-- **Redux Toolkit + Redux** – Gestión de estado y lógica asíncrona
-- **supabase-js** – Cliente JS para BD, Auth
-- **ESLint + Prettier** – Lint y formato de código
-- **Playwright + Jest** – Testing e2e y unitario
+## 📁 Estructura del Proyecto
 
-## 📋 Requisitos Previos
-
-Antes de ejecutar este proyecto, asegúrate de tener instalado:
-
-- **Node.js** (versión 18.18 o superior)
-- **npm** (viene incluido con Node.js)
-
-Puedes verificar si tienes Node.js instalado ejecutando:
-
-```bash
-node --version
-npm --version
+```
+src/
+├── app/
+│   ├── (app)/                 # Rutas protegidas de la aplicación
+│   │   ├── dashboard/         # Panel principal
+│   │   ├── modules/           # Módulos del sistema
+│   │   │   ├── ventas/        # Gestión de ventas
+│   │   │   ├── compras/       # Gestión de compras
+│   │   │   ├── retenciones/   # Retenciones
+│   │   │   ├── liquidacion/   # Liquidación de impuestos
+│   │   │   ├── registro-ruc/  # Consulta RUC
+│   │   │   ├── usuarios/      # Gestión de usuarios
+│   │   │   └── chatbot/       # Asistente virtual
+│   │   └── layout.tsx         # Layout con sidebar
+│   ├── (auth)/                # Rutas de autenticación
+│   │   └── login/             # Página de login
+│   └── logout/                # Página de logout
+├── components/
+│   ├── ui/                    # Componentes de shadcn/ui
+│   ├── forms/                 # Componentes de formularios
+│   ├── tables/                # Componentes de tablas
+│   ├── app-sidebar.tsx        # Sidebar principal
+│   ├── mode-toggle.tsx        # Selector de tema
+│   └── theme-provider.tsx     # Proveedor de temas
+├── contexts/
+│   └── app-context.tsx        # Context global de la app
+└── lib/
+    └── utils.ts               # Utilidades
 ```
 
-## 🛠️ Instalación
+## 🎨 Características de UI/UX
 
-1. **Clona el repositorio**:
+### Diseño Moderno
+
+- **Interfaz limpia** con componentes de shadcn/ui
+- **Modo oscuro/claro** con transiciones suaves
+- **Responsive design** para todos los dispositivos
+- **Iconografía consistente** con Lucide React
+
+### Componentes Reutilizables
+
+- **DataTable**: Tablas con búsqueda, paginación y ordenamiento
+- **FormFieldWrapper**: Wrapper para campos de formulario
+- **Cards informativos** con métricas y estadísticas
+- **Sidebar navegable** con todos los módulos
+
+### Experiencia de Usuario
+
+- **Navegación intuitiva** con sidebar colapsible
+- **Feedback visual** con notificaciones toast
+- **Estados de carga** y validaciones en tiempo real
+- **Búsqueda y filtrado** en todas las tablas
+
+## 📊 Funcionalidades por Módulo
+
+### Dashboard
+
+- Métricas principales (ventas, compras, IVA, retenciones)
+- Actividad reciente del sistema
+- Próximos vencimientos tributarios
+- Gráficos y estadísticas visuales
+
+### Ventas
+
+- Registro de facturas y notas de crédito/débito
+- Cálculo automático de IVA
+- Búsqueda y filtrado por cliente
+- Métricas de ventas mensuales
+
+### Compras
+
+- Registro de facturas de proveedores
+- Control de retenciones aplicadas
+- Análisis por tipo de comprobante
+- Estado de conciliación
+
+### Retenciones
+
+- Emisión de comprobantes de retención
+- Calculadora automática de retenciones
+- Códigos de retención frecuentes
+- Validación de porcentajes según tipo
+
+### Liquidación
+
+- Cálculo automático de IVA mensual
+- Liquidación de Impuesto a la Renta
+- Generación de formularios (F104, F103)
+- Control de fechas de vencimiento
+
+### Consulta RUC
+
+- Validación de formato de RUC
+- Consulta de datos tributarios
+- Información de actividades económicas
+- Datos de representante legal
+
+### Usuarios
+
+- Gestión de cuentas de usuario
+- Sistema de roles y permisos
+- Registro de actividad
+- Control de acceso por módulos
+
+### Chatbot
+
+- Asistente virtual tributario
+- Preguntas frecuentes
+- Calculadoras rápidas
+- Respuestas contextuales
+
+## 🚀 Instalación y Configuración
+
+### Prerrequisitos
+
+- Node.js 18+
+- npm o yarn
+
+### Pasos de instalación
+
+1. **Clonar el repositorio**
 
 ```bash
-git clone https://github.com/andresuisek/tesis-frontend.git
+git clone <repository-url>
 cd tesis-frontend
 ```
 
-2. **Instala las dependencias**:
+2. **Instalar dependencias**
 
 ```bash
 npm install
 ```
 
-## 🚀 Cómo Ejecutar el Proyecto
-
-### Modo Desarrollo
-
-Para ejecutar el proyecto en modo desarrollo:
+3. **Ejecutar en desarrollo**
 
 ```bash
 npm run dev
 ```
 
-El proyecto se ejecutará en [http://localhost:3000](http://localhost:3000)
+4. **Abrir en el navegador**
 
-### Compilación para Producción
+```
+http://localhost:3000
+```
 
-Para compilar el proyecto para producción:
+### Credenciales de prueba
+
+- **Email**: admin@empresa.com
+- **Contraseña**: 123456
+
+## 🛠️ Scripts Disponibles
 
 ```bash
-npm run build
+npm run dev      # Ejecutar en desarrollo con Turbopack
+npm run build    # Construir para producción
+npm run start    # Ejecutar build de producción
+npm run lint     # Ejecutar ESLint
 ```
 
-### Ejecutar en Modo Producción
+## 📱 Responsive Design
 
-Para ejecutar la versión compilada:
+El sistema está optimizado para:
 
-```bash
-npm run start
-```
+- **Desktop** (1024px+): Experiencia completa con sidebar
+- **Tablet** (768px-1023px): Layout adaptado con navegación colapsible
+- **Mobile** (320px-767px): Interfaz móvil optimizada
 
-## 📁 Estructura del Proyecto
+## 🔧 Personalización
 
-```
-tesis-frontend/
-├── src/
-│   └── app/
-│       ├── globals.css      # Estilos globales
-│       ├── layout.tsx       # Layout principal
-│       ├── page.tsx         # Página principal
-│       └── favicon.ico      # Icono de la aplicación
-├── public/                  # Archivos estáticos
-├── package.json            # Dependencias y scripts
-├── next.config.ts          # Configuración de Next.js
-├── tailwind.config.ts      # Configuración de Tailwind CSS
-├── tsconfig.json           # Configuración de TypeScript
-└── README.md               # Este archivo
-```
+### Temas
 
-## 🧪 Scripts Disponibles
+El sistema soporta modo claro y oscuro automático:
 
-- `npm run dev` - Inicia el servidor de desarrollo
-- `npm run build` - Compila el proyecto para producción
-- `npm run start` - Ejecuta la versión compilada
-- `npm run lint` - Ejecuta ESLint para verificar el código
+- Variables CSS personalizables en `globals.css`
+- Configuración de colores en `tailwind.config.js`
+- Componentes con soporte nativo para dark mode
 
-## 🔧 Desarrollo
+### Componentes
 
-### Agregar Nuevas Páginas
+Todos los componentes son modulares y reutilizables:
 
-Para agregar nuevas páginas, crea archivos `page.tsx` en el directorio `src/app/`:
+- Fácil personalización de estilos
+- Props configurables para diferentes casos de uso
+- Documentación integrada con TypeScript
 
-```
-src/app/
-├── page.tsx          # Página principal (/)
-├── about/
-│   └── page.tsx      # Página "about" (/about)
-└── contact/
-    └── page.tsx      # Página "contact" (/contact)
-```
+## 🔒 Seguridad
 
-### Estilos
+- **Validación de formularios** en cliente y servidor
+- **Sanitización de datos** de entrada
+- **Control de acceso** basado en roles
+- **Sesiones seguras** con tokens JWT (preparado)
 
-El proyecto utiliza **Tailwind CSS**. Puedes:
+## 📈 Rendimiento
 
-- Usar clases de Tailwind directamente en tus componentes
-- Modificar `src/app/globals.css` para estilos globales
-- Crear archivos CSS modules si necesitas estilos específicos
+- **Server Components** de React 19
+- **Lazy loading** de componentes pesados
+- **Optimización de imágenes** automática
+- **Bundle splitting** inteligente
 
-## 🐛 Solución de Problemas
+## 🧪 Testing (Preparado)
 
-### El proyecto no se inicia
+Estructura preparada para:
 
-1. Verifica que Node.js esté instalado correctamente
-2. Elimina `node_modules` y `package-lock.json`, luego ejecuta `npm install`
-3. Verifica que no haya errores en la consola
+- Unit tests con Jest
+- Integration tests con React Testing Library
+- E2E tests con Playwright
 
-### Errores de TypeScript
+## 📝 Próximas Funcionalidades
 
-- Revisa que todos los tipos estén correctamente definidos
-- Ejecuta `npm run lint` para verificar errores
+- [ ] Integración con API del SRI
+- [ ] Reportes PDF avanzados
+- [ ] Sincronización con sistemas contables
+- [ ] Notificaciones push
+- [ ] Backup automático de datos
+- [ ] Multi-empresa
 
-### Puerto ocupado
+## 🤝 Contribución
 
-Si el puerto 3000 está ocupado, Next.js automáticamente usará el siguiente puerto disponible (3001, 3002, etc.)
+1. Fork el proyecto
+2. Crear rama para feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
 
-## 👨‍💻 Desarrollado para Tesis
+## 📄 Licencia
 
-Este proyecto fue creado como parte de una tesis universitaria, utilizando las mejores prácticas de desarrollo frontend moderno.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+## 👨‍💻 Autor
+
+**Andrés Ontiveros**
+
+- Proyecto de Tesis de Grado
+- Universidad: [Tu Universidad]
+- Año: 2024
+
+## 📞 Soporte
+
+Para soporte técnico o consultas:
+
+- Email: [tu-email@universidad.edu]
+- Issues: [GitHub Issues](link-to-issues)
 
 ---
 
-**Nota**: Para cualquier duda sobre el proyecto, consulta la documentación oficial de las tecnologías utilizadas o contacta al desarrollador.
+⭐ **¡Si te gusta este proyecto, dale una estrella!** ⭐
