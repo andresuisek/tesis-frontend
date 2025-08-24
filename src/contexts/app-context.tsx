@@ -8,6 +8,7 @@ interface Usuario {
   nombre: string;
   email: string;
   rol: string;
+  ruc?: string;
 }
 
 interface AppState {

@@ -12,10 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { FormFieldWrapper } from "@/components/forms/form-field-wrapper";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, LogIn, Shield, FileText } from "lucide-react";
+import { Eye, EyeOff, LogIn, Shield, FileText, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -55,20 +59,42 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Simulación de login
-    setTimeout(() => {
-      if (
-        formData.email === "admin@empresa.com" &&
-        formData.password === "123456"
-      ) {
-        toast.success("¡Bienvenido al sistema!");
-        // Aquí redirigirías al dashboard
-        window.location.href = "/dashboard";
-      } else {
-        toast.error("Credenciales incorrectas");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        throw error;
       }
+
+      if (data.user) {
+        console.log("Usuario autenticado:", data.user);
+        console.log("Datos completos:", data);
+        toast.success("¡Bienvenido al sistema!");
+
+        // Redirección directa e inmediata
+        console.log("Redirigiendo al dashboard...");
+        router.push("/dashboard");
+      }
+    } catch (error: any) {
+      console.error("Error en login:", error);
+
+      let errorMessage = "Error al iniciar sesión";
+
+      if (error.message === "Invalid login credentials") {
+        errorMessage = "Credenciales incorrectas";
+      } else if (error.message === "Email not confirmed") {
+        errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -160,10 +186,33 @@ export default function LoginPage() {
               )}
             </Button>
 
-            <div className="text-center">
+            <div className="text-center space-y-3">
               <Button variant="link" className="text-sm">
                 ¿Olvidaste tu contraseña?
               </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    O
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  ¿No tienes una cuenta?
+                </p>
+                <Link href="/registro">
+                  <Button variant="outline" className="w-full">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Crear Nueva Cuenta
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
