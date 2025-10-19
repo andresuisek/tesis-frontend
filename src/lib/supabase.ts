@@ -33,3 +33,57 @@ export interface ContribuyenteActividad {
   contribuyente_ruc: string;
   actividad_codigo: string;
 }
+
+export type TipoComprobante =
+  | "factura"
+  | "nota_credito"
+  | "liquidacion_compra"
+  | "retencion"
+  | "otros";
+
+export interface Venta {
+  id: string;
+  contribuyente_ruc: string;
+  ruc_cliente?: string;
+  razon_social_cliente?: string;
+  fecha_emision: string;
+  tipo_comprobante: TipoComprobante;
+  numero_comprobante: string;
+  identificacion_receptor?: string;
+  subtotal_0: number;
+  subtotal_8: number;
+  subtotal_15: number;
+  iva: number;
+  total: number;
+  nota_credito_id?: string;
+  retencion_id?: string;
+  created_at: string;
+}
+
+export interface NotaCredito {
+  id: string;
+  contribuyente_ruc: string;
+  fecha_emision: string;
+  tipo_comprobante: TipoComprobante;
+  numero_comprobante: string;
+  subtotal_0: number;
+  subtotal_8: number;
+  subtotal_15: number;
+  iva: number;
+  total: number;
+  created_at: string;
+}
+
+export interface Retencion {
+  id: string;
+  contribuyente_ruc: string;
+  tipo_comprobante?: TipoComprobante;
+  serie_comprobante?: string;
+  clave_acceso?: string;
+  fecha_emision: string;
+  retencion_iva_percent?: number;
+  retencion_valor?: number;
+  retencion_renta_percent?: number;
+  retencion_renta_valor?: number;
+  created_at: string;
+}

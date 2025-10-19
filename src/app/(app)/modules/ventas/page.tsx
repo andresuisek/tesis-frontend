@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,162 +9,255 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Calendar, DollarSign } from "lucide-react";
-import { DataTable } from "@/components/tables/data-table";
-import { ColumnDef } from "@tanstack/react-table";
+import { Plus } from "lucide-react";
+import { supabase, Venta } from "@/lib/supabase";
+import { useAuth } from "@/contexts/auth-context";
+import { VentasKPIs } from "@/components/ventas/ventas-kpis";
+import { VentasTable } from "@/components/ventas/ventas-table";
+import { VentasFilters } from "@/components/ventas/ventas-filters";
+import { NuevaVentaDialog } from "@/components/ventas/nueva-venta-dialog";
+import { NuevaNotaCreditoDialog } from "@/components/ventas/nueva-nota-credito-dialog";
+import { NuevaRetencionDialog } from "@/components/ventas/nueva-retencion-dialog";
+import { DetalleVentaDialog } from "@/components/ventas/detalle-venta-dialog";
+import { toast } from "sonner";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
 
-// Tipo de datos para ventas
-type Venta = {
-  id: string;
-  fecha: string;
-  cliente: {
-    ruc: string;
-    razonSocial: string;
-  };
-  tipoComprobante: string;
-  serie: string;
-  numero: string;
-  subtotal: number;
-  iva: number;
-  total: number;
-  estado: "Emitido" | "Anulado" | "Pendiente";
-};
-
-// Datos de ejemplo
-const ventasData: Venta[] = [
-  {
-    id: "1",
-    fecha: "2024-01-15",
-    cliente: {
-      ruc: "1234567890001",
-      razonSocial: "Empresa ABC S.A.",
-    },
-    tipoComprobante: "Factura",
-    serie: "001-001",
-    numero: "000001234",
-    subtotal: 1000.0,
-    iva: 120.0,
-    total: 1120.0,
-    estado: "Emitido",
-  },
-  {
-    id: "2",
-    fecha: "2024-01-14",
-    cliente: {
-      ruc: "0987654321001",
-      razonSocial: "Comercial XYZ Ltda.",
-    },
-    tipoComprobante: "Factura",
-    serie: "001-001",
-    numero: "000001233",
-    subtotal: 2500.0,
-    iva: 300.0,
-    total: 2800.0,
-    estado: "Emitido",
-  },
-  {
-    id: "3",
-    fecha: "2024-01-13",
-    cliente: {
-      ruc: "1122334455001",
-      razonSocial: "Distribuidora 123",
-    },
-    tipoComprobante: "Nota de Crédito",
-    serie: "001-001",
-    numero: "000000567",
-    subtotal: -500.0,
-    iva: -60.0,
-    total: -560.0,
-    estado: "Emitido",
-  },
-];
-
-// Definición de columnas para la tabla
-const columns: ColumnDef<Venta>[] = [
-  {
-    accessorKey: "fecha",
-    header: "Fecha",
-    cell: ({ row }) => {
-      const fecha = new Date(row.getValue("fecha"));
-      return fecha.toLocaleDateString("es-EC");
-    },
-  },
-  {
-    accessorKey: "cliente",
-    header: "Cliente",
-    cell: ({ row }) => {
-      const cliente = row.getValue("cliente") as {
-        ruc: string;
-        razonSocial: string;
-      };
-      return (
-        <div>
-          <div className="font-medium">{cliente.razonSocial}</div>
-          <div className="text-sm text-muted-foreground">{cliente.ruc}</div>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "tipoComprobante",
-    header: "Tipo",
-  },
-  {
-    accessorKey: "serie",
-    header: "Serie",
-  },
-  {
-    accessorKey: "numero",
-    header: "Número",
-  },
-  {
-    accessorKey: "total",
-    header: "Total",
-    cell: ({ row }) => {
-      const total = parseFloat(row.getValue("total"));
-      const formatted = new Intl.NumberFormat("es-EC", {
-        style: "currency",
-        currency: "USD",
-      }).format(total);
-      return <div className="text-right font-medium">{formatted}</div>;
-    },
-  },
-  {
-    accessorKey: "estado",
-    header: "Estado",
-    cell: ({ row }) => {
-      const estado = row.getValue("estado") as string;
-      return (
-        <Badge
-          variant={
-            estado === "Emitido"
-              ? "default"
-              : estado === "Anulado"
-              ? "destructive"
-              : "secondary"
-          }
-        >
-          {estado}
-        </Badge>
-      );
-    },
-  },
-];
+dayjs.locale("es");
 
 export default function VentasPage() {
-  const [showNewVentaForm, setShowNewVentaForm] = useState(false);
+  const { contribuyente } = useAuth();
+  const [ventas, setVentas] = useState<Venta[]>([]);
+  const [ventasMesAnterior, setVentasMesAnterior] = useState<Venta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewVentaDialog, setShowNewVentaDialog] = useState(false);
+  const [showNotaCreditoDialog, setShowNotaCreditoDialog] = useState(false);
+  const [showRetencionDialog, setShowRetencionDialog] = useState(false);
+  const [showDetalleDialog, setShowDetalleDialog] = useState(false);
+  const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(
+    null
+  );
 
-  // Calcular totales
-  const totalVentas = ventasData.reduce((acc, venta) => acc + venta.total, 0);
-  const ventasDelMes = ventasData.filter((venta) => {
-    const fechaVenta = new Date(venta.fecha);
-    const hoy = new Date();
+  // Estados para filtros
+  const [selectedYear, setSelectedYear] = useState(dayjs().year());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  // Cargar ventas desde Supabase
+  const cargarVentas = async () => {
+    if (!contribuyente?.ruc) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Construir query base
+      let query = supabase
+        .from("ventas")
+        .select("*")
+        .eq("contribuyente_ruc", contribuyente.ruc)
+        .order("fecha_emision", { ascending: false });
+
+      // Aplicar filtros de fecha si hay selección
+      if (selectedMonth !== null) {
+        // Filtrar por mes y año específicos
+        const startDate = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .startOf("month")
+          .format("YYYY-MM-DD");
+        const endDate = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .endOf("month")
+          .format("YYYY-MM-DD");
+
+        query = query
+          .gte("fecha_emision", startDate)
+          .lte("fecha_emision", endDate);
+      } else {
+        // Filtrar solo por año
+        const startDate = dayjs()
+          .year(selectedYear)
+          .startOf("year")
+          .format("YYYY-MM-DD");
+        const endDate = dayjs()
+          .year(selectedYear)
+          .endOf("year")
+          .format("YYYY-MM-DD");
+
+        query = query
+          .gte("fecha_emision", startDate)
+          .lte("fecha_emision", endDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setVentas(data || []);
+
+      // Cargar ventas del mes anterior para comparación de tendencias
+      if (selectedMonth !== null) {
+        const mesAnterior = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .subtract(1, "month");
+
+        const { data: dataMesAnterior } = await supabase
+          .from("ventas")
+          .select("*")
+          .eq("contribuyente_ruc", contribuyente.ruc)
+          .gte(
+            "fecha_emision",
+            mesAnterior.startOf("month").format("YYYY-MM-DD")
+          )
+          .lte(
+            "fecha_emision",
+            mesAnterior.endOf("month").format("YYYY-MM-DD")
+          );
+
+        setVentasMesAnterior(dataMesAnterior || []);
+      }
+    } catch (error) {
+      console.error("Error al cargar ventas:", error);
+      toast.error("Error al cargar las ventas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar años disponibles
+  const cargarAnosDisponibles = async () => {
+    if (!contribuyente?.ruc) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("ventas")
+        .select("fecha_emision")
+        .eq("contribuyente_ruc", contribuyente.ruc)
+        .order("fecha_emision", { ascending: false });
+
+      if (error) throw error;
+
+      const years = new Set<number>();
+      data?.forEach((venta) => {
+        const year = dayjs(venta.fecha_emision).year();
+        years.add(year);
+      });
+
+      // Asegurar que el año actual siempre esté disponible
+      years.add(dayjs().year());
+
+      setAvailableYears(Array.from(years).sort((a, b) => b - a));
+    } catch (error) {
+      console.error("Error al cargar años disponibles:", error);
+    }
+  };
+
+  // Cargar datos cuando cambia el contribuyente o los filtros
+  useEffect(() => {
+    cargarVentas();
+  }, [contribuyente, selectedYear, selectedMonth]);
+
+  // Cargar años disponibles al montar el componente
+  useEffect(() => {
+    cargarAnosDisponibles();
+  }, [contribuyente]);
+
+  const handleVentaCreada = () => {
+    cargarVentas();
+    cargarAnosDisponibles();
+  };
+
+  const handleCrearNotaCredito = (venta: Venta) => {
+    // Reset forzado antes de abrir
+    setShowNotaCreditoDialog(false);
+    setVentaSeleccionada(null);
+
+    setTimeout(() => {
+      setVentaSeleccionada(venta);
+      setShowNotaCreditoDialog(true);
+    }, 50);
+  };
+
+  const handleNotaCreditoCreada = () => {
+    cargarVentas();
+  };
+
+  const handleCrearRetencion = (venta: Venta) => {
+    // Reset forzado antes de abrir
+    setShowRetencionDialog(false);
+    setVentaSeleccionada(null);
+
+    setTimeout(() => {
+      setVentaSeleccionada(venta);
+      setShowRetencionDialog(true);
+    }, 50);
+  };
+
+  const handleRetencionCreada = () => {
+    cargarVentas();
+  };
+
+  const handleVerDetalle = (venta: Venta) => {
+    // Reset forzado antes de abrir
+    setShowDetalleDialog(false);
+    setVentaSeleccionada(null);
+
+    setTimeout(() => {
+      setVentaSeleccionada(venta);
+      setShowDetalleDialog(true);
+    }, 50);
+  };
+
+  const handleCloseNotaCreditoDialog = (open: boolean) => {
+    setShowNotaCreditoDialog(open);
+    if (!open) {
+      // Limpiar la selección después de cerrar el diálogo
+      setTimeout(() => {
+        if (!showDetalleDialog && !showRetencionDialog) {
+          setVentaSeleccionada(null);
+        }
+      }, 200);
+    }
+  };
+
+  const handleCloseRetencionDialog = (open: boolean) => {
+    setShowRetencionDialog(open);
+    if (!open) {
+      setTimeout(() => {
+        if (!showDetalleDialog && !showNotaCreditoDialog) {
+          setVentaSeleccionada(null);
+        }
+      }, 200);
+    }
+  };
+
+  const handleCloseDetalleDialog = (open: boolean) => {
+    setShowDetalleDialog(open);
+    if (!open) {
+      // Limpiar la selección después de cerrar el diálogo
+      setTimeout(() => {
+        if (!showNotaCreditoDialog && !showRetencionDialog) {
+          setVentaSeleccionada(null);
+        }
+      }, 200);
+    }
+  };
+
+  if (!contribuyente) {
     return (
-      fechaVenta.getMonth() === hoy.getMonth() &&
-      fechaVenta.getFullYear() === hoy.getFullYear()
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">
+          Debes tener un perfil de contribuyente registrado para gestionar
+          ventas.
+        </p>
+      </div>
     );
-  }).length;
+  }
 
   return (
     <div className="space-y-6">
@@ -177,59 +270,23 @@ export default function VentasPage() {
             Administra todas tus facturas, notas de crédito y débito
           </p>
         </div>
-        <Button onClick={() => setShowNewVentaForm(true)}>
+        <Button onClick={() => setShowNewVentaDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Venta
         </Button>
       </div>
 
-      {/* Métricas de ventas */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Ventas</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-EC", {
-                style: "currency",
-                currency: "USD",
-              }).format(totalVentas)}
-            </div>
-            <p className="text-xs text-muted-foreground">Total acumulado</p>
-          </CardContent>
-        </Card>
+      {/* Filtros */}
+      <VentasFilters
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+        onYearChange={setSelectedYear}
+        onMonthChange={setSelectedMonth}
+        availableYears={availableYears}
+      />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Ventas del Mes
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ventasDelMes}</div>
-            <p className="text-xs text-muted-foreground">Documentos emitidos</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IVA Generado</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-EC", {
-                style: "currency",
-                currency: "USD",
-              }).format(ventasData.reduce((acc, venta) => acc + venta.iva, 0))}
-            </div>
-            <p className="text-xs text-muted-foreground">IVA por cobrar</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* KPIs de ventas */}
+      <VentasKPIs ventas={ventas} mesAnterior={ventasMesAnterior} />
 
       {/* Tabla de ventas */}
       <Card>
@@ -237,44 +294,60 @@ export default function VentasPage() {
           <CardTitle>Registro de Ventas</CardTitle>
           <CardDescription>
             Listado completo de todas las ventas registradas
+            {selectedMonth &&
+              ` - ${dayjs()
+                .month(selectedMonth - 1)
+                .format("MMMM")} ${selectedYear}`}
+            {!selectedMonth && ` - Año ${selectedYear}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={columns}
-            data={ventasData}
-            searchKey="cliente"
-            searchPlaceholder="Buscar por cliente..."
+          <VentasTable
+            ventas={ventas}
+            loading={loading}
+            onCrearNotaCredito={handleCrearNotaCredito}
+            onCrearRetencion={handleCrearRetencion}
+            onView={handleVerDetalle}
           />
         </CardContent>
       </Card>
 
-      {/* Modal para nueva venta - placeholder */}
-      {showNewVentaForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Nueva Venta</CardTitle>
-              <CardDescription>
-                Registra una nueva factura o documento de venta
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Formulario de nueva venta será implementado aquí...
-              </p>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewVentaForm(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button>Guardar</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Dialog para nueva venta */}
+      <NuevaVentaDialog
+        open={showNewVentaDialog}
+        onOpenChange={setShowNewVentaDialog}
+        onVentaCreada={handleVentaCreada}
+        contribuyenteRuc={contribuyente.ruc}
+      />
+
+      {/* Dialogs - Siempre montados, controlados por prop open */}
+      {ventaSeleccionada && (
+        <>
+          <NuevaNotaCreditoDialog
+            key={`nota-credito-${ventaSeleccionada.id}`}
+            open={showNotaCreditoDialog}
+            onOpenChange={handleCloseNotaCreditoDialog}
+            onNotaCreditoCreada={handleNotaCreditoCreada}
+            venta={ventaSeleccionada}
+            contribuyenteRuc={contribuyente.ruc}
+          />
+
+          <NuevaRetencionDialog
+            key={`retencion-${ventaSeleccionada.id}`}
+            open={showRetencionDialog}
+            onOpenChange={handleCloseRetencionDialog}
+            onRetencionCreada={handleRetencionCreada}
+            venta={ventaSeleccionada}
+            contribuyenteRuc={contribuyente.ruc}
+          />
+
+          <DetalleVentaDialog
+            key={`detalle-${ventaSeleccionada.id}`}
+            open={showDetalleDialog}
+            onOpenChange={handleCloseDetalleDialog}
+            venta={ventaSeleccionada}
+          />
+        </>
       )}
     </div>
   );

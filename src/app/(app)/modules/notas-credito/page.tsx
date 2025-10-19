@@ -2,24 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RetencionesTable } from "@/components/retenciones/retenciones-table";
-import { DetalleRetencionDialog } from "@/components/retenciones/detalle-retencion-dialog";
-import { Retencion } from "@/lib/supabase";
+import { NotasCreditoTable } from "@/components/notas-credito/notas-credito-table";
+import { DetalleNotaCreditoDialog } from "@/components/notas-credito/detalle-nota-credito-dialog";
+import { NotaCredito } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
-import { Receipt, DollarSign, Calculator, Calendar } from "lucide-react";
+import { FileX, DollarSign, TrendingDown, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
 dayjs.locale("es");
 
-export default function RetencionesPage() {
+export default function NotasCreditoPage() {
   const { user, contribuyente } = useAuth();
-  const [retenciones, setRetenciones] = useState<Retencion[]>([]);
+  const [notasCredito, setNotasCredito] = useState<NotaCredito[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
-  const [retencionSeleccionada, setRetencionSeleccionada] =
-    useState<Retencion | null>(null);
+  const [notaCreditoSeleccionada, setNotaCreditoSeleccionada] =
+    useState<NotaCredito | null>(null);
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -31,9 +31,9 @@ export default function RetencionesPage() {
     }).format(valor);
   };
 
-  // Cargar retenciones del usuario logueado
+  // Cargar notas de crédito del usuario logueado
   useEffect(() => {
-    const cargarRetenciones = async () => {
+    const cargarNotasCredito = async () => {
       if (!contribuyente?.ruc) {
         setLoading(false);
         return;
@@ -42,49 +42,41 @@ export default function RetencionesPage() {
       try {
         const { supabase } = await import("@/lib/supabase");
         const { data, error } = await supabase
-          .from("retenciones")
+          .from("notas_credito")
           .select("*")
           .eq("contribuyente_ruc", contribuyente.ruc)
           .order("fecha_emision", { ascending: false });
 
         if (error) throw error;
 
-        setRetenciones(data || []);
+        setNotasCredito(data || []);
       } catch (error) {
-        console.error("Error al cargar retenciones:", error);
-        toast.error("Error al cargar las retenciones");
+        console.error("Error al cargar notas de crédito:", error);
+        toast.error("Error al cargar las notas de crédito");
       } finally {
         setLoading(false);
       }
     };
 
-    cargarRetenciones();
+    cargarNotasCredito();
   }, [contribuyente?.ruc]);
 
   // Calcular estadísticas
-  const totalRetenciones = retenciones.length;
-  const totalMonto = retenciones.reduce(
-    (sum, ret) =>
-      sum + (ret.retencion_valor || 0) + (ret.retencion_renta_valor || 0),
-    0
-  );
-  const retencionesMesActual = retenciones.filter((ret) =>
-    dayjs(ret.fecha_emision).isSame(dayjs(), "month")
+  const totalNotasCredito = notasCredito.length;
+  const totalMonto = notasCredito.reduce((sum, nc) => sum + nc.total, 0);
+  const notasCreditoMesActual = notasCredito.filter((nc) =>
+    dayjs(nc.fecha_emision).isSame(dayjs(), "month")
   ).length;
-  const montoMesActual = retenciones
-    .filter((ret) => dayjs(ret.fecha_emision).isSame(dayjs(), "month"))
-    .reduce(
-      (sum, ret) =>
-        sum + (ret.retencion_valor || 0) + (ret.retencion_renta_valor || 0),
-      0
-    );
+  const montoMesActual = notasCredito
+    .filter((nc) => dayjs(nc.fecha_emision).isSame(dayjs(), "month"))
+    .reduce((sum, nc) => sum + nc.total, 0);
 
   // Handlers
-  const handleVerDetalle = (retencion: Retencion) => {
+  const handleVerDetalle = (notaCredito: NotaCredito) => {
     setShowDetalleDialog(false);
-    setRetencionSeleccionada(null);
+    setNotaCreditoSeleccionada(null);
     setTimeout(() => {
-      setRetencionSeleccionada(retencion);
+      setNotaCreditoSeleccionada(notaCredito);
       setShowDetalleDialog(true);
     }, 50);
   };
@@ -93,7 +85,7 @@ export default function RetencionesPage() {
     setShowDetalleDialog(open);
     if (!open) {
       setTimeout(() => {
-        setRetencionSeleccionada(null);
+        setNotaCreditoSeleccionada(null);
       }, 200);
     }
   };
@@ -111,7 +103,7 @@ export default function RetencionesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground">Cargando retenciones...</p>
+        <p className="text-muted-foreground">Cargando notas de crédito...</p>
       </div>
     );
   }
@@ -121,11 +113,11 @@ export default function RetencionesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Receipt className="h-8 w-8 text-purple-500" />
-          Retenciones
+          <FileX className="h-8 w-8 text-red-500" />
+          Notas de Crédito
         </h1>
         <p className="text-muted-foreground">
-          Gestiona y visualiza las retenciones emitidas
+          Gestiona y visualiza las notas de crédito emitidas
         </p>
       </div>
 
@@ -134,14 +126,14 @@ export default function RetencionesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Retenciones
+              Total Notas de Crédito
             </CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <FileX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalRetenciones}</div>
+            <div className="text-2xl font-bold">{totalNotasCredito}</div>
             <p className="text-xs text-muted-foreground">
-              Retenciones emitidas en total
+              Notas emitidas en total
             </p>
           </CardContent>
         </Card>
@@ -152,11 +144,11 @@ export default function RetencionesPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-red-600">
               {formatearMoneda(totalMonto)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Total en retenciones
+              Total en notas de crédito
             </p>
           </CardContent>
         </Card>
@@ -167,9 +159,9 @@ export default function RetencionesPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{retencionesMesActual}</div>
+            <div className="text-2xl font-bold">{notasCreditoMesActual}</div>
             <p className="text-xs text-muted-foreground">
-              Retenciones emitidas en {dayjs().format("MMMM")}
+              Notas emitidas en {dayjs().format("MMMM")}
             </p>
           </CardContent>
         </Card>
@@ -179,10 +171,10 @@ export default function RetencionesPage() {
             <CardTitle className="text-sm font-medium">
               Monto Este Mes
             </CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-red-600">
               {formatearMoneda(montoMesActual)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -192,29 +184,29 @@ export default function RetencionesPage() {
         </Card>
       </div>
 
-      {/* Tabla de Retenciones */}
+      {/* Tabla de Notas de Crédito */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-purple-500" />
-            Listado de Retenciones
+            <FileX className="h-5 w-5 text-red-500" />
+            Listado de Notas de Crédito
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <RetencionesTable
-            retenciones={retenciones}
+          <NotasCreditoTable
+            notasCredito={notasCredito}
             onView={handleVerDetalle}
           />
         </CardContent>
       </Card>
 
       {/* Dialog de Detalle */}
-      {retencionSeleccionada && (
-        <DetalleRetencionDialog
-          key={`detalle-${retencionSeleccionada.id}`}
+      {notaCreditoSeleccionada && (
+        <DetalleNotaCreditoDialog
+          key={`detalle-${notaCreditoSeleccionada.id}`}
           open={showDetalleDialog}
           onOpenChange={handleCloseDetalleDialog}
-          retencion={retencionSeleccionada}
+          notaCredito={notaCreditoSeleccionada}
         />
       )}
     </div>

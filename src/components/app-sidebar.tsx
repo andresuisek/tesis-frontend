@@ -13,6 +13,8 @@ import {
   Users,
   Settings,
   LogOut,
+  FileX,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -25,8 +27,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -42,16 +52,23 @@ const items = [
     title: "Ventas",
     url: "/modules/ventas",
     icon: TrendingUp,
+    items: [
+      {
+        title: "Notas de Crédito",
+        url: "/modules/notas-credito",
+        icon: FileX,
+      },
+      {
+        title: "Retenciones",
+        url: "/modules/retenciones",
+        icon: Receipt,
+      },
+    ],
   },
   {
     title: "Compras",
     url: "/modules/compras",
     icon: ShoppingCart,
-  },
-  {
-    title: "Retenciones",
-    url: "/modules/retenciones",
-    icon: Receipt,
   },
   {
     title: "Liquidación",
@@ -112,22 +129,64 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    className="hover:bg-[#1D4ED8]/10 hover:text-[#1D4ED8] transition-all duration-200 rounded-lg group"
-                  >
-                    <a
-                      href={item.url}
-                      className="flex items-center gap-3 px-3 py-2"
-                    >
-                      <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8]" />
-                      <span className="text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8] font-medium">
-                        {item.title}
-                      </span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <Collapsible
+                  key={item.title}
+                  asChild
+                  defaultOpen={false}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    {item.items ? (
+                      <>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="hover:bg-[#1D4ED8]/10 hover:text-[#1D4ED8] transition-all duration-200 rounded-lg group">
+                            <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8]" />
+                            <span className="text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8] font-medium">
+                              {item.title}
+                            </span>
+                            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild>
+                                <a href={item.url}>
+                                  <span>Ver Todas</span>
+                                </a>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            {item.items.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton asChild>
+                                  <a href={subItem.url}>
+                                    <subItem.icon className="h-4 w-4" />
+                                    <span>{subItem.title}</span>
+                                  </a>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </>
+                    ) : (
+                      <SidebarMenuButton
+                        asChild
+                        className="hover:bg-[#1D4ED8]/10 hover:text-[#1D4ED8] transition-all duration-200 rounded-lg group"
+                      >
+                        <a
+                          href={item.url}
+                          className="flex items-center gap-3 px-3 py-2"
+                        >
+                          <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8]" />
+                          <span className="text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8] font-medium">
+                            {item.title}
+                          </span>
+                        </a>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                </Collapsible>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
