@@ -64,19 +64,6 @@ export function NuevaRetencionDialog({
   const maxTotal = venta.total;
   const excedeLimite = totalRetencion > maxTotal;
 
-  // Reset del formulario cuando se abre el diálogo
-  useEffect(() => {
-    if (open) {
-      // Resetear valores al abrir
-      setFechaEmision(new Date().toISOString().split("T")[0]);
-      setTipoComprobante("retencion");
-      setSerieComprobante("");
-      setClaveAcceso("");
-      setRetencionIvaPercent("");
-      setRetencionRentaPercent("");
-    }
-  }, [open]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -127,8 +114,9 @@ export function NuevaRetencionDialog({
       if (errorVenta) throw errorVenta;
 
       toast.success("Retención registrada exitosamente");
+      resetForm();
+      onOpenChange(false);
       onRetencionCreada();
-      handleClose();
     } catch (error) {
       console.error("Error al crear retención:", error);
       toast.error("Error al registrar la retención");
@@ -137,14 +125,19 @@ export function NuevaRetencionDialog({
     }
   };
 
-  const handleClose = () => {
-    // Resetear el formulario
+  const resetForm = () => {
+    // Resetear el formulario a valores iniciales
     setFechaEmision(new Date().toISOString().split("T")[0]);
     setTipoComprobante("retencion");
     setSerieComprobante("");
     setClaveAcceso("");
     setRetencionIvaPercent("");
     setRetencionRentaPercent("");
+  };
+
+  const handleClose = () => {
+    // Solo resetear si el usuario no está editando
+    resetForm();
     onOpenChange(false);
   };
 

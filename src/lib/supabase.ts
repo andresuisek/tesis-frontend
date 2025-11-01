@@ -87,3 +87,32 @@ export interface Retencion {
   retencion_renta_valor?: number;
   created_at: string;
 }
+
+export type RubroCompra =
+  | "no_definido"
+  | "vivienda"
+  | "alimentacion"
+  | "salud"
+  | "educacion"
+  | "vestimenta"
+  | "turismo"
+  | "actividad_profesional";
+
+export interface Compra {
+  id: string;
+  contribuyente_ruc: string;
+  ruc_proveedor?: string;
+  razon_social_proveedor?: string;
+  fecha_emision: string;
+  tipo_comprobante?: TipoComprobante;
+  numero_comprobante?: string;
+  rubro: RubroCompra; // Por defecto será "no_definido" desde la BD
+  valor_sin_impuesto: number;
+  subtotal_0: number;
+  subtotal_8: number;
+  subtotal_15: number;
+  iva: number;
+  total: number;
+  clave_acceso?: string;
+  created_at: string;
+}

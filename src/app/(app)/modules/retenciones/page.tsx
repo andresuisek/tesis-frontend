@@ -81,12 +81,8 @@ export default function RetencionesPage() {
 
   // Handlers
   const handleVerDetalle = (retencion: Retencion) => {
-    setShowDetalleDialog(false);
-    setRetencionSeleccionada(null);
-    setTimeout(() => {
-      setRetencionSeleccionada(retencion);
-      setShowDetalleDialog(true);
-    }, 50);
+    setRetencionSeleccionada(retencion);
+    setShowDetalleDialog(true);
   };
 
   const handleCloseDetalleDialog = (open: boolean) => {
@@ -209,9 +205,8 @@ export default function RetencionesPage() {
       </Card>
 
       {/* Dialog de Detalle */}
-      {retencionSeleccionada && (
+      {retencionSeleccionada && showDetalleDialog && (
         <DetalleRetencionDialog
-          key={`detalle-${retencionSeleccionada.id}`}
           open={showDetalleDialog}
           onOpenChange={handleCloseDetalleDialog}
           retencion={retencionSeleccionada}

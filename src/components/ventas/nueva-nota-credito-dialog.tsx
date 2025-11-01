@@ -58,18 +58,10 @@ export function NuevaNotaCreditoDialog({
   const maxTotal = venta.total;
   const excedeLimite = totalCalculado > maxTotal;
 
-  // Reset del formulario cuando se abre el diálogo
-  useEffect(() => {
-    if (open) {
-      // Resetear valores al abrir
-      setFechaEmision(new Date().toISOString().split("T")[0]);
-      setNumeroComprobante("");
-      setSubtotal("");
-      const ivaDefault =
-        venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : "0";
-      setPorcentajeIva(ivaDefault);
-    }
-  }, [open, venta.subtotal_15, venta.subtotal_8]);
+  // Detectar el IVA inicial basado en la venta
+  const getIvaInicial = () => {
+    return venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : "0";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,8 +108,9 @@ export function NuevaNotaCreditoDialog({
       if (errorVenta) throw errorVenta;
 
       toast.success("Nota de crédito registrada exitosamente");
+      resetForm();
+      onOpenChange(false);
       onNotaCreditoCreada();
-      handleClose();
     } catch (error) {
       console.error("Error al crear nota de crédito:", error);
       toast.error("Error al registrar la nota de crédito");
@@ -126,14 +119,17 @@ export function NuevaNotaCreditoDialog({
     }
   };
 
-  const handleClose = () => {
-    // Resetear el formulario
+  const resetForm = () => {
+    // Resetear el formulario a valores iniciales
     setFechaEmision(new Date().toISOString().split("T")[0]);
     setNumeroComprobante("");
     setSubtotal("");
-    setPorcentajeIva(
-      venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : "0"
-    );
+    setPorcentajeIva(getIvaInicial());
+  };
+
+  const handleClose = () => {
+    // Solo resetear si el usuario no está editando
+    resetForm();
     onOpenChange(false);
   };
 

@@ -173,14 +173,8 @@ export default function VentasPage() {
   };
 
   const handleCrearNotaCredito = (venta: Venta) => {
-    // Reset forzado antes de abrir
-    setShowNotaCreditoDialog(false);
-    setVentaSeleccionada(null);
-
-    setTimeout(() => {
-      setVentaSeleccionada(venta);
-      setShowNotaCreditoDialog(true);
-    }, 50);
+    setVentaSeleccionada(venta);
+    setShowNotaCreditoDialog(true);
   };
 
   const handleNotaCreditoCreada = () => {
@@ -188,14 +182,8 @@ export default function VentasPage() {
   };
 
   const handleCrearRetencion = (venta: Venta) => {
-    // Reset forzado antes de abrir
-    setShowRetencionDialog(false);
-    setVentaSeleccionada(null);
-
-    setTimeout(() => {
-      setVentaSeleccionada(venta);
-      setShowRetencionDialog(true);
-    }, 50);
+    setVentaSeleccionada(venta);
+    setShowRetencionDialog(true);
   };
 
   const handleRetencionCreada = () => {
@@ -203,14 +191,8 @@ export default function VentasPage() {
   };
 
   const handleVerDetalle = (venta: Venta) => {
-    // Reset forzado antes de abrir
-    setShowDetalleDialog(false);
-    setVentaSeleccionada(null);
-
-    setTimeout(() => {
-      setVentaSeleccionada(venta);
-      setShowDetalleDialog(true);
-    }, 50);
+    setVentaSeleccionada(venta);
+    setShowDetalleDialog(true);
   };
 
   const handleCloseNotaCreditoDialog = (open: boolean) => {
@@ -320,34 +302,33 @@ export default function VentasPage() {
         contribuyenteRuc={contribuyente.ruc}
       />
 
-      {/* Dialogs - Siempre montados, controlados por prop open */}
-      {ventaSeleccionada && (
-        <>
-          <NuevaNotaCreditoDialog
-            key={`nota-credito-${ventaSeleccionada.id}`}
-            open={showNotaCreditoDialog}
-            onOpenChange={handleCloseNotaCreditoDialog}
-            onNotaCreditoCreada={handleNotaCreditoCreada}
-            venta={ventaSeleccionada}
-            contribuyenteRuc={contribuyente.ruc}
-          />
+      {/* Dialogs - Mantener montados para preservar el estado */}
+      {ventaSeleccionada && showNotaCreditoDialog && (
+        <NuevaNotaCreditoDialog
+          open={showNotaCreditoDialog}
+          onOpenChange={handleCloseNotaCreditoDialog}
+          onNotaCreditoCreada={handleNotaCreditoCreada}
+          venta={ventaSeleccionada}
+          contribuyenteRuc={contribuyente.ruc}
+        />
+      )}
 
-          <NuevaRetencionDialog
-            key={`retencion-${ventaSeleccionada.id}`}
-            open={showRetencionDialog}
-            onOpenChange={handleCloseRetencionDialog}
-            onRetencionCreada={handleRetencionCreada}
-            venta={ventaSeleccionada}
-            contribuyenteRuc={contribuyente.ruc}
-          />
+      {ventaSeleccionada && showRetencionDialog && (
+        <NuevaRetencionDialog
+          open={showRetencionDialog}
+          onOpenChange={handleCloseRetencionDialog}
+          onRetencionCreada={handleRetencionCreada}
+          venta={ventaSeleccionada}
+          contribuyenteRuc={contribuyente.ruc}
+        />
+      )}
 
-          <DetalleVentaDialog
-            key={`detalle-${ventaSeleccionada.id}`}
-            open={showDetalleDialog}
-            onOpenChange={handleCloseDetalleDialog}
-            venta={ventaSeleccionada}
-          />
-        </>
+      {ventaSeleccionada && showDetalleDialog && (
+        <DetalleVentaDialog
+          open={showDetalleDialog}
+          onOpenChange={handleCloseDetalleDialog}
+          venta={ventaSeleccionada}
+        />
       )}
     </div>
   );

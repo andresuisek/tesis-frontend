@@ -84,12 +84,6 @@ export function DetalleNotaCreditoDialog({
     };
 
     cargarVenta();
-
-    return () => {
-      setVenta(null);
-      setLoading(false);
-      setError(null);
-    };
   }, [notaCredito.id, open]);
 
   return (

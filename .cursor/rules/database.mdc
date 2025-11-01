@@ -22,20 +22,13 @@ CREATE TYPE tipo_comprobante AS ENUM (
 'retencion',
 'otros'
 );
+CREATE TYPE rubro_compra AS ENUM ('no_definido', 'vivienda', 'alimentacion', 'salud', 'educacion', 'vestimenta', 'turismo', 'actividad_profesional');
 
 -- 3. Catálogos básicos
 CREATE TABLE actividades_economicas (
 codigo VARCHAR(10) PRIMARY KEY,
 descripcion TEXT NOT NULL,
 aplica_iva BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE rubros (
-id SERIAL PRIMARY KEY,
-codigo VARCHAR(20) UNIQUE,
-nombre VARCHAR(120) NOT NULL,
-descripcion TEXT,
-deducible BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE retencion_params (
@@ -111,13 +104,14 @@ razon_social_proveedor VARCHAR(255),
 fecha_emision DATE NOT NULL,
 tipo_comprobante tipo_comprobante,
 numero_comprobante VARCHAR(30),
-rubro_id INT REFERENCES rubros(id),
+rubro rubro_compra NOT NULL DEFAULT 'no_definido',
+valor_sin_impuesto NUMERIC(14,2) DEFAULT 0,
 subtotal_0 NUMERIC(14,2) DEFAULT 0,
 subtotal_8 NUMERIC(14,2) DEFAULT 0,
 subtotal_15 NUMERIC(14,2) DEFAULT 0,
 iva NUMERIC(14,2) DEFAULT 0,
 total NUMERIC(14,2) NOT NULL,
-clave_acceso VARCHAR(49),
+clave_acceso VARCHAR(49) UNIQUE,
 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -127,175 +121,7 @@ id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
 tipo_comprobante tipo_comprobante,
 serie_comprobante VARCHAR(30),
-clave_acceso VARCHAR(49),
-fecha_emision DATE NOT NULL,
-retencion_iva_percent NUMERIC(5,2),
-retencion_valor NUMERIC(14,2),
-retencion_renta_percent NUMERIC(5,2),
-retencion_renta_valor NUMERIC(14,2),
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 9. Archivos cargados (registros TXT, PDFs, etc.)
-CREATE TABLE archivos_cargados (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-tipo_archivo VARCHAR(20), -- 'ventas' | 'compras' | 'retenciones' | etc.
-storage_path TEXT NOT NULL, -- ubicación en Supabase Storage
-uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 10. Notificaciones internas
-CREATE TABLE notificaciones (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-titulo VARCHAR(140),
-mensaje TEXT,
-leida BOOLEAN NOT NULL DEFAULT FALSE,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 11. Liquidaciones de impuestos (IVA mensual, Renta anual, etc.)
-CREATE TABLE tax_liquidations (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-periodo VARCHAR(7) NOT NULL, -- ‘YYYY-MM’ o ‘YYYY’
-tipo VARCHAR(10) NOT NULL, -- 'IVA' | 'RENTA' | ...
-resumen JSONB,
-total_pagar NUMERIC(14,2),
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 12. Índices recomendados
-CREATE INDEX idx*ventas_fecha ON ventas(fecha_emision);
-CREATE INDEX idx_compras_fecha ON compras(fecha_emision);
-CREATE INDEX idx_retenciones_fecha ON retenciones(fecha_emision);
-/* =============================================================
-PostgreSQL schema for the web-based tax-control platform
-(Supabase-hosted – authentication tables are managed by Supabase
-and therefore are NOT included here).
-Ext: uuid-ossp is used to generate UUID primary keys.
-============================================================= \_/
-
--- 1. Required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- 2. Reusable ENUM types
-CREATE TYPE contribuyente_estado AS ENUM ('activo','inactivo');
-CREATE TYPE tipo_obligacion AS ENUM ('mensual','semestral');
-CREATE TYPE tipo_comprobante AS ENUM (
-'factura',
-'nota_credito',
-'liquidacion_compra',
-'retencion',
-'otros'
-);
-
--- 3. Catálogos básicos
-CREATE TABLE actividades_economicas (
-codigo VARCHAR(10) PRIMARY KEY,
-descripcion TEXT NOT NULL,
-aplica_iva BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE rubros (
-id SERIAL PRIMARY KEY,
-codigo VARCHAR(20) UNIQUE,
-nombre VARCHAR(120) NOT NULL,
-descripcion TEXT,
-deducible BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE retencion_params (
-id SERIAL PRIMARY KEY,
-codigo VARCHAR(20) UNIQUE,
-descripcion TEXT,
-porcentaje NUMERIC(5,2),
-tipo VARCHAR(10) -- 'iva' | 'renta' | etc.
-);
-
--- 4. Contribuyentes (personas naturales)
-CREATE TABLE contribuyentes (
-ruc CHAR(13) PRIMARY KEY, -- PK según requerimientos
-first_name VARCHAR(100),
-last_name VARCHAR(100),
-estado contribuyente_estado NOT NULL DEFAULT 'activo',
-tipo_obligacion tipo_obligacion NOT NULL DEFAULT 'mensual',
-cargas_familiares SMALLINT NOT NULL DEFAULT 0 CHECK (cargas_familiares >= 0),
-obligado_contab BOOLEAN NOT NULL DEFAULT FALSE,
-agente_retencion BOOLEAN NOT NULL DEFAULT FALSE,
-telefono VARCHAR(20),
-email VARCHAR(120),
-direccion TEXT,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 4.1 Relaciones
-CREATE TABLE contribuyente_actividad (
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-actividad_codigo VARCHAR(10) REFERENCES actividades_economicas(codigo),
-PRIMARY KEY (contribuyente_ruc, actividad_codigo)
-);
-
--- 5. Ventas
-CREATE TABLE ventas (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-fecha_emision DATE NOT NULL,
-tipo_comprobante tipo_comprobante NOT NULL DEFAULT 'factura',
-numero_comprobante VARCHAR(30) NOT NULL,
-subtotal_0 NUMERIC(14,2) DEFAULT 0,
-subtotal_8 NUMERIC(14,2) DEFAULT 0,
-subtotal_15 NUMERIC(14,2) DEFAULT 0,
-iva NUMERIC(14,2) DEFAULT 0,
-total NUMERIC(14,2) NOT NULL,
-retencion_id UUID REFERENCES retenciones(id) ON DELETE SET NULL,
-nota_credito_id UUID REFERENCES notas_credito(id) ON DELETE SET NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 6. Notas de crédito
-CREATE TABLE notas_credito (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-fecha_emision DATE NOT NULL,
-tipo_comprobante tipo_comprobante NOT NULL DEFAULT 'nota_credito',
-numero_comprobante VARCHAR(30) NOT NULL,
-subtotal_0 NUMERIC(14,2) DEFAULT 0,
-subtotal_8 NUMERIC(14,2) DEFAULT 0,
-subtotal_15 NUMERIC(14,2) DEFAULT 0,
-iva NUMERIC(14,2) DEFAULT 0,
-total NUMERIC(14,2) NOT NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 7. Compras
-CREATE TABLE compras (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-ruc_proveedor CHAR(13),
-razon_social_proveedor VARCHAR(255),
-fecha_emision DATE NOT NULL,
-tipo_comprobante tipo_comprobante,
-numero_comprobante VARCHAR(30),
-rubro_id INT REFERENCES rubros(id),
-subtotal_0 NUMERIC(14,2) DEFAULT 0,
-subtotal_8 NUMERIC(14,2) DEFAULT 0,
-subtotal_15 NUMERIC(14,2) DEFAULT 0,
-iva NUMERIC(14,2) DEFAULT 0,
-total NUMERIC(14,2) NOT NULL,
-clave_acceso VARCHAR(49),
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 8. Retenciones
-CREATE TABLE retenciones (
-id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-tipo_comprobante tipo_comprobante,
-serie_comprobante VARCHAR(30),
-clave_acceso VARCHAR(49),
+clave_acceso VARCHAR(49) UNIQUE,
 fecha_emision DATE NOT NULL,
 retencion_iva_percent NUMERIC(5,2),
 retencion_valor NUMERIC(14,2),

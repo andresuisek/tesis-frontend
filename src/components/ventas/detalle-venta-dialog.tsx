@@ -85,13 +85,6 @@ export function DetalleVentaDialog({
     };
 
     cargarNotaCredito();
-
-    // Cleanup cuando el componente se desmonta o cambia el diálogo
-    return () => {
-      setNotaCredito(null);
-      setLoading(false);
-      setError(null);
-    };
   }, [venta.nota_credito_id, open]);
 
   // useEffect para cargar la retención
@@ -139,12 +132,6 @@ export function DetalleVentaDialog({
     };
 
     cargarRetencion();
-
-    return () => {
-      setRetencion(null);
-      setLoadingRetencion(false);
-      setErrorRetencion(null);
-    };
   }, [venta.retencion_id, open]);
 
   const formatearMoneda = (valor: number): string => {

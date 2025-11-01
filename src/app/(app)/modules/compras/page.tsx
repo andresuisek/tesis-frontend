@@ -1,383 +1,219 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { supabase, Compra } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingCart, Receipt, TrendingDown } from "lucide-react";
-import { DataTable } from "@/components/tables/data-table";
-import { ColumnDef } from "@tanstack/react-table";
-
-// Tipo de datos para compras
-type Compra = {
-  id: string;
-  fecha: string;
-  proveedor: {
-    ruc: string;
-    razonSocial: string;
-  };
-  tipoComprobante: string;
-  serie: string;
-  numero: string;
-  claveAcceso?: string;
-  subtotal: number;
-  iva: number;
-  total: number;
-  retencionIva?: number;
-  retencionRenta?: number;
-  estado: "Registrado" | "Conciliado" | "Pendiente";
-};
-
-// Datos de ejemplo
-const comprasData: Compra[] = [
-  {
-    id: "1",
-    fecha: "2024-01-15",
-    proveedor: {
-      ruc: "1790123456001",
-      razonSocial: "Proveedores Unidos S.A.",
-    },
-    tipoComprobante: "Factura",
-    serie: "001-002",
-    numero: "000012345",
-    claveAcceso: "1501202401179012345600110010020000123451234567890",
-    subtotal: 5000.0,
-    iva: 600.0,
-    total: 5600.0,
-    retencionIva: 60.0,
-    retencionRenta: 100.0,
-    estado: "Conciliado",
-  },
-  {
-    id: "2",
-    fecha: "2024-01-14",
-    proveedor: {
-      ruc: "0992345678001",
-      razonSocial: "Suministros Técnicos Ltda.",
-    },
-    tipoComprobante: "Factura",
-    serie: "001-001",
-    numero: "000056789",
-    subtotal: 2800.0,
-    iva: 336.0,
-    total: 3136.0,
-    retencionIva: 33.6,
-    retencionRenta: 56.0,
-    estado: "Registrado",
-  },
-  {
-    id: "3",
-    fecha: "2024-01-13",
-    proveedor: {
-      ruc: "1723456789001",
-      razonSocial: "Materiales de Construcción XYZ",
-    },
-    tipoComprobante: "Liquidación de Compra",
-    serie: "001-001",
-    numero: "000000123",
-    subtotal: 1200.0,
-    iva: 144.0,
-    total: 1344.0,
-    estado: "Pendiente",
-  },
-];
-
-// Definición de columnas para la tabla
-const columns: ColumnDef<Compra>[] = [
-  {
-    accessorKey: "fecha",
-    header: "Fecha",
-    cell: ({ row }) => {
-      const fecha = new Date(row.getValue("fecha"));
-      return fecha.toLocaleDateString("es-EC");
-    },
-  },
-  {
-    accessorKey: "proveedor",
-    header: "Proveedor",
-    cell: ({ row }) => {
-      const proveedor = row.getValue("proveedor") as {
-        ruc: string;
-        razonSocial: string;
-      };
-      return (
-        <div>
-          <div className="font-medium">{proveedor.razonSocial}</div>
-          <div className="text-sm text-muted-foreground">{proveedor.ruc}</div>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "tipoComprobante",
-    header: "Tipo",
-    cell: ({ row }) => {
-      const tipo = row.getValue("tipoComprobante") as string;
-      return <Badge variant="outline">{tipo}</Badge>;
-    },
-  },
-  {
-    accessorKey: "serie",
-    header: "Serie",
-  },
-  {
-    accessorKey: "numero",
-    header: "Número",
-  },
-  {
-    accessorKey: "total",
-    header: "Total",
-    cell: ({ row }) => {
-      const total = parseFloat(row.getValue("total"));
-      const formatted = new Intl.NumberFormat("es-EC", {
-        style: "currency",
-        currency: "USD",
-      }).format(total);
-      return <div className="text-right font-medium">{formatted}</div>;
-    },
-  },
-  {
-    accessorKey: "estado",
-    header: "Estado",
-    cell: ({ row }) => {
-      const estado = row.getValue("estado") as string;
-      return (
-        <Badge
-          variant={
-            estado === "Conciliado"
-              ? "default"
-              : estado === "Registrado"
-              ? "secondary"
-              : "destructive"
-          }
-        >
-          {estado}
-        </Badge>
-      );
-    },
-  },
-];
+import { ComprasKPIs } from "@/components/compras/compras-kpis";
+import { ComprasFilters } from "@/components/compras/compras-filters";
+import { ComprasTable } from "@/components/compras/compras-table";
+import { GastosPersonalesSummary } from "@/components/compras/gastos-personales-summary";
+import { ComprasPagination } from "@/components/compras/compras-pagination";
+import { NuevaCompraDialog } from "@/components/compras/nueva-compra-dialog";
+import { ImportarComprasDialog } from "@/components/compras/importar-compras-dialog";
+import { Plus, Upload } from "lucide-react";
+import { toast } from "sonner";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
 
 export default function ComprasPage() {
-  const [showNewCompraForm, setShowNewCompraForm] = useState(false);
+  const { contribuyente } = useAuth();
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [comprasFiltradas, setComprasFiltradas] = useState<Compra[]>([]);
+  const [todasLasComprasFiltradas, setTodasLasComprasFiltradas] = useState<Compra[]>([]); // Para KPIs
+  const [loading, setLoading] = useState(true);
+  const [showNuevaCompraDialog, setShowNuevaCompraDialog] = useState(false);
+  const [showImportarDialog, setShowImportarDialog] = useState(false);
 
-  // Calcular totales
-  const totalCompras = comprasData.reduce(
-    (acc, compra) => acc + compra.total,
-    0
-  );
-  const totalIvaCompras = comprasData.reduce(
-    (acc, compra) => acc + compra.iva,
-    0
-  );
-  const totalRetenciones = comprasData.reduce(
-    (acc, compra) =>
-      acc + (compra.retencionIva || 0) + (compra.retencionRenta || 0),
-    0
-  );
+  // Filtros
+  const [mes, setMes] = useState("todos");
+  const [anio, setAnio] = useState(new Date().getFullYear().toString());
+
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [totalCompras, setTotalCompras] = useState(0);
+  const ITEMS_POR_PAGINA = 15;
+
+  dayjs.locale("es");
+
+  useEffect(() => {
+    if (contribuyente) {
+      cargarCompras();
+    }
+  }, [contribuyente]);
+
+  // Resetear página cuando cambien los filtros
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [mes, anio]);
+
+  useEffect(() => {
+    cargarCompras();
+  }, [mes, anio, paginaActual]);
+
+  const cargarCompras = async () => {
+    if (!contribuyente) return;
+
+    setLoading(true);
+    try {
+      // Construir query base con filtros
+      let queryBase = supabase
+        .from("compras")
+        .select("*")
+        .eq("contribuyente_ruc", contribuyente.ruc);
+
+      // Aplicar filtro de mes
+      if (mes !== "todos") {
+        const mesNum = parseInt(mes);
+        const anioNum = anio !== "todos" ? parseInt(anio) : new Date().getFullYear();
+        const fechaInicio = dayjs(`${anioNum}-${mesNum.toString().padStart(2, "0")}-01`).format("YYYY-MM-DD");
+        const fechaFin = dayjs(fechaInicio).endOf("month").format("YYYY-MM-DD");
+        queryBase = queryBase.gte("fecha_emision", fechaInicio).lte("fecha_emision", fechaFin);
+      }
+
+      // Aplicar filtro de año (solo si mes es "todos")
+      if (anio !== "todos" && mes === "todos") {
+        const anioNum = parseInt(anio);
+        const fechaInicio = `${anioNum}-01-01`;
+        const fechaFin = `${anioNum}-12-31`;
+        queryBase = queryBase.gte("fecha_emision", fechaInicio).lte("fecha_emision", fechaFin);
+      }
+
+      // Cargar TODAS las compras filtradas para KPIs (sin paginación)
+      const { data: todasCompras, error: errorTodas } = await queryBase
+        .order("fecha_emision", { ascending: false });
+
+      if (errorTodas) throw errorTodas;
+
+      setTodasLasComprasFiltradas(todasCompras || []);
+      setTotalCompras(todasCompras?.length || 0);
+
+      // Aplicar paginación manualmente para la tabla
+      const from = (paginaActual - 1) * ITEMS_POR_PAGINA;
+      const to = from + ITEMS_POR_PAGINA;
+      const comprasPaginadas = (todasCompras || []).slice(from, to);
+
+      setCompras(comprasPaginadas);
+      setComprasFiltradas(comprasPaginadas);
+    } catch (error: any) {
+      console.error("Error al cargar compras:", error);
+      toast.error("Error al cargar las compras");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEliminarCompra = async (compra: Compra) => {
+    if (!confirm("¿Estás seguro de eliminar esta compra?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("compras")
+        .delete()
+        .eq("id", compra.id);
+
+      if (error) throw error;
+
+      toast.success("Compra eliminada exitosamente");
+      cargarCompras();
+    } catch (error: any) {
+      console.error("Error al eliminar compra:", error);
+      toast.error("Error al eliminar la compra");
+    }
+  };
+
+  if (!contribuyente) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <p className="text-muted-foreground">
+          Cargando información del contribuyente...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Gestión de Compras
-          </h1>
-          <p className="text-muted-foreground">
-            Registra y administra todas tus compras y gastos deducibles
-          </p>
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Gestión de Compras</h1>
+            <p className="text-muted-foreground">
+              Administra todas tus compras, gastos y proveedores
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Importar TXT
+            </Button>
+            <Button onClick={() => setShowNuevaCompraDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Compra
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setShowNewCompraForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Compra
-        </Button>
       </div>
 
-      {/* Métricas de compras */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Compras</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-EC", {
-                style: "currency",
-                currency: "USD",
-              }).format(totalCompras)}
-            </div>
-            <p className="text-xs text-muted-foreground">Total acumulado</p>
-          </CardContent>
-        </Card>
+      {/* Filtros */}
+      <ComprasFilters
+        mes={mes}
+        onMesChange={setMes}
+        anio={anio}
+        onAnioChange={setAnio}
+      />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IVA Pagado</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-EC", {
-                style: "currency",
-                currency: "USD",
-              }).format(totalIvaCompras)}
-            </div>
-            <p className="text-xs text-muted-foreground">Crédito tributario</p>
-          </CardContent>
-        </Card>
+      {/* KPIs */}
+      {!loading && <ComprasKPIs compras={todasLasComprasFiltradas} />}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Retenciones</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-EC", {
-                style: "currency",
-                currency: "USD",
-              }).format(totalRetenciones)}
-            </div>
-            <p className="text-xs text-muted-foreground">Total retenido</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documentos</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{comprasData.length}</div>
-            <p className="text-xs text-muted-foreground">Total registrados</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabla de compras */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registro de Compras</CardTitle>
-          <CardDescription>
-            Listado completo de todas las compras y gastos registrados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={comprasData}
-            searchKey="proveedor"
-            searchPlaceholder="Buscar por proveedor..."
-          />
-        </CardContent>
-      </Card>
-
-      {/* Sección de análisis */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Análisis por Tipo de Comprobante</CardTitle>
-            <CardDescription>
-              Distribución de compras por tipo de documento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { tipo: "Factura", cantidad: 2, total: 8736.0 },
-                { tipo: "Liquidación de Compra", cantidad: 1, total: 1344.0 },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    <div>
-                      <p className="text-sm font-medium">{item.tipo}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.cantidad} documentos
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {new Intl.NumberFormat("es-EC", {
-                        style: "currency",
-                        currency: "USD",
-                      }).format(item.total)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Estado de Conciliación</CardTitle>
-            <CardDescription>
-              Estado actual de los documentos registrados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { estado: "Conciliado", cantidad: 1, color: "bg-green-500" },
-                { estado: "Registrado", cantidad: 1, color: "bg-blue-500" },
-                { estado: "Pendiente", cantidad: 1, color: "bg-orange-500" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <div>
-                      <p className="text-sm font-medium">{item.estado}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {item.cantidad} documentos
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal para nueva compra - placeholder */}
-      {showNewCompraForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Nueva Compra</CardTitle>
-              <CardDescription>
-                Registra una nueva factura de compra o gasto
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Formulario de nueva compra será implementado aquí...
-              </p>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewCompraForm(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button>Guardar</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Gastos Personales */}
+      {!loading && (
+        <GastosPersonalesSummary 
+          compras={todasLasComprasFiltradas} 
+          cargasFamiliares={contribuyente.cargas_familiares}
+        />
       )}
+
+      {/* Tabla */}
+      {loading ? (
+        <div className="flex items-center justify-center h-[300px]">
+          <p className="text-muted-foreground">Cargando compras...</p>
+        </div>
+      ) : (
+        <ComprasTable
+          compras={comprasFiltradas}
+          onEliminar={handleEliminarCompra}
+        />
+      )}
+
+      {/* Paginación */}
+      {!loading && (
+        <ComprasPagination
+          paginaActual={paginaActual}
+          totalItems={totalCompras}
+          itemsPorPagina={ITEMS_POR_PAGINA}
+          onPaginaChange={setPaginaActual}
+        />
+      )}
+
+      {/* Dialog Nueva Compra */}
+      <NuevaCompraDialog
+        open={showNuevaCompraDialog}
+        onOpenChange={setShowNuevaCompraDialog}
+        contribuyenteRuc={contribuyente.ruc}
+        onCompraCreada={cargarCompras}
+      />
+
+      {/* Dialog Importar Compras */}
+      <ImportarComprasDialog
+        open={showImportarDialog}
+        onOpenChange={setShowImportarDialog}
+        contribuyenteRuc={contribuyente.ruc}
+        onComprasImportadas={cargarCompras}
+      />
     </div>
   );
 }

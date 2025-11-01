@@ -73,12 +73,8 @@ export default function NotasCreditoPage() {
 
   // Handlers
   const handleVerDetalle = (notaCredito: NotaCredito) => {
-    setShowDetalleDialog(false);
-    setNotaCreditoSeleccionada(null);
-    setTimeout(() => {
-      setNotaCreditoSeleccionada(notaCredito);
-      setShowDetalleDialog(true);
-    }, 50);
+    setNotaCreditoSeleccionada(notaCredito);
+    setShowDetalleDialog(true);
   };
 
   const handleCloseDetalleDialog = (open: boolean) => {
@@ -201,9 +197,8 @@ export default function NotasCreditoPage() {
       </Card>
 
       {/* Dialog de Detalle */}
-      {notaCreditoSeleccionada && (
+      {notaCreditoSeleccionada && showDetalleDialog && (
         <DetalleNotaCreditoDialog
-          key={`detalle-${notaCreditoSeleccionada.id}`}
           open={showDetalleDialog}
           onOpenChange={handleCloseDetalleDialog}
           notaCredito={notaCreditoSeleccionada}

@@ -84,12 +84,6 @@ export function DetalleRetencionDialog({
     };
 
     cargarVenta();
-
-    return () => {
-      setVenta(null);
-      setLoading(false);
-      setError(null);
-    };
   }, [retencion.id, open]);
 
   const totalRetencion =
