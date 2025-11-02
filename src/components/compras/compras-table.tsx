@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Compra, RubroCompra } from "@/lib/supabase";
-import { MoreHorizontal, Eye, Trash2, Search, Download } from "lucide-react";
+import { MoreHorizontal, Trash2, Search, Download } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useState } from "react";
@@ -46,17 +46,6 @@ const rubrosLabels: Record<RubroCompra, string> = {
   vestimenta: "Vestimenta",
   turismo: "Turismo",
   actividad_profesional: "Act. Profesional",
-};
-
-const rubrosColors: Record<RubroCompra, string> = {
-  no_definido: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  vivienda: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  alimentacion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  salud: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  educacion: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  vestimenta: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300",
-  turismo: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  actividad_profesional: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
 };
 
 export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
@@ -90,9 +79,9 @@ export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
       <CardHeader>
         <div className="flex flex-col gap-4">
           <div>
-            <CardTitle>Registro de Compras</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Listado completo de todas las compras registradas - Año {new Date().getFullYear()}
+            <CardTitle className="text-base font-semibold">Registro de compras</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Compras registradas según los filtros aplicados
             </p>
           </div>
 
@@ -109,8 +98,8 @@ export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
                 Exportar
               </Button>
             </div>
@@ -199,7 +188,7 @@ export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
                     <TableCell className="hidden md:table-cell">
                       <Badge
                         variant="outline"
-                        className={rubrosColors[compra.rubro]}
+                        className="rounded-full border-border/60 bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
                       >
                         {rubrosLabels[compra.rubro]}
                       </Badge>
@@ -229,22 +218,17 @@ export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              // Placeholder para ver detalles
-                              console.log("Ver detalle:", compra.id);
-                            }}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Detalle
-                          </DropdownMenuItem>
+                          {!onEliminar && (
+                            <DropdownMenuItem disabled>
+                              No hay acciones disponibles
+                            </DropdownMenuItem>
+                          )}
                           {onEliminar && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => onEliminar(compra)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Eliminar

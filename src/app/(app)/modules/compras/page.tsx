@@ -146,13 +146,13 @@ export default function ComprasPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
-              <Upload className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={() => setShowImportarDialog(true)} className="gap-2">
+              <Upload className="h-4 w-4" />
               Importar TXT
             </Button>
-            <Button onClick={() => setShowNuevaCompraDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Compra
+            <Button onClick={() => setShowNuevaCompraDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nueva compra
             </Button>
           </div>
         </div>

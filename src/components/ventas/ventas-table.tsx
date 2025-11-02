@@ -275,16 +275,16 @@ export function VentasTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-medium text-orange-600">
+                  <TableCell className="text-right font-medium text-info">
                     {formatearMoneda(venta.iva)}
                   </TableCell>
-                  <TableCell className="text-right font-bold text-green-600">
+                  <TableCell className="text-right font-semibold text-foreground">
                     {formatearMoneda(venta.total)}
                   </TableCell>
                   <TableCell className="text-center">
                     {venta.nota_credito_id ? (
                       <div className="flex justify-center">
-                        <Check className="h-5 w-5 text-green-600" />
+                        <Check className="h-5 w-5 text-primary" />
                       </div>
                     ) : (
                       <div className="flex justify-center">
@@ -295,7 +295,7 @@ export function VentasTable({
                   <TableCell className="text-center">
                     {venta.retencion_id ? (
                       <div className="flex justify-center">
-                        <Check className="h-5 w-5 text-purple-600" />
+                        <Check className="h-5 w-5 text-primary" />
                       </div>
                     ) : (
                       <div className="flex justify-center">
@@ -306,7 +306,7 @@ export function VentasTable({
                   <TableCell className="text-right">
                     {venta.nota_credito_id || venta.retencion_id ? (
                       <div className="flex flex-col items-end">
-                        <span className="font-bold text-blue-600">
+                        <span className="font-semibold text-primary">
                           Ver detalle
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -314,7 +314,7 @@ export function VentasTable({
                         </span>
                       </div>
                     ) : (
-                      <span className="font-bold text-green-600">
+                      <span className="font-semibold text-success">
                         {formatearMoneda(venta.total)}
                       </span>
                     )}
@@ -345,9 +345,9 @@ export function VentasTable({
                           </DropdownMenuItem>
                         )}
                         {venta.nota_credito_id && (
-                          <DropdownMenuItem disabled>
-                            <FileText className="mr-2 h-4 w-4 text-green-500" />
-                            <span className="text-green-600">
+                          <DropdownMenuItem disabled className="text-muted-foreground">
+                            <FileText className="mr-2 h-4 w-4 text-info" />
+                            <span className="font-medium">
                               Tiene Nota de Crédito
                             </span>
                           </DropdownMenuItem>
@@ -361,9 +361,9 @@ export function VentasTable({
                           </DropdownMenuItem>
                         )}
                         {venta.retencion_id && (
-                          <DropdownMenuItem disabled>
-                            <Receipt className="mr-2 h-4 w-4 text-purple-500" />
-                            <span className="text-purple-600">
+                          <DropdownMenuItem disabled className="text-muted-foreground">
+                            <Receipt className="mr-2 h-4 w-4 text-info" />
+                            <span className="font-medium">
                               Tiene Retención
                             </span>
                           </DropdownMenuItem>

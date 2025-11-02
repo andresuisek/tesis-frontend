@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Venta } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
@@ -169,7 +170,7 @@ export function NuevaNotaCreditoDialog({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total:</span>
-                  <span className="ml-2 font-bold text-green-600">
+                  <span className="ml-2 font-semibold text-success">
                     ${venta.total.toFixed(2)}
                   </span>
                 </div>
@@ -184,7 +185,7 @@ export function NuevaNotaCreditoDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fecha-emision">
-                    Fecha de Emisión <span className="text-red-500">*</span>
+                    Fecha de Emisión <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="fecha-emision"
@@ -197,7 +198,7 @@ export function NuevaNotaCreditoDialog({
                 <div className="space-y-2">
                   <Label htmlFor="numero-comprobante">
                     Número de Comprobante{" "}
-                    <span className="text-red-500">*</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="numero-comprobante"
@@ -215,7 +216,7 @@ export function NuevaNotaCreditoDialog({
               <h4 className="font-medium text-sm">Valores</h4>
               <div className="space-y-2">
                 <Label htmlFor="subtotal">
-                  Subtotal <span className="text-red-500">*</span>
+                  Subtotal <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="subtotal"
@@ -233,7 +234,7 @@ export function NuevaNotaCreditoDialog({
               {/* Radio Buttons para IVA */}
               <div className="space-y-2">
                 <Label>
-                  Porcentaje de IVA <span className="text-red-500">*</span>
+                  Porcentaje de IVA <span className="text-destructive">*</span>
                 </Label>
                 <div className="flex gap-6">
                   <div className="flex items-center space-x-2">
@@ -289,12 +290,15 @@ export function NuevaNotaCreditoDialog({
 
               {/* Resumen de Cálculos */}
               <div
-                className={`mt-4 p-4 rounded-lg space-y-2 ${
-                  excedeLimite ? "bg-red-50 border border-red-300" : "bg-muted"
-                }`}
+                className={cn(
+                  "mt-4 space-y-2 rounded-lg p-4 transition-colors",
+                  excedeLimite
+                    ? "border border-destructive/40 bg-destructive/10"
+                    : "border border-transparent bg-muted"
+                )}
               >
                 {excedeLimite && (
-                  <div className="flex items-center gap-2 text-red-600 mb-2">
+                  <div className="mb-2 flex items-center gap-2 text-destructive">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">
                       El monto excede el total de la venta
@@ -307,14 +311,17 @@ export function NuevaNotaCreditoDialog({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>IVA ({porcentajeIva}%):</span>
-                  <span className="font-medium text-orange-600">
+                  <span className="font-medium text-info">
                     ${ivaCalculado.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-base font-bold pt-2 border-t">
                   <span>Total:</span>
                   <span
-                    className={excedeLimite ? "text-red-600" : "text-green-600"}
+                    className={cn(
+                      "font-semibold",
+                      excedeLimite ? "text-destructive" : "text-success"
+                    )}
                   >
                     ${totalCalculado.toFixed(2)}
                   </span>

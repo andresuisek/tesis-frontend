@@ -178,10 +178,12 @@ export function DetalleVentaDialog({
 
         <div className="space-y-6">
           {/* Información de la Venta */}
-          <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-transparent">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
+          <div className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-3 text-lg font-semibold">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <FileText className="h-4 w-4" />
+                </span>
                 Venta Original
               </h3>
               <Badge variant="default">
@@ -234,13 +236,13 @@ export function DetalleVentaDialog({
               </div>
               <div className="flex justify-between text-sm font-medium">
                 <span className="text-muted-foreground">IVA:</span>
-                <span className="text-orange-600">
+                <span className="text-info">
                   {formatearMoneda(venta.iva)}
                 </span>
               </div>
               <div className="flex justify-between text-base font-bold pt-2 border-t">
                 <span>Total Original:</span>
-                <span className="text-blue-600">
+                <span className="text-primary">
                   {formatearMoneda(totalOriginal)}
                 </span>
               </div>
@@ -255,27 +257,34 @@ export function DetalleVentaDialog({
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : error ? (
-                <div className="border border-red-300 rounded-lg p-6 bg-red-50">
-                  <div className="flex items-center gap-2 text-red-600 mb-2">
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6">
+                  <div className="mb-2 flex items-center gap-2 text-destructive">
                     <FileText className="h-5 w-5" />
                     <h3 className="font-semibold">
                       Error al cargar Nota de Crédito
                     </h3>
                   </div>
-                  <p className="text-sm text-red-700">{error}</p>
-                  <p className="text-xs text-red-600 mt-2">
+                  <p className="text-sm text-destructive/90">{error}</p>
+                  <p className="mt-2 text-xs text-destructive/80">
                     Verifica los permisos de la base de datos o contacta al
                     administrador.
                   </p>
                 </div>
               ) : notaCredito ? (
-                <div className="border rounded-lg p-4 bg-gradient-to-r from-red-50 to-transparent">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-red-600" />
+                <div className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="flex items-center gap-3 text-lg font-semibold">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                        <FileText className="h-4 w-4" />
+                      </span>
                       Nota de Crédito
                     </h3>
-                    <Badge variant="destructive">Descuento Aplicado</Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-destructive/30 text-destructive"
+                    >
+                      Descuento Aplicado
+                    </Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -319,13 +328,13 @@ export function DetalleVentaDialog({
                     </div>
                     <div className="flex justify-between text-sm font-medium">
                       <span className="text-muted-foreground">IVA:</span>
-                      <span className="text-orange-600">
+                      <span className="text-info">
                         {formatearMoneda(notaCredito.iva)}
                       </span>
                     </div>
                     <div className="flex justify-between text-base font-bold pt-2 border-t">
                       <span>Total Nota de Crédito:</span>
-                      <span className="text-red-600">
+                      <span className="text-destructive">
                         -{formatearMoneda(totalNotaCredito)}
                       </span>
                     </div>
@@ -343,27 +352,29 @@ export function DetalleVentaDialog({
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : errorRetencion ? (
-                <div className="border border-red-300 rounded-lg p-6 bg-red-50">
-                  <div className="flex items-center gap-2 text-red-600 mb-2">
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-6">
+                  <div className="mb-2 flex items-center gap-2 text-destructive">
                     <Receipt className="h-5 w-5" />
                     <h3 className="font-semibold">Error al cargar Retención</h3>
                   </div>
-                  <p className="text-sm text-red-700">{errorRetencion}</p>
-                  <p className="text-xs text-red-600 mt-2">
+                  <p className="text-sm text-destructive/90">{errorRetencion}</p>
+                  <p className="mt-2 text-xs text-destructive/80">
                     Verifica los permisos de la base de datos o contacta al
                     administrador.
                   </p>
                 </div>
               ) : retencion ? (
-                <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-transparent">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Receipt className="h-5 w-5 text-purple-600" />
+                <div className="rounded-xl border border-border/60 bg-card/80 p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="flex items-center gap-3 text-lg font-semibold">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Receipt className="h-4 w-4" />
+                      </span>
                       Retención
                     </h3>
                     <Badge
-                      variant="secondary"
-                      className="bg-purple-100 text-purple-700"
+                      variant="outline"
+                      className="border-primary/30 text-primary"
                     >
                       Aplicada
                     </Badge>
@@ -406,7 +417,7 @@ export function DetalleVentaDialog({
                         <span className="text-muted-foreground">
                           Retención IVA ({retencion.retencion_iva_percent}%):
                         </span>
-                        <span className="text-orange-600">
+                        <span className="text-info">
                           {formatearMoneda(retencion.retencion_valor)}
                         </span>
                       </div>
@@ -418,14 +429,14 @@ export function DetalleVentaDialog({
                           Retención Renta ({retencion.retencion_renta_percent}
                           %):
                         </span>
-                        <span className="text-purple-600">
+                        <span className="text-primary">
                           {formatearMoneda(retencion.retencion_renta_valor)}
                         </span>
                       </div>
                     ) : null}
                     <div className="flex justify-between text-base font-bold pt-2 border-t">
                       <span>Total Retención:</span>
-                      <span className="text-purple-600">
+                      <span className="text-primary">
                         -{formatearMoneda(totalRetencion)}
                       </span>
                     </div>
@@ -437,60 +448,61 @@ export function DetalleVentaDialog({
 
           {/* Cálculo Final */}
           {(notaCredito || retencion) && (
-            <div className="border-2 border-green-300 rounded-lg p-4 bg-gradient-to-r from-green-50 to-transparent">
-              <div className="flex items-center gap-2 mb-4">
-                <Calculator className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-lg">Cálculo Final</h3>
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 shadow-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Calculator className="h-4 w-4" />
+                </span>
+                <h3 className="text-lg font-semibold">Resumen Final</h3>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Total Original:</span>
-                  <span className="font-mono text-blue-600">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Total Original</span>
+                  <span className="font-mono font-semibold text-primary">
                     {formatearMoneda(totalOriginal)}
                   </span>
                 </div>
                 {notaCredito && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm flex items-center gap-2">
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                      Nota de Crédito:
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingDown className="h-4 w-4 text-destructive" />
+                      Nota de Crédito
                     </span>
-                    <span className="font-mono text-red-600">
+                    <span className="font-mono text-destructive">
                       -{formatearMoneda(totalNotaCredito)}
                     </span>
                   </div>
                 )}
                 {retencion && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm flex items-center gap-2">
-                      <TrendingDown className="h-4 w-4 text-purple-500" />
-                      Retención:
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingDown className="h-4 w-4 text-primary" />
+                      Retención
                     </span>
-                    <span className="font-mono text-purple-600">
+                    <span className="font-mono text-primary">
                       -{formatearMoneda(totalRetencion)}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-3 border-t-2 border-green-400">
-                  <span className="font-bold text-lg">Saldo:</span>
-                  <span className="font-bold text-2xl text-green-600">
+                <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                  <span className="text-base font-semibold text-foreground">
+                    Saldo
+                  </span>
+                  <span className="font-mono text-2xl font-semibold text-success">
                     {formatearMoneda(totalNeto)}
                   </span>
                 </div>
 
-                {/* Porcentaje de descuento/reducción total */}
-                <div className="mt-3 p-3 bg-green-100 rounded text-center">
-                  <p className="text-sm text-green-800">
-                    Reducción total aplicada:{" "}
-                    <span className="font-bold">
-                      {(
-                        ((totalNotaCredito + totalRetencion) / totalOriginal) *
-                        100
-                      ).toFixed(2)}
-                      %
-                    </span>
-                  </p>
+                <div className="rounded-lg bg-card p-3 text-center text-xs text-muted-foreground">
+                  Reducción total aplicada:{" "}
+                  <span className="font-semibold text-foreground">
+                    {(
+                      ((totalNotaCredito + totalRetencion) / totalOriginal) *
+                      100
+                    ).toFixed(2)}
+                    %
+                  </span>
                 </div>
               </div>
             </div>

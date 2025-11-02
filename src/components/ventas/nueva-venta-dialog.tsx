@@ -154,7 +154,7 @@ export function NuevaVentaDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fecha-emision">
-                    Fecha de Emisión <span className="text-red-500">*</span>
+                    Fecha de Emisión <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="fecha-emision"
@@ -166,7 +166,7 @@ export function NuevaVentaDialog({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tipo-comprobante">
-                    Tipo de Comprobante <span className="text-red-500">*</span>
+                    Tipo de Comprobante <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={tipoComprobante}
@@ -192,7 +192,7 @@ export function NuevaVentaDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="numero-comprobante">
-                  Número de Comprobante <span className="text-red-500">*</span>
+                  Número de Comprobante <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="numero-comprobante"
@@ -209,7 +209,7 @@ export function NuevaVentaDialog({
               <h4 className="font-medium text-sm">Valores</h4>
               <div className="space-y-2">
                 <Label htmlFor="subtotal">
-                  Subtotal <span className="text-red-500">*</span>
+                  Subtotal <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="subtotal"
@@ -226,7 +226,7 @@ export function NuevaVentaDialog({
               {/* Radio Buttons para IVA */}
               <div className="space-y-2">
                 <Label>
-                  Porcentaje de IVA <span className="text-red-500">*</span>
+                  Porcentaje de IVA <span className="text-destructive">*</span>
                 </Label>
                 <div className="flex gap-6">
                   <div className="flex items-center space-x-2">
@@ -288,13 +288,13 @@ export function NuevaVentaDialog({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>IVA ({porcentajeIva}%):</span>
-                  <span className="font-medium text-orange-600">
+                  <span className="font-medium text-info">
                     ${ivaCalculado.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-base font-bold pt-2 border-t">
                   <span>Total:</span>
-                  <span className="text-green-600">
+                  <span className="text-success">
                     ${totalCalculado.toFixed(2)}
                   </span>
                 </div>

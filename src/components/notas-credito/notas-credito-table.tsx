@@ -165,7 +165,7 @@ export function NotasCreditoTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-red-500" />
+                      <FileText className="h-4 w-4 text-primary" />
                       <span className="font-medium">
                         {nc.numero_comprobante}
                       </span>
@@ -184,7 +184,7 @@ export function NotasCreditoTable({
                     {formatearMoneda(nc.iva)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="font-bold text-red-600">
+                    <span className="font-semibold text-foreground">
                       {formatearMoneda(nc.total)}
                     </span>
                   </TableCell>

@@ -17,427 +17,483 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  FileText,
-  Calculator,
-  ChartBar,
-  AlertCircle,
-  BarChart3,
-  PieChart,
-} from "lucide-react";
-import {
   Area,
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Pie,
-  PieChart as RechartsPieChart,
+  PieChart,
   XAxis,
   YAxis,
-  CartesianGrid,
   Cell,
 } from "recharts";
+import {
+  DollarSign,
+  ShoppingCart,
+  Calculator,
+  Receipt,
+  Loader2,
+  AlertCircle,
+  BarChart3,
+  Layers,
+  TrendingUp,
+  PieChart as PieChartIcon,
+} from "lucide-react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/es";
 
-// Datos para las gráficas
-const salesData = [
-  { month: "Ene", sales: 35000, purchases: 15000, profit: 20000 },
-  { month: "Feb", sales: 42000, purchases: 18000, profit: 24000 },
-  { month: "Mar", sales: 38000, purchases: 16000, profit: 22000 },
-  { month: "Abr", sales: 45000, purchases: 20000, profit: 25000 },
-  { month: "May", sales: 52000, purchases: 22000, profit: 30000 },
-  { month: "Jun", sales: 48000, purchases: 19000, profit: 29000 },
-];
+import { useDashboardData } from "@/hooks/use-dashboard-data";
 
-const taxData = [
-  { name: "IVA Pagado", value: 3967, fill: "#1D4ED8" },
-  { name: "Retenciones", value: 1234, fill: "#14B8A6" },
-  { name: "Impuesto Renta", value: 2500, fill: "#0A192F" },
-  { name: "Otros", value: 800, fill: "#6B7280" },
-];
+dayjs.extend(relativeTime);
+dayjs.locale("es");
 
-const monthlyTrend = [
-  { month: "Jul", amount: 32000 },
-  { month: "Ago", amount: 38000 },
-  { month: "Sep", amount: 42000 },
-  { month: "Oct", amount: 39000 },
-  { month: "Nov", amount: 46000 },
-  { month: "Dic", amount: 45231 },
-];
-
-const chartConfig = {
-  sales: {
-    label: "Ventas",
-    color: "#1D4ED8",
-  },
-  purchases: {
-    label: "Compras",
-    color: "#14B8A6",
-  },
-  profit: {
-    label: "Utilidad",
-    color: "#0A192F",
-  },
-  amount: {
-    label: "Monto",
-    color: "#1D4ED8",
-  },
+const monthlyFlowConfig = {
+  ventas: { label: "Ventas", color: "var(--chart-1)" },
+  compras: { label: "Compras", color: "var(--chart-2)" },
 };
 
-export default function DashboardPage() {
+const ivaChartConfig = {
+  ventas: { label: "Ventas", color: "var(--chart-1)" },
+  compras: { label: "Compras", color: "var(--chart-3)" },
+};
+
+const ajustesChartConfig = {
+  retenciones: { label: "Retenciones", color: "var(--chart-4)" },
+  notasCredito: { label: "Notas de crédito", color: "var(--chart-5)" },
+};
+
+const rubroChartConfig = {
+  total: { label: "Total", color: "var(--chart-1)" },
+};
+
+const taxColors = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+];
+
+const rubroLabels: Record<string, string> = {
+  vivienda: "Vivienda",
+  alimentacion: "Alimentación",
+  educacion: "Educación",
+  salud: "Salud",
+  vestimenta: "Vestimenta",
+  turismo: "Turismo",
+  actividad_profesional: "Actividad profesional",
+  no_definido: "No definido",
+};
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("es-EC", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(value || 0);
+
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat("es-EC", { maximumFractionDigits: 0 }).format(
+    value || 0
+  );
+
+type MetricChange = {
+  value: number;
+  positive: boolean;
+};
+
+interface MetricCardProps {
+  title: string;
+  value: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  change?: MetricChange;
+  helper?: string;
+}
+
+function MetricCard({ title, value, icon: Icon, change, helper }: MetricCardProps) {
   return (
-    <div className="space-y-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 min-h-screen p-6">
-      <div className="flex items-center justify-between">
+    <Card>
+      <CardHeader className="space-y-4 pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {title}
+            </CardTitle>
+            <p className="mt-3 text-2xl font-semibold tracking-tight">{value}</p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" aria-hidden />
+          </div>
+        </div>
+        {change ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className={`font-medium ${change.positive ? "text-primary" : "text-destructive"}`}>
+              {change.positive ? "+" : ""}
+              {change.value.toFixed(1)}%
+            </span>
+            <span>vs. mes anterior</span>
+          </div>
+        ) : null}
+        {helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+      </CardHeader>
+    </Card>
+  );
+}
+
+export default function DashboardPage() {
+  const {
+    kpis,
+    monthlyData,
+    taxDistribution,
+    rubroDistribution,
+    ivaBreakdown,
+    recentActivity,
+    loading,
+    error,
+  } = useDashboardData();
+
+  const ventasChange =
+    kpis.ventasMesAnterior > 0
+      ? ((kpis.ventasMes - kpis.ventasMesAnterior) / kpis.ventasMesAnterior) * 100
+      : 0;
+
+  const comprasChange =
+    kpis.comprasMesAnterior > 0
+      ? ((kpis.comprasMes - kpis.comprasMesAnterior) / kpis.comprasMesAnterior) * 100
+      : 0;
+
+  const retencionesChange =
+    kpis.retencionesMesAnterior > 0
+      ? ((kpis.retencionesMes - kpis.retencionesMesAnterior) /
+          kpis.retencionesMesAnterior) * 100
+      : 0;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="space-y-4 text-center">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Cargando datos del dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="space-y-4 text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+          <p className="text-destructive">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const rubrosData = rubroDistribution.map((item) => ({
+    rubro: rubroLabels[item.rubro] ?? item.rubro,
+    total: item.total,
+  }));
+
+  return (
+    <div className="space-y-8 p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-[#0A192F] to-[#1D4ED8] bg-clip-text text-transparent">
-            Dashboard Tributario
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            Resumen tributario
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Resumen general de tu actividad tributaria y métricas clave
+          <p className="mt-2 text-sm text-muted-foreground">
+            Visualiza tus métricas clave y el desempeño de tus obligaciones fiscales.
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Badge variant="outline" className="border-[#14B8A6] text-[#14B8A6]">
-            Último: Diciembre 2024
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="border-primary text-primary">
+            {dayjs().format("MMMM YYYY")}
           </Badge>
-          <Button className="bg-gradient-to-r from-[#1D4ED8] to-[#14B8A6] hover:from-[#1E40AF] hover:to-[#0F766E] text-white shadow-lg">
-            Generar Reporte
-          </Button>
+          <Button variant="outline">Generar reporte</Button>
         </div>
       </div>
 
-      {/* Métricas principales */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-[#1D4ED8] shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#0A192F] dark:text-white">
-              Ventas del Mes
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          title="Ventas del mes"
+          value={formatCurrency(kpis.ventasMes)}
+          icon={DollarSign}
+          change={{ value: Math.abs(ventasChange), positive: ventasChange >= 0 }}
+        />
+        <MetricCard
+          title="Compras del mes"
+          value={formatCurrency(kpis.comprasMes)}
+          icon={ShoppingCart}
+          change={{ value: Math.abs(comprasChange), positive: comprasChange >= 0 }}
+        />
+        <MetricCard
+          title="IVA a pagar"
+          value={formatCurrency(Math.max(0, kpis.ivaPagar))}
+          icon={Calculator}
+          helper={`Próximo vencimiento: ${dayjs().add(10, "days").format("DD MMM")}`}
+        />
+        <MetricCard
+          title="Retenciones registradas"
+          value={formatCurrency(kpis.retencionesMes)}
+          icon={Receipt}
+          change={{ value: Math.abs(retencionesChange), positive: retencionesChange >= 0 }}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Flujo mensual de ventas y compras
             </CardTitle>
-            <div className="p-2 bg-[#1D4ED8]/10 rounded-lg">
-              <DollarSign className="h-5 w-5 text-[#1D4ED8]" />
-            </div>
+            <CardDescription>Comportamiento de los últimos 6 meses</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#0A192F] dark:text-white">
-              $45,231.89
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-[#14B8A6] flex items-center gap-1 font-medium">
-                <TrendingUp className="h-3 w-3" />
-                +20.1%
-              </span>
-              desde el mes pasado
-            </p>
+            <ChartContainer config={monthlyFlowConfig} className="h-72">
+              <AreaChart data={monthlyData}>
+                <defs>
+                  <linearGradient id="ventasGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="comprasGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.22} />
+                    <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0.04} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis tickFormatter={formatNumber} tickLine={false} axisLine={false} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatCurrency(Number(value))}
+                    />
+                  }
+                />
+                <ChartLegend content={<ChartLegendContent />} />
+                <Area
+                  type="monotone"
+                  dataKey="ventas"
+                  stroke="var(--chart-1)"
+                  fill="url(#ventasGradient)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="compras"
+                  stroke="var(--chart-2)"
+                  fill="url(#comprasGradient)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </AreaChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-[#14B8A6] shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#0A192F] dark:text-white">
-              Compras del Mes
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Layers className="h-5 w-5 text-primary" />
+              Distribución de IVA por tasa (año)
             </CardTitle>
-            <div className="p-2 bg-[#14B8A6]/10 rounded-lg">
-              <FileText className="h-5 w-5 text-[#14B8A6]" />
-            </div>
+            <CardDescription>Comparativo entre ventas y compras</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#0A192F] dark:text-white">
-              $12,234.56
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-red-500 flex items-center gap-1 font-medium">
-                <TrendingDown className="h-3 w-3" />
-                -4.3%
-              </span>
-              desde el mes pasado
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500 shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#0A192F] dark:text-white">
-              IVA a Pagar
-            </CardTitle>
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Calculator className="h-5 w-5 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#0A192F] dark:text-white">
-              $3,967.22
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-orange-600 flex items-center gap-1 font-medium">
-                <AlertCircle className="h-3 w-3" />
-                Vence: 12 Ene 2025
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-[#0A192F] shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-[#0A192F] dark:text-white">
-              Retenciones
-            </CardTitle>
-            <div className="p-2 bg-[#0A192F]/10 rounded-lg">
-              <ChartBar className="h-5 w-5 text-[#0A192F]" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#0A192F] dark:text-white">
-              $1,234.56
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-[#14B8A6] flex items-center gap-1 font-medium">
-                <TrendingUp className="h-3 w-3" />
-                +12.5%
-              </span>
-              desde el mes pasado
-            </p>
+            <ChartContainer config={ivaChartConfig} className="h-72">
+              <BarChart data={ivaBreakdown}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                <XAxis dataKey="rate" tickLine={false} axisLine={false} />
+                <YAxis tickFormatter={formatNumber} tickLine={false} axisLine={false} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />
+                  }
+                />
+                <ChartLegend content={<ChartLegendContent />} />
+                <Bar dataKey="ventas" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="compras" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Sección de Gráficas */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Gráfica de Ventas vs Compras */}
-        <Card className="shadow-lg">
+      <div className="grid gap-4 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#0A192F] dark:text-white">
-              <BarChart3 className="h-5 w-5 text-[#1D4ED8]" />
-              Análisis Financiero Mensual
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Ajustes registrados
             </CardTitle>
-            <CardDescription>
-              Comparativa de ventas, compras y utilidades por mes
-            </CardDescription>
+            <CardDescription>Retenciones y notas de crédito emitidas</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig}>
-              <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartContainer config={ajustesChartConfig} className="h-72">
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis tickFormatter={formatNumber} tickLine={false} axisLine={false} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />
+                  }
+                />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="sales" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="purchases" fill="#14B8A6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="profit" fill="#0A192F" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="retenciones" fill="var(--chart-4)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="notasCredito" fill="var(--chart-5)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Gráfica de Distribución de Impuestos */}
-        <Card className="shadow-lg">
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[#0A192F] dark:text-white">
-              <PieChart className="h-5 w-5 text-[#14B8A6]" />
-              Distribución de Impuestos
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Layers className="h-5 w-5 text-primary" />
+              Compras por rubro (año)
             </CardTitle>
-            <CardDescription>
-              Desglose de obligaciones tributarias actuales
-            </CardDescription>
+            <CardDescription>Categorías deducibles con mayor peso</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig}>
-              <RechartsPieChart>
-                <Pie
-                  data={taxData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) =>
-                    `${name}: $${value.toLocaleString()}`
-                  }
-                >
-                  {taxData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </RechartsPieChart>
-            </ChartContainer>
+            {rubrosData.length ? (
+              <ChartContainer config={rubroChartConfig} className="h-72">
+                <BarChart data={rubrosData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                  <XAxis type="number" tickFormatter={formatNumber} hide />
+                  <YAxis
+                    dataKey="rubro"
+                    type="category"
+                    width={160}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />
+                    }
+                  />
+                  <Bar dataKey="total" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+                No se registran compras en las categorías deducibles.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráfica de Tendencia Mensual */}
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#0A192F] dark:text-white">
-            <TrendingUp className="h-5 w-5 text-[#14B8A6]" />
-            Tendencia de Ingresos
-          </CardTitle>
-          <CardDescription>
-            Evolución de los ingresos en los últimos 6 meses
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig}>
-            <AreaChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Area
-                type="monotone"
-                dataKey="amount"
-                stroke="#1D4ED8"
-                fill="url(#colorGradient)"
-                strokeWidth={3}
-              />
-              <defs>
-                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1D4ED8" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#14B8A6" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-            </AreaChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      {/* Secciones adicionales mejoradas */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-lg border-t-4 border-t-[#1D4ED8]">
+      <div className="grid gap-4 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle className="text-[#0A192F] dark:text-white">
-              Actividad Reciente
-            </CardTitle>
-            <CardDescription>
-              Últimas transacciones registradas en el sistema
-            </CardDescription>
+            <CardTitle className="text-base font-semibold">Actividad reciente</CardTitle>
+            <CardDescription>Últimas operaciones registradas</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                {
-                  type: "Venta",
-                  amount: "$2,345.67",
-                  date: "Hace 2 horas",
-                  status: "Completado",
-                  color: "#1D4ED8",
-                },
-                {
-                  type: "Compra",
-                  amount: "$890.12",
-                  date: "Hace 4 horas",
-                  status: "Pendiente",
-                  color: "#14B8A6",
-                },
-                {
-                  type: "Retención",
-                  amount: "$156.78",
-                  date: "Ayer",
-                  status: "Completado",
-                  color: "#0A192F",
-                },
-                {
-                  type: "Venta",
-                  amount: "$1,234.56",
-                  date: "Ayer",
-                  status: "Completado",
-                  color: "#1D4ED8",
-                },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-[#0A192F] dark:text-white">
-                        {item.type}
-                      </p>
+            {recentActivity.length ? (
+              <div className="space-y-3">
+                {recentActivity.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">{item.type}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.date}
+                        {dayjs(item.timestamp).fromNow()}
                       </p>
                     </div>
+                    <div className="text-right">
+                      <p className="text-sm font-mono font-semibold text-foreground">
+                        {formatCurrency(item.amount)}
+                      </p>
+                      <Badge variant="secondary" className="mt-1">
+                        {item.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#0A192F] dark:text-white">
-                      {item.amount}
-                    </p>
-                    <Badge
-                      variant={
-                        item.status === "Completado" ? "default" : "secondary"
-                      }
-                      className={
-                        item.status === "Completado"
-                          ? "bg-[#14B8A6] hover:bg-[#0F766E]"
-                          : ""
-                      }
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                Aún no registras movimientos.
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 shadow-lg border-t-4 border-t-orange-500">
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle className="text-[#0A192F] dark:text-white">
-              Próximos Vencimientos
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <PieChartIcon className="h-5 w-5 text-primary" />
+              Impuestos y vencimientos
             </CardTitle>
-            <CardDescription>
-              Obligaciones tributarias próximas a vencer
-            </CardDescription>
+            <CardDescription>Distribución mensual y próximos hitos</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="space-y-6">
+            {taxDistribution.length ? (
+              <ChartContainer config={{}} className="mx-auto h-56 w-full">
+                <PieChart>
+                  <Pie
+                    data={taxDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={45}
+                    outerRadius={85}
+                    paddingAngle={4}
+                  >
+                    {taxDistribution.map((_, index) => (
+                      <Cell key={index} fill={taxColors[index % taxColors.length]} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />
+                    }
+                  />
+                  <ChartLegend content={<ChartLegendContent hideIcon />} />
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-56 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                No hay impuestos registrados este mes.
+              </div>
+            )}
+
+            <div className="space-y-3">
               {[
                 {
-                  obligation: "Declaración IVA",
-                  date: "12 Ene 2025",
+                  title: "Declaración IVA",
+                  date: dayjs().add(10, "days").format("DD MMM YYYY"),
                   priority: "Alta",
                 },
                 {
-                  obligation: "Retenciones en la Fuente",
-                  date: "15 Ene 2025",
+                  title: "Retenciones en la fuente",
+                  date: dayjs().add(15, "days").format("DD MMM YYYY"),
                   priority: "Media",
                 },
                 {
-                  obligation: "Impuesto a la Renta",
-                  date: "31 Mar 2025",
+                  title: "Impuesto a la renta",
+                  date: dayjs().add(90, "days").format("DD MMM YYYY"),
                   priority: "Baja",
                 },
-              ].map((item, i) => (
+              ].map((item) => (
                 <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  key={item.title}
+                  className="flex items-center justify-between rounded-lg border border-border/40 p-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-[#0A192F] dark:text-white">
-                      {item.obligation}
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
                     <p className="text-xs text-muted-foreground">{item.date}</p>
                   </div>
-                  <Badge
-                    variant={
-                      item.priority === "Alta"
-                        ? "destructive"
-                        : item.priority === "Media"
-                        ? "default"
-                        : "secondary"
-                    }
-                    className={
-                      item.priority === "Media"
-                        ? "bg-[#1D4ED8] hover:bg-[#1E40AF]"
-                        : ""
-                    }
-                  >
+                  <Badge variant={item.priority === "Alta" ? "destructive" : "outline"}>
                     {item.priority}
                   </Badge>
                 </div>

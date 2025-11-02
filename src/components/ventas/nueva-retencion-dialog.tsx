@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Venta, TipoComprobante } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
@@ -171,13 +172,13 @@ export function NuevaRetencionDialog({
                 </div>
                 <div>
                   <span className="text-muted-foreground">IVA:</span>
-                  <span className="ml-2 font-medium text-orange-600">
+                  <span className="ml-2 font-medium text-info">
                     ${ivaVenta.toFixed(2)}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total:</span>
-                  <span className="ml-2 font-bold text-green-600">
+                  <span className="ml-2 font-semibold text-success">
                     ${venta.total.toFixed(2)}
                   </span>
                 </div>
@@ -192,7 +193,7 @@ export function NuevaRetencionDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fecha-emision">
-                    Fecha de Emisión <span className="text-red-500">*</span>
+                    Fecha de Emisión <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="fecha-emision"
@@ -224,7 +225,7 @@ export function NuevaRetencionDialog({
                 <div className="space-y-2">
                   <Label htmlFor="serie-comprobante">
                     Serie del Comprobante{" "}
-                    <span className="text-red-500">*</span>
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="serie-comprobante"
@@ -269,8 +270,8 @@ export function NuevaRetencionDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Valor Calculado</Label>
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-lg font-bold text-orange-600">
+                  <div className="rounded-md bg-muted p-2">
+                    <p className="text-lg font-semibold text-info">
                       ${retencionIvaValor.toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -305,8 +306,8 @@ export function NuevaRetencionDialog({
                 </div>
                 <div className="space-y-2">
                   <Label>Valor Calculado</Label>
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-lg font-bold text-purple-600">
+                  <div className="rounded-md bg-muted p-2">
+                    <p className="text-lg font-semibold text-primary">
                       ${retencionRentaValor.toFixed(2)}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -319,12 +320,15 @@ export function NuevaRetencionDialog({
 
             {/* Resumen de Cálculos */}
             <div
-              className={`mt-4 p-4 rounded-lg space-y-2 ${
-                excedeLimite ? "bg-red-50 border border-red-300" : "bg-muted"
-              }`}
+              className={cn(
+                "mt-4 space-y-2 rounded-lg p-4 transition-colors",
+                excedeLimite
+                  ? "border border-destructive/40 bg-destructive/10"
+                  : "border border-transparent bg-muted"
+              )}
             >
               {excedeLimite && (
-                <div className="flex items-center gap-2 text-red-600 mb-2">
+                <div className="mb-2 flex items-center gap-2 text-destructive">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">
                     El total de retención excede el total de la venta
@@ -333,20 +337,23 @@ export function NuevaRetencionDialog({
               )}
               <div className="flex justify-between text-sm">
                 <span>Retención IVA:</span>
-                <span className="font-medium text-orange-600">
+                <span className="font-medium text-info">
                   ${retencionIvaValor.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Retención Renta:</span>
-                <span className="font-medium text-purple-600">
+                <span className="font-medium text-primary">
                   ${retencionRentaValor.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-base font-bold pt-2 border-t">
                 <span>Total Retención:</span>
                 <span
-                  className={excedeLimite ? "text-red-600" : "text-blue-600"}
+                  className={cn(
+                    "font-semibold",
+                    excedeLimite ? "text-destructive" : "text-primary"
+                  )}
                 >
                   ${totalRetencion.toFixed(2)}
                 </span>
