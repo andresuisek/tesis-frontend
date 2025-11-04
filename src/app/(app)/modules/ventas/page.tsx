@@ -121,7 +121,7 @@ export default function VentasPage() {
 
         setVentasMesAnterior(dataMesAnterior || []);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al cargar ventas:", error);
       toast.error("Error al cargar las ventas");
     } finally {
@@ -152,7 +152,7 @@ export default function VentasPage() {
       years.add(dayjs().year());
 
       setAvailableYears(Array.from(years).sort((a, b) => b - a));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al cargar años disponibles:", error);
     }
   };
@@ -160,11 +160,13 @@ export default function VentasPage() {
   // Cargar datos cuando cambia el contribuyente o los filtros
   useEffect(() => {
     cargarVentas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contribuyente, selectedYear, selectedMonth]);
 
   // Cargar años disponibles al montar el componente
   useEffect(() => {
     cargarAnosDisponibles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contribuyente]);
 
   const handleVentaCreada = () => {

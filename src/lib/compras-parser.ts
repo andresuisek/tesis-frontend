@@ -130,7 +130,7 @@ export function parsearArchivoCompras(contenido: string): CompraParsed[] {
       };
 
       compras.push(compra);
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`Error procesando línea ${i + 1}:`, error);
       // Continuar con la siguiente línea
     }
@@ -206,7 +206,7 @@ function convertirFecha(fechaOriginal: string): string {
       return fechaSolo.format("YYYY-MM-DD");
     }
     return fecha.format("YYYY-MM-DD");
-  } catch (error) {
+  } catch {
     console.warn("Error convirtiendo fecha:", fechaOriginal);
     return dayjs().format("YYYY-MM-DD"); // Fecha actual como fallback
   }

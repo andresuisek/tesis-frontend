@@ -90,8 +90,6 @@ export function useDashboardData(): DashboardData {
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
 
-        const mesActual = dayjs().format("YYYY-MM");
-        const mesAnterior = dayjs().subtract(1, "month").format("YYYY-MM");
         const inicioMesActual = dayjs().startOf("month").format("YYYY-MM-DD");
         const finMesActual = dayjs().endOf("month").format("YYYY-MM-DD");
         const inicioMesAnterior = dayjs()

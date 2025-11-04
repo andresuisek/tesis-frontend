@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormFieldWrapper } from "@/components/forms/form-field-wrapper";
-import { Badge } from "@/components/ui/badge";
 import {
   Eye,
   EyeOff,
@@ -299,9 +298,10 @@ export default function RegistroPage() {
       }
 
       setNuevaActividad("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error agregando actividad:", error);
-      toast.error("Error al agregar actividad: " + error.message);
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      toast.error("Error al agregar actividad: " + message);
     }
   };
 
@@ -385,9 +385,10 @@ export default function RegistroPage() {
 
       toast.success("¡Registro exitoso! Ya puedes iniciar sesión.");
       router.push("/login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en registro:", error);
-      toast.error(error.message || "Error al registrar usuario");
+      const message = error instanceof Error ? error.message : "Error al registrar usuario";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

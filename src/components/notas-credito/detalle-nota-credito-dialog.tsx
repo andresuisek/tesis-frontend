@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { NotaCredito, Venta } from "@/lib/supabase";
-import { FileX, Receipt } from "lucide-react";
+import { FileX } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 

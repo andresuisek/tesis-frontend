@@ -47,7 +47,6 @@ export function VentasFilters({
 }: VentasFiltersProps) {
   const today = dayjs();
   const currentYear = today.year();
-  const currentMonth = today.month() + 1;
 
   const handleClearFilters = () => {
     onYearChange(currentYear);

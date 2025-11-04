@@ -68,7 +68,6 @@ export function NuevaCompraDialog({
 
   // Calcular IVA y total
   const calcularIva = () => {
-    const sub0 = parseFloat(subtotal0) || 0;
     const sub8 = parseFloat(subtotal8) || 0;
     const sub15 = parseFloat(subtotal15) || 0;
     return sub8 * 0.08 + sub15 * 0.15;
@@ -126,9 +125,10 @@ export function NuevaCompraDialog({
       onCompraCreada();
       onOpenChange(false);
       resetForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al crear compra:", error);
-      toast.error(`Error al crear compra: ${error.message}`);
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error al crear compra: ${message}`);
     } finally {
       setLoading(false);
     }

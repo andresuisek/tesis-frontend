@@ -31,6 +31,7 @@ import { MoreHorizontal, Trash2, Search, Download } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ComprasTableProps {
   compras: Compra[];
@@ -46,6 +47,25 @@ const rubrosLabels: Record<RubroCompra, string> = {
   vestimenta: "Vestimenta",
   turismo: "Turismo",
   actividad_profesional: "Act. Profesional",
+};
+
+const rubroClasses: Record<RubroCompra, string> = {
+  no_definido:
+    "bg-muted/60 text-muted-foreground border-border/60 dark:bg-muted/30 dark:text-muted-foreground",
+  vivienda:
+    "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800/50",
+  alimentacion:
+    "bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50",
+  salud:
+    "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800/50",
+  educacion:
+    "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800/50",
+  vestimenta:
+    "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50",
+  turismo:
+    "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50",
+  actividad_profesional:
+    "bg-muted/60 text-muted-foreground border-border/60 dark:bg-muted/30 dark:text-muted-foreground",
 };
 
 export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
@@ -188,7 +208,10 @@ export function ComprasTable({ compras, onEliminar }: ComprasTableProps) {
                     <TableCell className="hidden md:table-cell">
                       <Badge
                         variant="outline"
-                        className="rounded-full border-border/60 bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          rubroClasses[compra.rubro]
+                        )}
                       >
                         {rubrosLabels[compra.rubro]}
                       </Badge>

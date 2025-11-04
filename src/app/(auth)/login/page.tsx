@@ -78,17 +78,19 @@ export default function LoginPage() {
         console.log("Redirigiendo al dashboard...");
         router.push("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en login:", error);
 
       let errorMessage = "Error al iniciar sesión";
 
-      if (error.message === "Invalid login credentials") {
-        errorMessage = "Credenciales incorrectas";
-      } else if (error.message === "Email not confirmed") {
-        errorMessage = "Por favor confirma tu email antes de iniciar sesión";
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (error instanceof Error) {
+        if (error.message === "Invalid login credentials") {
+          errorMessage = "Credenciales incorrectas";
+        } else if (error.message === "Email not confirmed") {
+          errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+        } else {
+          errorMessage = error.message;
+        }
       }
 
       toast.error(errorMessage);
