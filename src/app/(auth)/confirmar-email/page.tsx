@@ -50,10 +50,11 @@ export default function ConfirmarEmailPage() {
         setTimeout(() => {
           router.push("/dashboard");
         }, 3000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error confirmando email:", error);
         setStatus("error");
-        setMessage(error.message || "Error al confirmar el email");
+        const message = error instanceof Error ? error.message : "Error al confirmar el email";
+        setMessage(message);
       }
     };
 

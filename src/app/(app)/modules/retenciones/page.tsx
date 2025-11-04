@@ -116,8 +116,10 @@ export default function RetencionesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Receipt className="h-8 w-8 text-purple-500" />
+        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Receipt className="h-5 w-5" />
+          </span>
           Retenciones
         </h1>
         <p className="text-muted-foreground">
@@ -148,7 +150,7 @@ export default function RetencionesPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-semibold text-primary">
               {formatearMoneda(totalMonto)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -178,7 +180,7 @@ export default function RetencionesPage() {
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-semibold text-primary">
               {formatearMoneda(montoMesActual)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -192,7 +194,7 @@ export default function RetencionesPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-purple-500" />
+            <Receipt className="h-5 w-5 text-primary" />
             Listado de Retenciones
           </CardTitle>
         </CardHeader>

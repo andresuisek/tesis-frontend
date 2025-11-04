@@ -94,33 +94,36 @@ export function DetalleRetencionDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-purple-500" />
+            <Receipt className="h-5 w-5 text-primary" />
             Detalle de Retención
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Información de la Retención */}
-          <Card className="border-purple-200 bg-purple-50/50">
+          <Card className="border border-border/60 bg-card/80 shadow-sm">
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-purple-700">
+                  <h3 className="text-lg font-semibold">
                     Retención
                   </h3>
-                  <Badge className="bg-purple-600">
+                  <Badge
+                    variant="outline"
+                    className="border-primary/30 text-primary"
+                  >
                     {retencion.tipo_comprobante || "retención"}
                   </Badge>
                 </div>
 
-                <Separator className="bg-purple-200" />
+                <Separator />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Serie de Comprobante
                     </p>
-                    <p className="font-semibold text-purple-700">
+                    <p className="font-semibold text-primary">
                       {retencion.serie_comprobante || "N/A"}
                     </p>
                   </div>
@@ -145,7 +148,7 @@ export function DetalleRetencionDialog({
                   </div>
                 )}
 
-                <Separator className="bg-purple-200" />
+                <Separator />
 
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -158,13 +161,13 @@ export function DetalleRetencionDialog({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Valor IVA:</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-info">
                       {retencion.retencion_valor
                         ? formatearMoneda(retencion.retencion_valor)
                         : "-"}
                     </span>
                   </div>
-                  <Separator className="bg-purple-200" />
+                  <Separator />
                   <div className="flex justify-between">
                     <span className="text-sm">Retención Renta:</span>
                     <span className="font-medium">
@@ -175,16 +178,16 @@ export function DetalleRetencionDialog({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Valor Renta:</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-primary">
                       {retencion.retencion_renta_valor
                         ? formatearMoneda(retencion.retencion_renta_valor)
                         : "-"}
                     </span>
                   </div>
-                  <Separator className="bg-purple-200" />
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="font-bold text-lg">Total Retenido:</span>
-                    <span className="font-bold text-2xl text-purple-600">
+                  <Separator />
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-lg font-semibold">Total Retenido:</span>
+                    <span className="text-2xl font-semibold text-primary">
                       {formatearMoneda(totalRetencion)}
                     </span>
                   </div>
@@ -195,7 +198,7 @@ export function DetalleRetencionDialog({
 
           {/* Venta Asociada */}
           {loading && (
-            <Card className="border-blue-200 bg-blue-50/50">
+            <Card className="border border-border/60 bg-card/80 shadow-sm">
               <CardContent className="pt-6">
                 <p className="text-center text-muted-foreground">
                   Cargando venta asociada...
@@ -205,37 +208,37 @@ export function DetalleRetencionDialog({
           )}
 
           {error && (
-            <Card className="border-yellow-200 bg-yellow-50/50">
+            <Card className="border border-destructive/40 bg-destructive/10 shadow-sm">
               <CardContent className="pt-6">
-                <p className="text-center text-yellow-700">{error}</p>
+                <p className="text-center text-destructive">{error}</p>
               </CardContent>
             </Card>
           )}
 
           {venta && !loading && !error && (
-            <Card className="border-blue-200 bg-blue-50/50">
+            <Card className="border border-border/60 bg-card/80 shadow-sm">
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-blue-700">
+                    <h3 className="text-lg font-semibold">
                       Venta Asociada
                     </h3>
                     <Badge
                       variant="outline"
-                      className="border-blue-500 text-blue-700"
+                      className="border-primary/30 text-primary"
                     >
                       {venta.tipo_comprobante}
                     </Badge>
                   </div>
 
-                  <Separator className="bg-blue-200" />
+                  <Separator />
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">
                         Número de Comprobante
                       </p>
-                      <p className="font-semibold text-blue-700">
+                      <p className="font-semibold text-primary">
                         {venta.numero_comprobante}
                       </p>
                     </div>
@@ -263,7 +266,7 @@ export function DetalleRetencionDialog({
                     </div>
                   )}
 
-                  <Separator className="bg-blue-200" />
+                  <Separator />
 
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -290,10 +293,10 @@ export function DetalleRetencionDialog({
                         {formatearMoneda(venta.iva)}
                       </span>
                     </div>
-                    <Separator className="bg-blue-200" />
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="font-bold text-lg">Total Original:</span>
-                      <span className="font-bold text-xl text-blue-600">
+                    <Separator />
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-lg font-semibold">Total Original:</span>
+                      <span className="text-xl font-semibold text-primary">
                         {formatearMoneda(venta.total)}
                       </span>
                     </div>
@@ -305,30 +308,27 @@ export function DetalleRetencionDialog({
 
           {/* Cálculo Final - Solo si hay venta asociada */}
           {venta && !loading && !error && (
-            <Card className="border-green-200 bg-green-50/50">
+            <Card className="rounded-xl border border-primary/25 bg-primary/5 shadow-sm">
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-green-700">
-                    Cálculo Final
-                  </h3>
-                  <Separator className="bg-green-200" />
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Total Original:</span>
-                      <span className="font-semibold">
+                  <h3 className="text-lg font-semibold">Resumen Final</h3>
+                  <Separator />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Total Original</span>
+                      <span className="font-mono font-semibold text-primary">
                         {formatearMoneda(venta.total)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-purple-600">
-                      <span className="text-sm">(-) Retención:</span>
-                      <span className="font-semibold">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">(-) Retención</span>
+                      <span className="font-mono text-primary">
                         -{formatearMoneda(totalRetencion)}
                       </span>
                     </div>
-                    <Separator className="bg-green-200" />
-                    <div className="flex justify-between items-center pt-3 border-t-2 border-green-400">
-                      <span className="font-bold text-lg">Saldo:</span>
-                      <span className="font-bold text-2xl text-green-600">
+                    <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                      <span className="text-base font-semibold">Saldo</span>
+                      <span className="font-mono text-2xl font-semibold text-success">
                         {formatearMoneda(venta.total - totalRetencion)}
                       </span>
                     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp,
@@ -10,6 +12,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Compra } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 interface ComprasKPIsProps {
   compras: Compra[];
@@ -97,152 +100,121 @@ export function ComprasKPIs({ compras, mesAnterior }: ComprasKPIsProps) {
     return new Intl.NumberFormat("es-EC").format(valor);
   };
 
+  const renderTrend = (actual: number, anterior: number) => {
+    if (!kpiAnterior) return null;
+    const tendencia = calcularTendencia(actual, anterior);
+    const Icon = tendencia.esPositiva ? TrendingUp : TrendingDown;
+
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span
+          className={cn(
+            "flex items-center gap-1 font-medium",
+            tendencia.esPositiva ? "text-primary" : "text-destructive"
+          )}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {tendencia.porcentaje.toFixed(1)}%
+        </span>
+        <span>vs mes anterior</span>
+      </div>
+    );
+  };
+
+  const IconBadge = ({ children }: { children: ReactNode }) => (
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+      {children}
+    </div>
+  );
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {/* Total Compras */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Compras</CardTitle>
-          <ShoppingCart className="h-4 w-4 text-blue-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatearNumero(kpiActual.totalCompras)}
-          </div>
-          {kpiAnterior && (
-            <div className="flex items-center text-xs text-muted-foreground mt-1">
-              {(() => {
-                const tendencia = calcularTendencia(
-                  kpiActual.totalCompras,
-                  kpiAnterior.totalCompras
-                );
-                return (
-                  <>
-                    {tendencia.esPositiva ? (
-                      <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-                    )}
-                    <span
-                      className={
-                        tendencia.esPositiva ? "text-green-500" : "text-red-500"
-                      }
-                    >
-                      {tendencia.porcentaje.toFixed(1)}%
-                    </span>
-                    <span className="ml-1">vs mes anterior</span>
-                  </>
-                );
-              })()}
+      <Card>
+        <CardHeader className="space-y-4 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Compras registradas
+              </CardTitle>
+              <p className="mt-3 text-2xl font-semibold tracking-tight">
+                {formatearNumero(kpiActual.totalCompras)}
+              </p>
             </div>
-          )}
-        </CardContent>
+            <IconBadge>
+              <ShoppingCart className="h-5 w-5" />
+            </IconBadge>
+          </div>
+          {renderTrend(kpiActual.totalCompras, kpiAnterior?.totalCompras || 0)}
+        </CardHeader>
       </Card>
 
-      {/* Total Gastado */}
-      <Card className="border-l-4 border-l-red-500">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Gastado</CardTitle>
-          <DollarSign className="h-4 w-4 text-red-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatearMoneda(kpiActual.totalGastado)}
-          </div>
-          {kpiAnterior && (
-            <div className="flex items-center text-xs text-muted-foreground mt-1">
-              {(() => {
-                const tendencia = calcularTendencia(
-                  kpiActual.totalGastado,
-                  kpiAnterior.totalGastado
-                );
-                return (
-                  <>
-                    {tendencia.esPositiva ? (
-                      <TrendingUp className="h-3 w-3 text-red-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 text-green-500 mr-1" />
-                    )}
-                    <span
-                      className={
-                        tendencia.esPositiva ? "text-red-500" : "text-green-500"
-                      }
-                    >
-                      {tendencia.porcentaje.toFixed(1)}%
-                    </span>
-                    <span className="ml-1">vs mes anterior</span>
-                  </>
-                );
-              })()}
+      <Card>
+        <CardHeader className="space-y-4 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Total gastado
+              </CardTitle>
+              <p className="mt-3 text-2xl font-semibold tracking-tight">
+                {formatearMoneda(kpiActual.totalGastado)}
+              </p>
             </div>
-          )}
-        </CardContent>
+            <IconBadge>
+              <DollarSign className="h-5 w-5" />
+            </IconBadge>
+          </div>
+          {renderTrend(kpiActual.totalGastado, kpiAnterior?.totalGastado || 0)}
+        </CardHeader>
       </Card>
 
-      {/* Compra Promedio */}
-      <Card className="border-l-4 border-l-orange-500">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Compra Promedio</CardTitle>
-          <Calculator className="h-4 w-4 text-orange-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatearMoneda(kpiActual.comprasPromedio)}
-          </div>
-          {kpiAnterior && (
-            <div className="flex items-center text-xs text-muted-foreground mt-1">
-              {(() => {
-                const tendencia = calcularTendencia(
-                  kpiActual.comprasPromedio,
-                  kpiAnterior.comprasPromedio
-                );
-                return (
-                  <>
-                    {tendencia.esPositiva ? (
-                      <TrendingUp className="h-3 w-3 text-red-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 text-green-500 mr-1" />
-                    )}
-                    <span
-                      className={
-                        tendencia.esPositiva ? "text-red-500" : "text-green-500"
-                      }
-                    >
-                      {tendencia.porcentaje.toFixed(1)}%
-                    </span>
-                    <span className="ml-1">vs mes anterior</span>
-                  </>
-                );
-              })()}
+      <Card>
+        <CardHeader className="space-y-4 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Compra promedio
+              </CardTitle>
+              <p className="mt-3 text-2xl font-semibold tracking-tight">
+                {formatearMoneda(kpiActual.comprasPromedio)}
+              </p>
             </div>
-          )}
-        </CardContent>
+            <IconBadge>
+              <Calculator className="h-5 w-5" />
+            </IconBadge>
+          </div>
+          {renderTrend(kpiActual.comprasPromedio, kpiAnterior?.comprasPromedio || 0)}
+        </CardHeader>
       </Card>
 
-      {/* IVA Total */}
-      <Card className="border-l-4 border-l-purple-500">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">IVA Total</CardTitle>
-          <FileText className="h-4 w-4 text-purple-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatearMoneda(kpiActual.ivaTotal)}
+      <Card>
+        <CardHeader className="space-y-4 pb-2">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                IVA asociado
+              </CardTitle>
+              <p className="mt-3 text-2xl font-semibold tracking-tight">
+                {formatearMoneda(kpiActual.ivaTotal)}
+              </p>
+            </div>
+            <IconBadge>
+              <FileText className="h-5 w-5" />
+            </IconBadge>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span>Subtotal 0%:</span>
-                <span>{formatearMoneda(kpiActual.subtotal0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Subtotal 8%:</span>
-                <span>{formatearMoneda(kpiActual.subtotal8)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Subtotal 15%:</span>
-                <span>{formatearMoneda(kpiActual.subtotal15)}</span>
-              </div>
+        </CardHeader>
+        <CardContent className="border-t border-dashed border-border/60 pt-4">
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-foreground">Subtotal 0%</span>
+              <span className="font-mono">{formatearMoneda(kpiActual.subtotal0)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-foreground">Subtotal 8%</span>
+              <span className="font-mono">{formatearMoneda(kpiActual.subtotal8)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-foreground">Subtotal 15%</span>
+              <span className="font-mono">{formatearMoneda(kpiActual.subtotal15)}</span>
             </div>
           </div>
         </CardContent>

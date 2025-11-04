@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setContribuyente(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error obteniendo contribuyente:", error);
     }
   };
@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Actualizar contribuyente cuando cambie el usuario
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       refreshContribuyente();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const value = {

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { NotaCredito, Venta } from "@/lib/supabase";
-import { FileX, Receipt } from "lucide-react";
+import { FileX } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
@@ -91,33 +91,36 @@ export function DetalleNotaCreditoDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileX className="h-5 w-5 text-red-500" />
+            <FileX className="h-5 w-5 text-primary" />
             Detalle de Nota de Crédito
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Información de la Nota de Crédito */}
-          <Card className="border-red-200 bg-red-50/50">
+          <Card className="border border-border/60 bg-card/80 shadow-sm">
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-red-700">
+                  <h3 className="text-lg font-semibold">
                     Nota de Crédito
                   </h3>
-                  <Badge variant="destructive">
+                  <Badge
+                    variant="outline"
+                    className="border-destructive/30 text-destructive"
+                  >
                     {notaCredito.tipo_comprobante}
                   </Badge>
                 </div>
 
-                <Separator className="bg-red-200" />
+                <Separator />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Número de Comprobante
                     </p>
-                    <p className="font-semibold text-red-700">
+                    <p className="font-semibold">
                       {notaCredito.numero_comprobante}
                     </p>
                   </div>
@@ -131,7 +134,7 @@ export function DetalleNotaCreditoDialog({
                   </div>
                 </div>
 
-                <Separator className="bg-red-200" />
+                <Separator />
 
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -154,14 +157,14 @@ export function DetalleNotaCreditoDialog({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">IVA:</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-info">
                       {formatearMoneda(notaCredito.iva)}
                     </span>
                   </div>
-                  <Separator className="bg-red-200" />
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="font-bold text-lg">Total:</span>
-                    <span className="font-bold text-2xl text-red-600">
+                  <Separator />
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-lg font-semibold">Total:</span>
+                    <span className="text-2xl font-semibold text-foreground">
                       {formatearMoneda(notaCredito.total)}
                     </span>
                   </div>
@@ -172,7 +175,7 @@ export function DetalleNotaCreditoDialog({
 
           {/* Venta Asociada */}
           {loading && (
-            <Card className="border-blue-200 bg-blue-50/50">
+            <Card className="border border-border/60 bg-card/80 shadow-sm">
               <CardContent className="pt-6">
                 <p className="text-center text-muted-foreground">
                   Cargando venta asociada...
@@ -182,37 +185,37 @@ export function DetalleNotaCreditoDialog({
           )}
 
           {error && (
-            <Card className="border-yellow-200 bg-yellow-50/50">
+            <Card className="border border-destructive/40 bg-destructive/10 shadow-sm">
               <CardContent className="pt-6">
-                <p className="text-center text-yellow-700">{error}</p>
+                <p className="text-center text-destructive">{error}</p>
               </CardContent>
             </Card>
           )}
 
           {venta && !loading && !error && (
-            <Card className="border-blue-200 bg-blue-50/50">
+            <Card className="border border-border/60 bg-card/80 shadow-sm">
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-blue-700">
+                    <h3 className="text-lg font-semibold">
                       Venta Asociada
                     </h3>
                     <Badge
                       variant="outline"
-                      className="border-blue-500 text-blue-700"
+                      className="border-primary/30 text-primary"
                     >
                       {venta.tipo_comprobante}
                     </Badge>
                   </div>
 
-                  <Separator className="bg-blue-200" />
+                  <Separator />
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">
                         Número de Comprobante
                       </p>
-                      <p className="font-semibold text-blue-700">
+                      <p className="font-semibold text-primary">
                         {venta.numero_comprobante}
                       </p>
                     </div>
@@ -240,7 +243,7 @@ export function DetalleNotaCreditoDialog({
                     </div>
                   )}
 
-                  <Separator className="bg-blue-200" />
+                  <Separator />
 
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -267,10 +270,12 @@ export function DetalleNotaCreditoDialog({
                         {formatearMoneda(venta.iva)}
                       </span>
                     </div>
-                    <Separator className="bg-blue-200" />
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="font-bold text-lg">Total Original:</span>
-                      <span className="font-bold text-xl text-blue-600">
+                    <Separator />
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-lg font-semibold">
+                        Total Original:
+                      </span>
+                      <span className="text-xl font-semibold text-primary">
                         {formatearMoneda(venta.total)}
                       </span>
                     </div>
@@ -282,30 +287,27 @@ export function DetalleNotaCreditoDialog({
 
           {/* Cálculo Final - Solo si hay venta asociada */}
           {venta && !loading && !error && (
-            <Card className="border-green-200 bg-green-50/50">
+            <Card className="rounded-xl border border-primary/25 bg-primary/5 shadow-sm">
               <CardContent className="pt-6">
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-green-700">
-                    Cálculo Final
-                  </h3>
-                  <Separator className="bg-green-200" />
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Total Original:</span>
-                      <span className="font-semibold">
+                  <h3 className="text-lg font-semibold">Resumen Final</h3>
+                  <Separator />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Total Original</span>
+                      <span className="font-mono font-semibold text-primary">
                         {formatearMoneda(venta.total)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-red-600">
-                      <span className="text-sm">(-) Nota de Crédito:</span>
-                      <span className="font-semibold">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">(-) Nota de Crédito</span>
+                      <span className="font-mono text-destructive">
                         -{formatearMoneda(notaCredito.total)}
                       </span>
                     </div>
-                    <Separator className="bg-green-200" />
-                    <div className="flex justify-between items-center pt-3 border-t-2 border-green-400">
-                      <span className="font-bold text-lg">Saldo:</span>
-                      <span className="font-bold text-2xl text-green-600">
+                    <div className="flex items-center justify-between border-t border-border/60 pt-3">
+                      <span className="text-base font-semibold">Saldo</span>
+                      <span className="font-mono text-2xl font-semibold text-success">
                         {formatearMoneda(venta.total - notaCredito.total)}
                       </span>
                     </div>

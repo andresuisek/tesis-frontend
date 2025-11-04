@@ -39,7 +39,6 @@ import { supabase, RubroCompra } from "@/lib/supabase";
 import {
   parsearArchivoCompras,
   agruparPorProveedor,
-  asignarRubrosACompras,
   CompraParsed,
   ProveedorResumen,
 } from "@/lib/compras-parser";
@@ -48,8 +47,7 @@ import {
   Upload, 
   FileText, 
   CheckCircle2, 
-  AlertCircle, 
-  X,
+  AlertCircle,
   Home,
   ShoppingBasket,
   Heart,
@@ -67,7 +65,7 @@ interface ImportarComprasDialogProps {
   onComprasImportadas: () => void;
 }
 
-const rubrosCompra: { value: RubroCompra; label: string; icon: any }[] = [
+const rubrosCompra: { value: RubroCompra; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: "no_definido", label: "No Definido", icon: HelpCircle },
   { value: "vivienda", label: "Vivienda", icon: Home },
   { value: "alimentacion", label: "Alimentación", icon: ShoppingBasket },
@@ -79,7 +77,7 @@ const rubrosCompra: { value: RubroCompra; label: string; icon: any }[] = [
 ];
 
 // Mapeo de iconos para acceso rápido
-const rubrosIconos: Record<RubroCompra, any> = {
+const rubrosIconos: Record<RubroCompra, React.ComponentType<{ className?: string }>> = {
   no_definido: HelpCircle,
   vivienda: Home,
   alimentacion: ShoppingBasket,
@@ -131,9 +129,10 @@ export function ImportarComprasDialog({
       
       // Iniciar importación automáticamente - pasar compras para evitar problemas de estado
       await insertarComprasTemporales(compras);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al parsear archivo:", error);
-      toast.error(`Error al procesar archivo: ${error.message}`);
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(`Error al procesar archivo: ${message}`);
     }
   };
 
@@ -181,10 +180,10 @@ export function ImportarComprasDialog({
         } else {
           imported += batch.length;
           if (data) {
-            idsInsertados.push(...data.map((c: any) => c.id));
+            idsInsertados.push(...data.map((c: { id: string }) => c.id));
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error en batch:", error);
         errors += batch.length;
       }
@@ -246,14 +245,14 @@ export function ImportarComprasDialog({
 
             if (data && data.length > 0) {
               // Filtrar las compras recién insertadas
-              const comprasAnteriores = data.filter((compra: any) => 
+              const comprasAnteriores = data.filter((compra: { id: string; rubro: string }) => 
                 !idsInsertados.includes(compra.id)
               );
 
               if (comprasAnteriores.length > 0) {
                 // Contar frecuencia de rubros
                 const frecuencias: Record<string, number> = {};
-                comprasAnteriores.forEach((compra: any) => {
+                comprasAnteriores.forEach((compra: { id: string; rubro: string }) => {
                   if (compra.rubro) {
                     frecuencias[compra.rubro] = (frecuencias[compra.rubro] || 0) + 1;
                   }
@@ -276,7 +275,7 @@ export function ImportarComprasDialog({
               ...proveedor,
               rubro: rubroSugerido,
             };
-          } catch (error) {
+          } catch (error: unknown) {
             console.error(`Error procesando proveedor ${proveedor.ruc_proveedor}:`, error);
             return proveedor; // Sin rubro sugerido si hay error
           }
@@ -296,7 +295,7 @@ export function ImportarComprasDialog({
       console.log("Estado proveedores actualizado, cambiando step a 'assign'");
       setStep("assign");
       console.log("Step cambiado a: assign");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error cargando proveedores:", error);
       toast.error("Error al cargar proveedores");
       // Volver al paso de upload si hay error
@@ -345,7 +344,7 @@ export function ImportarComprasDialog({
         } else {
           updated++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error:", error);
         errors++;
       }

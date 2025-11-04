@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -168,14 +167,14 @@ export function RetencionesTable({
                     <TableCell>
                       {dayjs(ret.fecha_emision).format("DD/MM/YYYY")}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Receipt className="h-4 w-4 text-purple-500" />
-                        <span className="font-medium">
-                          {ret.serie_comprobante || "N/A"}
-                        </span>
-                      </div>
-                    </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-primary" />
+                      <span className="font-medium">
+                        {ret.serie_comprobante || "N/A"}
+                      </span>
+                    </div>
+                  </TableCell>
                     <TableCell>
                       <span className="text-xs font-mono">
                         {ret.clave_acceso
@@ -203,11 +202,11 @@ export function RetencionesTable({
                         ? formatearMoneda(ret.retencion_renta_valor)
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-bold text-purple-600">
-                        {formatearMoneda(totalRetencion)}
-                      </span>
-                    </TableCell>
+                  <TableCell className="text-right">
+                    <span className="font-semibold text-foreground">
+                      {formatearMoneda(totalRetencion)}
+                    </span>
+                  </TableCell>
                     <TableCell>
                       <div className="flex justify-center">
                         <DropdownMenu>

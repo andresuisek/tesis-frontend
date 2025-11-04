@@ -18,7 +18,6 @@ import "dayjs/locale/es";
 
 export default function ComprasPage() {
   const { contribuyente } = useAuth();
-  const [compras, setCompras] = useState<Compra[]>([]);
   const [comprasFiltradas, setComprasFiltradas] = useState<Compra[]>([]);
   const [todasLasComprasFiltradas, setTodasLasComprasFiltradas] = useState<Compra[]>([]); // Para KPIs
   const [loading, setLoading] = useState(true);
@@ -35,21 +34,6 @@ export default function ComprasPage() {
   const ITEMS_POR_PAGINA = 15;
 
   dayjs.locale("es");
-
-  useEffect(() => {
-    if (contribuyente) {
-      cargarCompras();
-    }
-  }, [contribuyente]);
-
-  // Resetear página cuando cambien los filtros
-  useEffect(() => {
-    setPaginaActual(1);
-  }, [mes, anio]);
-
-  useEffect(() => {
-    cargarCompras();
-  }, [mes, anio, paginaActual]);
 
   const cargarCompras = async () => {
     if (!contribuyente) return;
@@ -93,15 +77,32 @@ export default function ComprasPage() {
       const to = from + ITEMS_POR_PAGINA;
       const comprasPaginadas = (todasCompras || []).slice(from, to);
 
-      setCompras(comprasPaginadas);
       setComprasFiltradas(comprasPaginadas);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al cargar compras:", error);
       toast.error("Error al cargar las compras");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (contribuyente) {
+      cargarCompras();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contribuyente]);
+
+  // Resetear página cuando cambien los filtros
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [mes, anio]);
+
+  useEffect(() => {
+    cargarCompras();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mes, anio, paginaActual]);
+
 
   const handleEliminarCompra = async (compra: Compra) => {
     if (!confirm("¿Estás seguro de eliminar esta compra?")) {
@@ -118,7 +119,7 @@ export default function ComprasPage() {
 
       toast.success("Compra eliminada exitosamente");
       cargarCompras();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al eliminar compra:", error);
       toast.error("Error al eliminar la compra");
     }
@@ -146,13 +147,13 @@ export default function ComprasPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
-              <Upload className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={() => setShowImportarDialog(true)} className="gap-2">
+              <Upload className="h-4 w-4" />
               Importar TXT
             </Button>
-            <Button onClick={() => setShowNuevaCompraDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Compra
+            <Button onClick={() => setShowNuevaCompraDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nueva compra
             </Button>
           </div>
         </div>

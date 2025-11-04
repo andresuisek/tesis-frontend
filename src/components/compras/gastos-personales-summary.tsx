@@ -3,9 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Compra, RubroCompra } from "@/lib/supabase";
 import { Home, UtensilsCrossed, GraduationCap, Heart, Shirt, Plane, Receipt, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GastosPersonalesSummaryProps {
   compras: Compra[];
@@ -53,15 +53,23 @@ const rubrosIcons: Record<RubroCompra, React.ReactNode> = {
   actividad_profesional: <Receipt className="h-4 w-4" />,
 };
 
-const rubrosColors: Record<RubroCompra, string> = {
-  no_definido: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300 border-gray-300",
-  vivienda: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-300",
-  alimentacion: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-300",
-  educacion: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 border-purple-300",
-  salud: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-300",
-  vestimenta: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300 border-pink-300",
-  turismo: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-300",
-  actividad_profesional: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-orange-300",
+const rubroBadges: Record<RubroCompra, string> = {
+  no_definido:
+    "bg-muted/60 text-muted-foreground border-border/60 dark:bg-muted/30 dark:text-muted-foreground",
+  vivienda:
+    "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800/50",
+  alimentacion:
+    "bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800/50",
+  educacion:
+    "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800/50",
+  salud:
+    "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800/50",
+  vestimenta:
+    "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50",
+  turismo:
+    "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50",
+  actividad_profesional:
+    "bg-muted/60 text-muted-foreground border-border/60 dark:bg-muted/30 dark:text-muted-foreground",
 };
 
 export function GastosPersonalesSummary({ compras, cargasFamiliares }: GastosPersonalesSummaryProps) {
@@ -97,20 +105,18 @@ export function GastosPersonalesSummary({ compras, cargasFamiliares }: GastosPer
   const disponible = Math.max(0, limiteGastosPersonales - totalGastosPersonales);
   
   // Determinar estado visual
-  let estadoColor: "verde" | "amarillo" | "rojo" = "verde";
+  let estado: "ok" | "aviso" | "alerta" = "ok";
   let IconoEstado = CheckCircle;
-  let mensajeEstado = "";
-  
+  let mensajeEstado = "Estás dentro del límite de gastos personales";
+
   if (porcentajeUsado >= 100) {
-    estadoColor = "rojo";
+    estado = "alerta";
     IconoEstado = AlertCircle;
     mensajeEstado = "Has superado el límite de gastos personales deducibles";
   } else if (porcentajeUsado >= 80) {
-    estadoColor = "amarillo";
+    estado = "aviso";
     IconoEstado = AlertTriangle;
     mensajeEstado = "Te estás acercando al límite de gastos personales";
-  } else {
-    mensajeEstado = "Estás dentro del límite de gastos personales";
   }
 
   // Rubros que siempre deben mostrarse (incluso en $0.00)
@@ -121,60 +127,51 @@ export function GastosPersonalesSummary({ compras, cargasFamiliares }: GastosPer
       <CardHeader>
         <div className="space-y-4">
           <CardTitle className="flex items-center justify-between">
-            <span>Gastos Personales por Categoría</span>
-            <Badge variant="outline" className="text-base font-semibold bg-primary/10 border-primary">
+            <span className="text-base font-semibold">Gastos personales por categoría</span>
+            <Badge
+              variant="outline"
+              className="rounded-full border-border/60 bg-muted px-3 py-1 text-xs font-medium text-foreground"
+            >
               Total: {formatearMoneda(totalGastosPersonales)}
             </Badge>
           </CardTitle>
 
-          {/* Alerta de estado */}
-          <Alert className={
-            estadoColor === "rojo" 
-              ? "border-red-500 bg-red-50 dark:bg-red-950" 
-              : estadoColor === "amarillo"
-              ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950"
-              : "border-green-500 bg-green-50 dark:bg-green-950"
-          }>
-            <IconoEstado className={`h-4 w-4 ${
-              estadoColor === "rojo" 
-                ? "text-red-600" 
-                : estadoColor === "amarillo"
-                ? "text-yellow-600"
-                : "text-green-600"
-            }`} />
-            <AlertDescription>
-              <div className="flex flex-col gap-2">
-                <p className="font-medium">{mensajeEstado}</p>
-                <div className="flex items-center gap-4 text-sm">
+          <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
+            <div className="flex items-start gap-3 text-sm">
+              <IconoEstado
+                className={`h-4 w-4 ${
+                  estado === "alerta"
+                    ? "text-destructive"
+                    : estado === "aviso"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              />
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">{mensajeEstado}</p>
+                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                   <span>
-                    <strong>Límite:</strong> {formatearMoneda(limiteGastosPersonales)} 
-                    <span className="text-muted-foreground ml-1">
+                    <strong>Límite:</strong> {formatearMoneda(limiteGastosPersonales)}
+                    <span className="ml-1">
                       ({cargasParaLimite} {cargasParaLimite === 1 ? "carga familiar" : "cargas familiares"})
                     </span>
                   </span>
-                  <span className={disponible > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                  <span className={disponible > 0 ? "text-foreground" : "text-destructive font-medium"}>
                     <strong>Disponible:</strong> {formatearMoneda(disponible)}
                   </span>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Progreso</span>
-                    <span className="font-semibold">{porcentajeUsado.toFixed(1)}%</span>
+                    <span className="font-semibold text-foreground">
+                      {porcentajeUsado.toFixed(1)}%
+                    </span>
                   </div>
-                  <Progress 
-                    value={Math.min(porcentajeUsado, 100)} 
-                    className={`h-2 ${
-                      estadoColor === "rojo" 
-                        ? "[&>div]:bg-red-500" 
-                        : estadoColor === "amarillo"
-                        ? "[&>div]:bg-yellow-500"
-                        : "[&>div]:bg-green-500"
-                    }`}
-                  />
+                  <Progress value={Math.min(porcentajeUsado, 100)} className="h-2" />
                 </div>
               </div>
-            </AlertDescription>
-          </Alert>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -190,10 +187,13 @@ export function GastosPersonalesSummary({ compras, cargasFamiliares }: GastosPer
               <Badge
                 key={rubro}
                 variant="outline"
-                className={`${rubrosColors[rubro]} px-4 py-2 text-sm font-medium flex items-center gap-2`}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
+                  rubroBadges[rubro]
+                )}
               >
                 {rubrosIcons[rubro]}
-                <span>{rubrosLabels[rubro]}:</span>
+                <span className="uppercase tracking-wide">{rubrosLabels[rubro]}</span>
                 <span className="font-semibold">{formatearMoneda(total)}</span>
               </Badge>
             );

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function middleware() {
   // TEMPORALMENTE DESHABILITADO - Dejar que el contexto de auth maneje las redirecciones
   console.log("Middleware: Permitiendo acceso a todas las rutas");
   return NextResponse.next();
