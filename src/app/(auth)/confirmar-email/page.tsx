@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import { CheckCircle, XCircle, Mail, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-export default function ConfirmarEmailPage() {
+function ConfirmarEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -135,5 +135,31 @@ export default function ConfirmarEmailPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ConfirmarEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+          <div className="w-full max-w-md space-y-6">
+            <Card>
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                </div>
+                <CardTitle className="text-xl">Cargando...</CardTitle>
+                <CardDescription>
+                  Por favor espera mientras cargamos la página
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      }
+    >
+      <ConfirmarEmailContent />
+    </Suspense>
   );
 }

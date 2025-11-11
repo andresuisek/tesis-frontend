@@ -86,6 +86,9 @@ export function useDashboardData(): DashboardData {
       return;
     }
 
+    // Capturar el RUC en una constante para evitar problemas de nullability
+    const rucContribuyente = contribuyente.ruc;
+
     async function fetchDashboardData() {
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
@@ -111,7 +114,7 @@ export function useDashboardData(): DashboardData {
         const { data: ventasMes, error: ventasError } = await supabase
           .from("ventas")
           .select("total, iva, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioMesActual)
           .lte("fecha_emision", finMesActual);
 
@@ -121,7 +124,7 @@ export function useDashboardData(): DashboardData {
         const { data: ventasMesAnt } = await supabase
           .from("ventas")
           .select("total")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioMesAnterior)
           .lte("fecha_emision", finMesAnterior);
 
@@ -129,7 +132,7 @@ export function useDashboardData(): DashboardData {
         const { data: comprasMes, error: comprasError } = await supabase
           .from("compras")
           .select("total, iva, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioMesActual)
           .lte("fecha_emision", finMesActual);
 
@@ -139,7 +142,7 @@ export function useDashboardData(): DashboardData {
         const { data: comprasMesAnt } = await supabase
           .from("compras")
           .select("total")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioMesAnterior)
           .lte("fecha_emision", finMesAnterior);
 
@@ -148,7 +151,7 @@ export function useDashboardData(): DashboardData {
           await supabase
             .from("retenciones")
             .select("retencion_valor, fecha_emision")
-            .eq("contribuyente_ruc", contribuyente.ruc)
+            .eq("contribuyente_ruc", rucContribuyente)
             .gte("fecha_emision", inicioMesActual)
             .lte("fecha_emision", finMesActual);
 
@@ -158,7 +161,7 @@ export function useDashboardData(): DashboardData {
         const { data: retencionesMesAnt } = await supabase
           .from("retenciones")
           .select("retencion_valor")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioMesAnterior)
           .lte("fecha_emision", finMesAnterior);
 
@@ -167,13 +170,13 @@ export function useDashboardData(): DashboardData {
           supabase
             .from("ventas")
             .select("subtotal_0, subtotal_8, subtotal_15, iva, fecha_emision")
-            .eq("contribuyente_ruc", contribuyente.ruc)
+            .eq("contribuyente_ruc", rucContribuyente)
             .gte("fecha_emision", inicioAnioActual)
             .lte("fecha_emision", finMesActual),
           supabase
             .from("compras")
             .select("subtotal_0, subtotal_8, subtotal_15, iva, total, rubro, fecha_emision")
-            .eq("contribuyente_ruc", contribuyente.ruc)
+            .eq("contribuyente_ruc", rucContribuyente)
             .gte("fecha_emision", inicioAnioActual)
             .lte("fecha_emision", finMesActual),
         ]);
@@ -215,25 +218,25 @@ export function useDashboardData(): DashboardData {
         const { data: ventasMensuales } = await supabase
           .from("ventas")
           .select("total, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioPeriodoSeisMeses);
 
         const { data: comprasMensuales } = await supabase
           .from("compras")
           .select("total, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioPeriodoSeisMeses);
 
         const { data: retencionesMensuales } = await supabase
           .from("retenciones")
           .select("retencion_valor, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioPeriodoSeisMeses);
 
         const { data: notasCreditoMensuales } = await supabase
           .from("notas_credito")
           .select("total, fecha_emision")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .gte("fecha_emision", inicioPeriodoSeisMeses);
 
         // Agrupar por mes
@@ -292,14 +295,14 @@ export function useDashboardData(): DashboardData {
         const { data: recentVentas } = await supabase
           .from("ventas")
           .select("id, total, fecha_emision, created_at")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .order("created_at", { ascending: false })
           .limit(5);
 
         const { data: recentCompras } = await supabase
           .from("compras")
           .select("id, total, fecha_emision, created_at")
-          .eq("contribuyente_ruc", contribuyente.ruc)
+          .eq("contribuyente_ruc", rucContribuyente)
           .order("created_at", { ascending: false })
           .limit(5);
 

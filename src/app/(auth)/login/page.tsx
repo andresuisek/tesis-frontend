@@ -220,7 +220,7 @@ export default function LoginPage() {
         </Card>
 
         {/* Demo Credentials */}
-        <Card className="border-dashed">
+        {/* <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Shield className="mr-2 h-4 w-4" />
@@ -248,7 +248,7 @@ export default function LoginPage() {
               Usa estas credenciales para probar el sistema
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Features */}
         <div className="grid grid-cols-2 gap-4 text-center">
