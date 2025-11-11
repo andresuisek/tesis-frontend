@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormFieldWrapper } from "@/components/forms/form-field-wrapper";
-import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, LogIn, Shield, FileText, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
