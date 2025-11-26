@@ -10,12 +10,18 @@ import { FileX, DollarSign, TrendingDown, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
+import { useDateFilter } from "@/contexts/date-filter-context";
+import { useAvailableYears } from "@/hooks/use-available-years";
 
 dayjs.locale("es");
 
 export default function NotasCreditoPage() {
   const { user, contribuyente } = useAuth();
   const [notasCredito, setNotasCredito] = useState<NotaCredito[]>([]);
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { years: availableYears } = useAvailableYears("notas_credito");
+
   const [loading, setLoading] = useState(true);
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
   const [notaCreditoSeleccionada, setNotaCreditoSeleccionada] =
@@ -41,11 +47,38 @@ export default function NotasCreditoPage() {
 
       try {
         const { supabase } = await import("@/lib/supabase");
-        const { data, error } = await supabase
+
+        let query = supabase
           .from("notas_credito")
           .select("*")
           .eq("contribuyente_ruc", contribuyente.ruc)
           .order("fecha_emision", { ascending: false });
+
+        if (selectedMonth !== null) {
+          const start = dayjs()
+            .year(selectedYear)
+            .month(selectedMonth - 1)
+            .startOf("month")
+            .format("YYYY-MM-DD");
+          const end = dayjs()
+            .year(selectedYear)
+            .month(selectedMonth - 1)
+            .endOf("month")
+            .format("YYYY-MM-DD");
+          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
+        } else {
+          const start = dayjs()
+            .year(selectedYear)
+            .startOf("year")
+            .format("YYYY-MM-DD");
+          const end = dayjs()
+            .year(selectedYear)
+            .endOf("year")
+            .format("YYYY-MM-DD");
+          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -59,17 +92,17 @@ export default function NotasCreditoPage() {
     };
 
     cargarNotasCredito();
-  }, [contribuyente?.ruc]);
+  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
 
   // Calcular estadísticas
   const totalNotasCredito = notasCredito.length;
   const totalMonto = notasCredito.reduce((sum, nc) => sum + nc.total, 0);
-  const notasCreditoMesActual = notasCredito.filter((nc) =>
-    dayjs(nc.fecha_emision).isSame(dayjs(), "month")
-  ).length;
-  const montoMesActual = notasCredito
-    .filter((nc) => dayjs(nc.fecha_emision).isSame(dayjs(), "month"))
-    .reduce((sum, nc) => sum + nc.total, 0);
+  const periodoLabel =
+    selectedMonth !== null
+      ? `${dayjs().month(selectedMonth - 1).format("MMMM")} ${selectedYear}`
+      : `Año ${selectedYear}`;
+  const promedioPeriodo =
+    totalNotasCredito > 0 ? totalMonto / totalNotasCredito : 0;
 
   // Handlers
   const handleVerDetalle = (notaCredito: NotaCredito) => {
@@ -119,6 +152,8 @@ export default function NotasCreditoPage() {
         </p>
       </div>
 
+      <TaxPeriodFilter availableYears={availableYears} />
+
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -153,13 +188,17 @@ export default function NotasCreditoPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Este Mes</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Periodo seleccionado
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{notasCreditoMesActual}</div>
+            <div className="text-lg font-semibold capitalize">
+              {periodoLabel}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Notas emitidas en {dayjs().format("MMMM")}
+              {selectedMonth !== null ? "Detalle mensual" : "Resumen anual"}
             </p>
           </CardContent>
         </Card>
@@ -167,16 +206,16 @@ export default function NotasCreditoPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Monto Este Mes
+              Promedio por nota
             </CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-primary">
-              {formatearMoneda(montoMesActual)}
+              {formatearMoneda(promedioPeriodo)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Total en {dayjs().format("MMMM")}
+              Calculado para el periodo seleccionado
             </p>
           </CardContent>
         </Card>

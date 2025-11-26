@@ -116,3 +116,22 @@ export interface Compra {
   clave_acceso?: string;
   created_at: string;
 }
+
+export interface TaxLiquidation {
+  id: string;
+  contribuyente_ruc: string;
+  fecha_inicio_cierre: string;
+  fecha_fin_cierre: string;
+  total_compras_iva_0: number;
+  total_compras_iva_mayor_0: number;
+  total_ventas_iva_0: number;
+  total_ventas_iva_mayor_0: number;
+  total_nc_iva_mayor_0: number;
+  total_retenciones_iva_mayor_0: number;
+  credito_favor_adquisicion: number;
+  credito_favor_retencion: number;
+  impuesto_pagar_sri: number;
+  impuesto_causado: number;
+  created_at: string;
+  deleted_at?: string | null;
+}

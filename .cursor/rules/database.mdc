@@ -53,6 +53,7 @@ telefono VARCHAR(20),
 email VARCHAR(120),
 direccion TEXT,
 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL,
 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -77,7 +78,8 @@ iva NUMERIC(14,2) DEFAULT 0,
 total NUMERIC(14,2) NOT NULL,
 retencion_id UUID REFERENCES retenciones(id) ON DELETE SET NULL,
 nota_credito_id UUID REFERENCES notas_credito(id) ON DELETE SET NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 -- 6. Notas de crédito
@@ -92,7 +94,8 @@ subtotal_8 NUMERIC(14,2) DEFAULT 0,
 subtotal_15 NUMERIC(14,2) DEFAULT 0,
 iva NUMERIC(14,2) DEFAULT 0,
 total NUMERIC(14,2) NOT NULL,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 -- 7. Compras
@@ -112,7 +115,8 @@ subtotal_15 NUMERIC(14,2) DEFAULT 0,
 iva NUMERIC(14,2) DEFAULT 0,
 total NUMERIC(14,2) NOT NULL,
 clave_acceso VARCHAR(49) UNIQUE,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 -- 8. Retenciones
@@ -127,7 +131,8 @@ retencion_iva_percent NUMERIC(5,2),
 retencion_valor NUMERIC(14,2),
 retencion_renta_percent NUMERIC(5,2),
 retencion_renta_valor NUMERIC(14,2),
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 -- 9. Archivos cargados (registros TXT, PDFs, etc.)
@@ -146,21 +151,55 @@ contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
 titulo VARCHAR(140),
 mensaje TEXT,
 leida BOOLEAN NOT NULL DEFAULT FALSE,
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
 -- 11. Liquidaciones de impuestos (IVA mensual, Renta anual, etc.)
 CREATE TABLE tax_liquidations (
 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 contribuyente_ruc CHAR(13) REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
-periodo VARCHAR(7) NOT NULL, -- ‘YYYY-MM’ o ‘YYYY’
-tipo VARCHAR(10) NOT NULL, -- 'IVA' | 'RENTA' | ...
-resumen JSONB,
-total_pagar NUMERIC(14,2),
-created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+fecha_inicio_cierre DATE NOT NULL,
+fecha_fin_cierre DATE NOT NULL,
+total_compras_iva_0 NUMERIC(14,2) DEFAULT 0,
+total_compras_iva_mayor_0 NUMERIC(14,2) DEFAULT 0,
+total_ventas_iva_0 NUMERIC(14,2) DEFAULT 0,
+total_ventas_iva_mayor_0 NUMERIC(14,2) DEFAULT 0,
+total_nc_iva_mayor_0 NUMERIC(14,2) DEFAULT 0,
+total_retenciones_iva_mayor_0 NUMERIC(14,2) DEFAULT 0,
+credito_favor_adquisicion NUMERIC(14,2) DEFAULT 0,
+credito_favor_retencion NUMERIC(14,2) DEFAULT 0,
+impuesto_pagar_sri NUMERIC(14,2) DEFAULT 0,
+impuesto_causado NUMERIC(14,2) DEFAULT 0,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- 12. Índices recomendados
+-- 12. Contadores (usuarios que gestionan contribuyentes)
+CREATE TABLE contadores (
+id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+cedula VARCHAR(20) UNIQUE NOT NULL,
+first_name VARCHAR(100) NOT NULL,
+last_name VARCHAR(100) NOT NULL,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL
+);
+
+-- 13. Relación N-M entre contadores y contribuyentes
+CREATE TABLE contador_contribuyente (
+id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+contador_id UUID NOT NULL REFERENCES contadores(id) ON DELETE CASCADE,
+contribuyente_ruc CHAR(13) NOT NULL REFERENCES contribuyentes(ruc) ON DELETE CASCADE,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+deleted_at TIMESTAMPTZ DEFAULT NULL,
+UNIQUE (contador_id, contribuyente_ruc)
+);
+
+-- 14. Índices recomendados
+CREATE INDEX idx_ventas_fecha ON ventas(fecha_emision);
+CREATE INDEX idx_compras_fecha ON compras(fecha_emision);
+CREATE INDEX idx_retenciones_fecha ON retenciones(fecha_emision);
 CREATE INDEX idx_ventas_fecha ON ventas(fecha_emision);
 CREATE INDEX idx_compras_fecha ON compras(fecha_emision);
 CREATE INDEX idx_retenciones_fecha ON retenciones(fecha_emision);

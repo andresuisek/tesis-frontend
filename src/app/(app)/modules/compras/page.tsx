@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase, Compra } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ComprasKPIs } from "@/components/compras/compras-kpis";
-import { ComprasFilters } from "@/components/compras/compras-filters";
 import { ComprasTable } from "@/components/compras/compras-table";
 import { GastosPersonalesSummary } from "@/components/compras/gastos-personales-summary";
 import { ComprasPagination } from "@/components/compras/compras-pagination";
@@ -15,6 +14,9 @@ import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
+import { useDateFilter } from "@/contexts/date-filter-context";
+import { useAvailableYears } from "@/hooks/use-available-years";
 
 export default function ComprasPage() {
   const { contribuyente } = useAuth();
@@ -24,9 +26,9 @@ export default function ComprasPage() {
   const [showNuevaCompraDialog, setShowNuevaCompraDialog] = useState(false);
   const [showImportarDialog, setShowImportarDialog] = useState(false);
 
-  // Filtros
-  const [mes, setMes] = useState("todos");
-  const [anio, setAnio] = useState(new Date().getFullYear().toString());
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { years: availableYears, refresh: refreshAvailableYears } =
+    useAvailableYears("compras");
 
   // Paginación
   const [paginaActual, setPaginaActual] = useState(1);
@@ -46,21 +48,29 @@ export default function ComprasPage() {
         .select("*")
         .eq("contribuyente_ruc", contribuyente.ruc);
 
-      // Aplicar filtro de mes
-      if (mes !== "todos") {
-        const mesNum = parseInt(mes);
-        const anioNum = anio !== "todos" ? parseInt(anio) : new Date().getFullYear();
-        const fechaInicio = dayjs(`${anioNum}-${mesNum.toString().padStart(2, "0")}-01`).format("YYYY-MM-DD");
-        const fechaFin = dayjs(fechaInicio).endOf("month").format("YYYY-MM-DD");
-        queryBase = queryBase.gte("fecha_emision", fechaInicio).lte("fecha_emision", fechaFin);
-      }
-
-      // Aplicar filtro de año (solo si mes es "todos")
-      if (anio !== "todos" && mes === "todos") {
-        const anioNum = parseInt(anio);
-        const fechaInicio = `${anioNum}-01-01`;
-        const fechaFin = `${anioNum}-12-31`;
-        queryBase = queryBase.gte("fecha_emision", fechaInicio).lte("fecha_emision", fechaFin);
+      // Aplicar filtros globales
+      if (selectedMonth !== null) {
+        const start = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .startOf("month")
+          .format("YYYY-MM-DD");
+        const end = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .endOf("month")
+          .format("YYYY-MM-DD");
+        queryBase = queryBase.gte("fecha_emision", start).lte("fecha_emision", end);
+      } else {
+        const start = dayjs()
+          .year(selectedYear)
+          .startOf("year")
+          .format("YYYY-MM-DD");
+        const end = dayjs()
+          .year(selectedYear)
+          .endOf("year")
+          .format("YYYY-MM-DD");
+        queryBase = queryBase.gte("fecha_emision", start).lte("fecha_emision", end);
       }
 
       // Cargar TODAS las compras filtradas para KPIs (sin paginación)
@@ -96,12 +106,12 @@ export default function ComprasPage() {
   // Resetear página cuando cambien los filtros
   useEffect(() => {
     setPaginaActual(1);
-  }, [mes, anio]);
+  }, [selectedYear, selectedMonth]);
 
   useEffect(() => {
     cargarCompras();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mes, anio, paginaActual]);
+  }, [selectedYear, selectedMonth, paginaActual]);
 
 
   const handleEliminarCompra = async (compra: Compra) => {
@@ -160,12 +170,7 @@ export default function ComprasPage() {
       </div>
 
       {/* Filtros */}
-      <ComprasFilters
-        mes={mes}
-        onMesChange={setMes}
-        anio={anio}
-        onAnioChange={setAnio}
-      />
+      <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
       {!loading && <ComprasKPIs compras={todasLasComprasFiltradas} />}
@@ -205,7 +210,10 @@ export default function ComprasPage() {
         open={showNuevaCompraDialog}
         onOpenChange={setShowNuevaCompraDialog}
         contribuyenteRuc={contribuyente.ruc}
-        onCompraCreada={cargarCompras}
+        onCompraCreada={() => {
+          cargarCompras();
+          refreshAvailableYears();
+        }}
       />
 
       {/* Dialog Importar Compras */}
@@ -213,7 +221,10 @@ export default function ComprasPage() {
         open={showImportarDialog}
         onOpenChange={setShowImportarDialog}
         contribuyenteRuc={contribuyente.ruc}
-        onComprasImportadas={cargarCompras}
+        onComprasImportadas={() => {
+          cargarCompras();
+          refreshAvailableYears();
+        }}
       />
     </div>
   );

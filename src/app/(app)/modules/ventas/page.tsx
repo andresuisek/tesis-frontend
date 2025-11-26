@@ -14,7 +14,6 @@ import { supabase, Venta } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { VentasKPIs } from "@/components/ventas/ventas-kpis";
 import { VentasTable } from "@/components/ventas/ventas-table";
-import { VentasFilters } from "@/components/ventas/ventas-filters";
 import { NuevaVentaDialog } from "@/components/ventas/nueva-venta-dialog";
 import { NuevaNotaCreditoDialog } from "@/components/ventas/nueva-nota-credito-dialog";
 import { NuevaRetencionDialog } from "@/components/ventas/nueva-retencion-dialog";
@@ -22,6 +21,9 @@ import { DetalleVentaDialog } from "@/components/ventas/detalle-venta-dialog";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
+import { useDateFilter } from "@/contexts/date-filter-context";
+import { useAvailableYears } from "@/hooks/use-available-years";
 
 dayjs.locale("es");
 
@@ -38,10 +40,9 @@ export default function VentasPage() {
     null
   );
 
-  // Estados para filtros
-  const [selectedYear, setSelectedYear] = useState(dayjs().year());
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { years: availableYears, refresh: refreshAvailableYears } =
+    useAvailableYears("ventas");
 
   // Cargar ventas desde Supabase
   const cargarVentas = async () => {
@@ -129,49 +130,15 @@ export default function VentasPage() {
     }
   };
 
-  // Cargar años disponibles
-  const cargarAnosDisponibles = async () => {
-    if (!contribuyente?.ruc) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("ventas")
-        .select("fecha_emision")
-        .eq("contribuyente_ruc", contribuyente.ruc)
-        .order("fecha_emision", { ascending: false });
-
-      if (error) throw error;
-
-      const years = new Set<number>();
-      data?.forEach((venta) => {
-        const year = dayjs(venta.fecha_emision).year();
-        years.add(year);
-      });
-
-      // Asegurar que el año actual siempre esté disponible
-      years.add(dayjs().year());
-
-      setAvailableYears(Array.from(years).sort((a, b) => b - a));
-    } catch (error: unknown) {
-      console.error("Error al cargar años disponibles:", error);
-    }
-  };
-
   // Cargar datos cuando cambia el contribuyente o los filtros
   useEffect(() => {
     cargarVentas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contribuyente, selectedYear, selectedMonth]);
 
-  // Cargar años disponibles al montar el componente
-  useEffect(() => {
-    cargarAnosDisponibles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contribuyente]);
-
   const handleVentaCreada = () => {
     cargarVentas();
-    cargarAnosDisponibles();
+    refreshAvailableYears();
   };
 
   const handleCrearNotaCredito = (venta: Venta) => {
@@ -261,13 +228,7 @@ export default function VentasPage() {
       </div>
 
       {/* Filtros */}
-      <VentasFilters
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-        onYearChange={setSelectedYear}
-        onMonthChange={setSelectedMonth}
-        availableYears={availableYears}
-      />
+      <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs de ventas */}
       <VentasKPIs ventas={ventas} mesAnterior={ventasMesAnterior} />
@@ -278,11 +239,11 @@ export default function VentasPage() {
           <CardTitle>Registro de Ventas</CardTitle>
           <CardDescription>
             Listado completo de todas las ventas registradas
-            {selectedMonth &&
+            {selectedMonth !== null &&
               ` - ${dayjs()
                 .month(selectedMonth - 1)
                 .format("MMMM")} ${selectedYear}`}
-            {!selectedMonth && ` - Año ${selectedYear}`}
+            {selectedMonth === null && ` - Año ${selectedYear}`}
           </CardDescription>
         </CardHeader>
         <CardContent>

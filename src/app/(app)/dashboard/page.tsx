@@ -45,6 +45,9 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/es";
 
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
+import { useAvailableYears } from "@/hooks/use-available-years";
+import { useDateFilter } from "@/contexts/date-filter-context";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -152,6 +155,15 @@ export default function DashboardPage() {
     loading,
     error,
   } = useDashboardData();
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { years: availableYears } = useAvailableYears("ventas");
+  const periodBadgeLabel =
+    selectedMonth !== null
+      ? dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .format("MMMM YYYY")
+      : `Año ${selectedYear}`;
 
   const ventasChange =
     kpis.ventasMesAnterior > 0
@@ -209,11 +221,13 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="border-primary text-primary">
-            {dayjs().format("MMMM YYYY")}
+            {periodBadgeLabel}
           </Badge>
           <Button variant="outline">Generar reporte</Button>
         </div>
       </div>
+
+      <TaxPeriodFilter availableYears={availableYears} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard

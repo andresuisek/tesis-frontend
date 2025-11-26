@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
+import { useDateFilter } from "@/contexts/date-filter-context";
 import dayjs from "dayjs";
 
 export interface DashboardKPIs {
@@ -61,6 +62,7 @@ export interface DashboardData {
 
 export function useDashboardData(): DashboardData {
   const { contribuyente } = useAuth();
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const [data, setData] = useState<DashboardData>({
     kpis: {
       ventasMes: 0,
@@ -93,30 +95,58 @@ export function useDashboardData(): DashboardData {
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
 
-        const inicioMesActual = dayjs().startOf("month").format("YYYY-MM-DD");
-        const finMesActual = dayjs().endOf("month").format("YYYY-MM-DD");
-        const inicioMesAnterior = dayjs()
-          .subtract(1, "month")
-          .startOf("month")
-          .format("YYYY-MM-DD");
-        const finMesAnterior = dayjs()
-          .subtract(1, "month")
-          .endOf("month")
-          .format("YYYY-MM-DD");
+        const currentPeriodStart =
+          selectedMonth !== null
+            ? dayjs()
+                .year(selectedYear)
+                .month(selectedMonth - 1)
+                .startOf("month")
+            : dayjs().year(selectedYear).startOf("year");
+        const currentPeriodEnd =
+          selectedMonth !== null
+            ? dayjs()
+                .year(selectedYear)
+                .month(selectedMonth - 1)
+                .endOf("month")
+            : dayjs().year(selectedYear).endOf("year");
 
-        const inicioPeriodoSeisMeses = dayjs()
-          .subtract(6, "months")
-          .startOf("month")
-          .format("YYYY-MM-DD");
-        const inicioAnioActual = dayjs().startOf("year").format("YYYY-MM-DD");
+        const previousReference =
+          selectedMonth !== null
+            ? currentPeriodStart.subtract(1, "month")
+            : currentPeriodStart.subtract(1, "year");
+        const previousPeriodStart =
+          selectedMonth !== null
+            ? previousReference.startOf("month")
+            : previousReference.startOf("year");
+        const previousPeriodEnd =
+          selectedMonth !== null
+            ? previousReference.endOf("month")
+            : previousReference.endOf("year");
+
+        const monthsWindow = selectedMonth !== null ? 6 : 12;
+        const monthlyRangeStart =
+          selectedMonth !== null
+            ? currentPeriodStart.subtract(monthsWindow - 1, "month")
+            : dayjs().year(selectedYear).startOf("year");
+        const monthlyRangeEnd =
+          selectedMonth !== null
+            ? currentPeriodEnd
+            : dayjs().year(selectedYear).endOf("year");
+
+        const currentStart = currentPeriodStart.format("YYYY-MM-DD");
+        const currentEnd = currentPeriodEnd.format("YYYY-MM-DD");
+        const previousStart = previousPeriodStart.format("YYYY-MM-DD");
+        const previousEnd = previousPeriodEnd.format("YYYY-MM-DD");
+        const monthlyStart = monthlyRangeStart.format("YYYY-MM-DD");
+        const monthlyEnd = monthlyRangeEnd.format("YYYY-MM-DD");
 
         // Obtener ventas del mes actual
         const { data: ventasMes, error: ventasError } = await supabase
           .from("ventas")
           .select("total, iva, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioMesActual)
-          .lte("fecha_emision", finMesActual);
+          .gte("fecha_emision", currentStart)
+          .lte("fecha_emision", currentEnd);
 
         if (ventasError) throw ventasError;
 
@@ -125,16 +155,16 @@ export function useDashboardData(): DashboardData {
           .from("ventas")
           .select("total")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioMesAnterior)
-          .lte("fecha_emision", finMesAnterior);
+          .gte("fecha_emision", previousStart)
+          .lte("fecha_emision", previousEnd);
 
         // Obtener compras del mes actual
         const { data: comprasMes, error: comprasError } = await supabase
           .from("compras")
           .select("total, iva, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioMesActual)
-          .lte("fecha_emision", finMesActual);
+          .gte("fecha_emision", currentStart)
+          .lte("fecha_emision", currentEnd);
 
         if (comprasError) throw comprasError;
 
@@ -143,8 +173,8 @@ export function useDashboardData(): DashboardData {
           .from("compras")
           .select("total")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioMesAnterior)
-          .lte("fecha_emision", finMesAnterior);
+          .gte("fecha_emision", previousStart)
+          .lte("fecha_emision", previousEnd);
 
         // Obtener retenciones del mes actual
         const { data: retencionesMes, error: retencionesError } =
@@ -152,8 +182,8 @@ export function useDashboardData(): DashboardData {
             .from("retenciones")
             .select("retencion_valor, fecha_emision")
             .eq("contribuyente_ruc", rucContribuyente)
-            .gte("fecha_emision", inicioMesActual)
-            .lte("fecha_emision", finMesActual);
+            .gte("fecha_emision", currentStart)
+            .lte("fecha_emision", currentEnd);
 
         if (retencionesError) throw retencionesError;
 
@@ -162,8 +192,8 @@ export function useDashboardData(): DashboardData {
           .from("retenciones")
           .select("retencion_valor")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioMesAnterior)
-          .lte("fecha_emision", finMesAnterior);
+          .gte("fecha_emision", previousStart)
+          .lte("fecha_emision", previousEnd);
 
         // Datos agregados anuales para análisis
         const [ventasAnuales, comprasAnuales] = await Promise.all([
@@ -171,14 +201,14 @@ export function useDashboardData(): DashboardData {
             .from("ventas")
             .select("subtotal_0, subtotal_8, subtotal_15, iva, fecha_emision")
             .eq("contribuyente_ruc", rucContribuyente)
-            .gte("fecha_emision", inicioAnioActual)
-            .lte("fecha_emision", finMesActual),
+            .gte("fecha_emision", currentStart)
+            .lte("fecha_emision", currentEnd),
           supabase
             .from("compras")
             .select("subtotal_0, subtotal_8, subtotal_15, iva, total, rubro, fecha_emision")
             .eq("contribuyente_ruc", rucContribuyente)
-            .gte("fecha_emision", inicioAnioActual)
-            .lte("fecha_emision", finMesActual),
+            .gte("fecha_emision", currentStart)
+            .lte("fecha_emision", currentEnd),
         ]);
 
         if (ventasAnuales.error) throw ventasAnuales.error;
@@ -219,33 +249,37 @@ export function useDashboardData(): DashboardData {
           .from("ventas")
           .select("total, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioPeriodoSeisMeses);
+          .gte("fecha_emision", monthlyStart)
+          .lte("fecha_emision", monthlyEnd);
 
         const { data: comprasMensuales } = await supabase
           .from("compras")
           .select("total, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioPeriodoSeisMeses);
+          .gte("fecha_emision", monthlyStart)
+          .lte("fecha_emision", monthlyEnd);
 
         const { data: retencionesMensuales } = await supabase
           .from("retenciones")
           .select("retencion_valor, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioPeriodoSeisMeses);
+          .gte("fecha_emision", monthlyStart)
+          .lte("fecha_emision", monthlyEnd);
 
         const { data: notasCreditoMensuales } = await supabase
           .from("notas_credito")
           .select("total, fecha_emision")
           .eq("contribuyente_ruc", rucContribuyente)
-          .gte("fecha_emision", inicioPeriodoSeisMeses);
+          .gte("fecha_emision", monthlyStart)
+          .lte("fecha_emision", monthlyEnd);
 
         // Agrupar por mes
         const monthlyDataMap = new Map<string, MonthlyData>();
-        for (let i = 5; i >= 0; i--) {
-          const month = dayjs().subtract(i, "months").format("MMM");
-          const monthKey = dayjs().subtract(i, "months").format("YYYY-MM");
+        for (let i = 0; i < monthsWindow; i++) {
+          const date = monthlyRangeStart.add(i, "month");
+          const monthKey = date.format("YYYY-MM");
           monthlyDataMap.set(monthKey, {
-            month,
+            month: date.format("MMM"),
             ventas: 0,
             compras: 0,
             utilidad: 0,
@@ -296,6 +330,8 @@ export function useDashboardData(): DashboardData {
           .from("ventas")
           .select("id, total, fecha_emision, created_at")
           .eq("contribuyente_ruc", rucContribuyente)
+          .gte("fecha_emision", currentStart)
+          .lte("fecha_emision", currentEnd)
           .order("created_at", { ascending: false })
           .limit(5);
 
@@ -303,6 +339,8 @@ export function useDashboardData(): DashboardData {
           .from("compras")
           .select("id, total, fecha_emision, created_at")
           .eq("contribuyente_ruc", rucContribuyente)
+          .gte("fecha_emision", currentStart)
+          .lte("fecha_emision", currentEnd)
           .order("created_at", { ascending: false })
           .limit(5);
 
@@ -430,7 +468,7 @@ export function useDashboardData(): DashboardData {
     }
 
     fetchDashboardData();
-  }, [contribuyente?.ruc]);
+  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
 
   return data;
 }
