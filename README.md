@@ -172,6 +172,34 @@ npm run dev
 http://localhost:3000
 ```
 
+### Configuración del agente inteligente
+
+1. **Definir variables de entorno**
+
+   Crea un archivo `.env.local` en la raíz del proyecto con:
+
+   ```
+   OPENAI_API_KEY=sk-xxxx
+   OPENAI_MODEL=gpt-4o-mini
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
+   ```
+
+   El `SUPABASE_SERVICE_ROLE_KEY` se obtiene desde la consola de Supabase (Settings → API). No lo expongas en el frontend.
+
+2. **Endpoint disponible**
+
+   Envía solicitudes `POST` a `/api/ai-agent/query` con el cuerpo:
+
+   ```json
+   {
+     "question": "¿Cuál fue mi total de ventas en marzo?",
+     "contribuyenteRuc": "1790012345001"
+   }
+   ```
+
+   El backend generará el SQL, lo ejecutará en Supabase y devolverá únicamente un resumen amigable,
+   viñetas con hallazgos y una sugerencia para continuar la conversación.
+
 ### Credenciales de prueba
 
 - **Email**: admin@empresa.com
