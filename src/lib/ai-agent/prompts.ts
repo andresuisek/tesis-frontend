@@ -125,7 +125,7 @@ export function getSchemaSummary() {
     const fileContents = fs.readFileSync(databaseDocPath, "utf-8");
     cachedSchemaSummary = buildSchemaSummary(fileContents);
     return cachedSchemaSummary;
-  } catch (error) {
+  } catch {
     cachedSchemaSummary = "No se encontró la descripción del esquema.";
     return cachedSchemaSummary;
   }

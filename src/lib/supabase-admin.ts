@@ -10,6 +10,7 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GenericClient = SupabaseClient<any, "public", any>;
 let cachedClient: GenericClient | null = null;
 

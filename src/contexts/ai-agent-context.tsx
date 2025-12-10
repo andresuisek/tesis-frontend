@@ -137,7 +137,7 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
           rowCount: payload.rowCount,
           previewRows: payload.previewRows,
         });
-      } catch (error) {
+      } catch {
         pushMessage({
           role: "assistant",
           content:

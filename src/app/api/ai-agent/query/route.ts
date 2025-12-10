@@ -169,7 +169,7 @@ export async function POST(req: Request) {
 
   try {
     payload = await req.json();
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "El cuerpo de la petición no es un JSON válido" },
       { status: 400 }
