@@ -36,7 +36,7 @@ export function useAvailableYears(table: string, dateColumn = "fecha_emision") {
       if (error) throw error;
 
       const yearSet = new Set<number>();
-      const rows = data as YearRow[] | null;
+      const rows = data as unknown as YearRow[] | null;
       rows?.forEach((row: YearRow) => {
         const rawDate = row[dateColumn];
         if (!rawDate) return;
