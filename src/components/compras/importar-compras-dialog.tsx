@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +29,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +58,9 @@ import {
   Palmtree,
   Briefcase,
   HelpCircle,
+  Search,
+  X,
+  CheckCheck,
 } from "lucide-react";
 
 interface ImportarComprasDialogProps {
@@ -99,17 +104,51 @@ export function ImportarComprasDialog({
   const [step, setStep] = useState<Step>("upload");
   const [comprasParsed, setComprasParsed] = useState<CompraParsed[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResumen[]>([]);
-  const [comprasInsertadas, setComprasInsertadas] = useState<string[]>([]); // IDs de compras insertadas
+  const [comprasInsertadas, setComprasInsertadas] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Estados para selección múltiple
+  const [selectedProveedores, setSelectedProveedores] = useState<Set<string>>(new Set());
+  const [rubroMasivo, setRubroMasivo] = useState<RubroCompra | "">("");
+  const [searchFilter, setSearchFilter] = useState("");
+
+  // Filtrar proveedores por búsqueda
+  const proveedoresFiltrados = useMemo(() => {
+    if (!searchFilter.trim()) return proveedores;
+    const search = searchFilter.toLowerCase();
+    return proveedores.filter(
+      (p) =>
+        p.razon_social_proveedor.toLowerCase().includes(search) ||
+        p.ruc_proveedor.includes(search)
+    );
+  }, [proveedores, searchFilter]);
+
+  // Calcular estadísticas de selección
+  const selectionStats = useMemo(() => {
+    const selectedArray = Array.from(selectedProveedores);
+    const selectedInView = proveedoresFiltrados.filter((p) =>
+      selectedProveedores.has(p.ruc_proveedor)
+    );
+    const allInViewSelected =
+      proveedoresFiltrados.length > 0 &&
+      proveedoresFiltrados.every((p) => selectedProveedores.has(p.ruc_proveedor));
+    const someInViewSelected = selectedInView.length > 0 && !allInViewSelected;
+
+    return {
+      total: selectedArray.length,
+      inView: selectedInView.length,
+      allInViewSelected,
+      someInViewSelected,
+    };
+  }, [selectedProveedores, proveedoresFiltrados]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar que sea un archivo .txt
     if (!file.name.endsWith(".txt")) {
       toast.error("Por favor selecciona un archivo .txt");
       return;
@@ -126,8 +165,6 @@ export function ImportarComprasDialog({
 
       setComprasParsed(compras);
       toast.success(`${compras.length} compras parseadas. Iniciando importación...`);
-      
-      // Iniciar importación automáticamente - pasar compras para evitar problemas de estado
       await insertarComprasTemporales(compras);
     } catch (error: unknown) {
       console.error("Error al parsear archivo:", error);
@@ -137,7 +174,7 @@ export function ImportarComprasDialog({
   };
 
   const insertarComprasTemporales = async (comprasParseadas: CompraParsed[]) => {
-    const compras = comprasParseadas; // Renombrar para claridad
+    const compras = comprasParseadas;
     setStep("importing");
     setProgress(0);
     setImportedCount(0);
@@ -160,7 +197,6 @@ export function ImportarComprasDialog({
           tipo_comprobante: compra.tipo_comprobante,
           numero_comprobante: compra.numero_comprobante,
           clave_acceso: compra.clave_acceso,
-          // rubro se asigna automáticamente como "no_definido" por la BD
           valor_sin_impuesto: compra.valor_sin_impuesto,
           subtotal_0: 0,
           subtotal_8: 0,
@@ -188,17 +224,14 @@ export function ImportarComprasDialog({
         errors += batch.length;
       }
 
-      // Actualizar progreso
       const progressValue = ((i + batch.length) / compras.length) * 100;
       setProgress(progressValue);
       setImportedCount(imported);
       setErrorCount(errors);
 
-      // Pequeña pausa
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    console.log("Compras insertadas, IDs:", idsInsertados.length);
     setComprasInsertadas(idsInsertados);
 
     if (errors === 0) {
@@ -207,34 +240,22 @@ export function ImportarComprasDialog({
       toast.warning(`${imported} compras guardadas, ${errors} fallaron`);
     }
 
-    // Ahora cargar proveedores con rubros sugeridos
-    console.log("Iniciando carga de proveedores...");
     await cargarProveedoresConRubros(compras, idsInsertados);
-    console.log("Carga de proveedores completada");
   };
 
   const cargarProveedoresConRubros = async (comprasParseadas: CompraParsed[], idsInsertados: string[]) => {
     try {
-      console.log("Cargando proveedores con rubros...");
-      console.log("Compras insertadas:", idsInsertados.length);
-      console.log("Compras a agrupar:", comprasParseadas.length);
-      
-      // Agrupar proveedores del archivo parseado
       const proveedoresAgrupados = agruparPorProveedor(comprasParseadas);
-      console.log("Proveedores agrupados:", proveedoresAgrupados.length);
 
-      // Para cada proveedor, buscar el rubro más frecuente en compras anteriores
       const proveedoresConRubro = await Promise.all(
         proveedoresAgrupados.map(async (proveedor) => {
           try {
-            // Buscar rubro más frecuente de este proveedor en compras anteriores
-            // Excluir las recién insertadas y las que tienen "no_definido"
             const { data, error } = await supabase
               .from("compras")
               .select("id, rubro")
               .eq("contribuyente_ruc", contribuyenteRuc)
               .eq("ruc_proveedor", proveedor.ruc_proveedor)
-              .neq("rubro", "no_definido") // Solo compras con rubro asignado
+              .neq("rubro", "no_definido")
               .limit(20);
 
             if (error) {
@@ -244,13 +265,11 @@ export function ImportarComprasDialog({
             let rubroSugerido: RubroCompra | undefined;
 
             if (data && data.length > 0) {
-              // Filtrar las compras recién insertadas
               const comprasAnteriores = data.filter((compra: { id: string; rubro: string }) => 
                 !idsInsertados.includes(compra.id)
               );
 
               if (comprasAnteriores.length > 0) {
-                // Contar frecuencia de rubros
                 const frecuencias: Record<string, number> = {};
                 comprasAnteriores.forEach((compra: { id: string; rubro: string }) => {
                   if (compra.rubro) {
@@ -258,15 +277,10 @@ export function ImportarComprasDialog({
                   }
                 });
 
-                // Obtener el más frecuente
                 const entries = Object.entries(frecuencias);
                 if (entries.length > 0) {
-                  const rubroMasFrecuente = entries.sort(
-                    ([, a], [, b]) => b - a
-                  )[0]?.[0];
-                  
+                  const rubroMasFrecuente = entries.sort(([, a], [, b]) => b - a)[0]?.[0];
                   rubroSugerido = rubroMasFrecuente as RubroCompra;
-                  console.log(`Rubro sugerido para ${proveedor.razon_social_proveedor}:`, rubroSugerido);
                 }
               }
             }
@@ -277,29 +291,82 @@ export function ImportarComprasDialog({
             };
           } catch (error: unknown) {
             console.error(`Error procesando proveedor ${proveedor.ruc_proveedor}:`, error);
-            return proveedor; // Sin rubro sugerido si hay error
+            return proveedor;
           }
         })
       );
 
-      console.log("Proveedores con rubros procesados:", proveedoresConRubro.length);
-      console.log("Detalle proveedores:", proveedoresConRubro);
-      
       if (proveedoresConRubro.length === 0) {
-        console.error("ERROR: No se agruparon proveedores");
         toast.error("No se pudieron agrupar los proveedores");
         return;
       }
-      
+
       setProveedores(proveedoresConRubro);
-      console.log("Estado proveedores actualizado, cambiando step a 'assign'");
+      setSelectedProveedores(new Set());
       setStep("assign");
-      console.log("Step cambiado a: assign");
     } catch (error: unknown) {
       console.error("Error cargando proveedores:", error);
       toast.error("Error al cargar proveedores");
-      // Volver al paso de upload si hay error
       setStep("upload");
+    }
+  };
+
+  // Manejar selección individual
+  const handleSelectProveedor = (rucProveedor: string, checked: boolean) => {
+    setSelectedProveedores((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(rucProveedor);
+      } else {
+        newSet.delete(rucProveedor);
+      }
+      return newSet;
+    });
+  };
+
+  // Seleccionar/deseleccionar todos los visibles (filtrados)
+  const handleSelectAllVisible = (checked: boolean) => {
+    setSelectedProveedores((prev) => {
+      const newSet = new Set(prev);
+      proveedoresFiltrados.forEach((p) => {
+        if (checked) {
+          newSet.add(p.ruc_proveedor);
+        } else {
+          newSet.delete(p.ruc_proveedor);
+        }
+      });
+      return newSet;
+    });
+  };
+
+  // Aplicar rubro masivo a seleccionados
+  const handleAplicarRubroMasivo = () => {
+    if (!rubroMasivo || selectedProveedores.size === 0) {
+      toast.error("Selecciona proveedores y un rubro");
+      return;
+    }
+
+    setProveedores((prev) =>
+      prev.map((p) =>
+        selectedProveedores.has(p.ruc_proveedor)
+          ? { ...p, rubro: rubroMasivo as RubroCompra }
+          : p
+      )
+    );
+
+    toast.success(`Rubro "${rubrosCompra.find(r => r.value === rubroMasivo)?.label}" asignado a ${selectedProveedores.size} proveedores`);
+    setSelectedProveedores(new Set());
+    setRubroMasivo("");
+  };
+
+  // Seleccionar todos los que no tienen rubro
+  const handleSelectSinRubro = () => {
+    const sinRubro = proveedoresFiltrados.filter((p) => !p.rubro);
+    setSelectedProveedores(new Set(sinRubro.map((p) => p.ruc_proveedor)));
+    if (sinRubro.length === 0) {
+      toast.info("Todos los proveedores ya tienen rubro asignado");
+    } else {
+      toast.info(`${sinRubro.length} proveedores sin rubro seleccionados`);
     }
   };
 
@@ -312,7 +379,6 @@ export function ImportarComprasDialog({
   };
 
   const handleActualizarRubros = async () => {
-    // Validar que todos los proveedores tengan rubro asignado
     const proveedoresSinRubro = proveedores.filter((p) => !p.rubro);
     if (proveedoresSinRubro.length > 0) {
       toast.error(
@@ -326,7 +392,6 @@ export function ImportarComprasDialog({
     let updated = 0;
     let errors = 0;
 
-    // Actualizar rubros por proveedor
     for (let i = 0; i < proveedores.length; i++) {
       const proveedor = proveedores[i];
 
@@ -349,7 +414,6 @@ export function ImportarComprasDialog({
         errors++;
       }
 
-      // Actualizar progreso
       const progressValue = ((i + 1) / proveedores.length) * 100;
       setProgress(progressValue);
     }
@@ -359,14 +423,11 @@ export function ImportarComprasDialog({
     if (errors === 0) {
       toast.success(`Rubros actualizados correctamente para ${updated} proveedores`);
     } else {
-      toast.warning(
-        `${updated} proveedores actualizados, ${errors} fallaron`
-      );
+      toast.warning(`${updated} proveedores actualizados, ${errors} fallaron`);
     }
   };
 
   const handleClose = () => {
-    // Reset state
     setStep("upload");
     setComprasParsed([]);
     setProveedores([]);
@@ -374,6 +435,9 @@ export function ImportarComprasDialog({
     setProgress(0);
     setImportedCount(0);
     setErrorCount(0);
+    setSelectedProveedores(new Set());
+    setRubroMasivo("");
+    setSearchFilter("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -392,10 +456,11 @@ export function ImportarComprasDialog({
   };
 
   const todosRubrosAsignados = proveedores.every((p) => p.rubro);
+  const proveedoresSinRubroCount = proveedores.filter((p) => !p.rubro).length;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[95vw] lg:max-w-[1100px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -446,36 +511,150 @@ export function ImportarComprasDialog({
         {/* Step 3: Assign Rubros */}
         {step === "assign" && (
           <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+            {/* Barra de acciones masivas - siempre visible cuando hay selección */}
+            {selectedProveedores.size > 0 && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex flex-wrap items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <CheckCheck className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-sm">
+                    {selectedProveedores.size} proveedor{selectedProveedores.size !== 1 ? "es" : ""} seleccionado{selectedProveedores.size !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                  <Select
+                    value={rubroMasivo}
+                    onValueChange={(value) => setRubroMasivo(value as RubroCompra)}
+                  >
+                    <SelectTrigger className="w-[200px] bg-background">
+                      <SelectValue placeholder="Seleccionar rubro">
+                        {rubroMasivo && (
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const Icon = rubrosIconos[rubroMasivo as RubroCompra];
+                              return <Icon className="h-4 w-4" />;
+                            })()}
+                            <span>
+                              {rubrosCompra.find(r => r.value === rubroMasivo)?.label}
+                            </span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rubrosCompra.filter(r => r.value !== "no_definido").map((rubro) => {
+                        const Icon = rubro.icon;
+                        return (
+                          <SelectItem key={rubro.value} value={rubro.value}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              <span>{rubro.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button
+                    size="sm"
+                    onClick={handleAplicarRubroMasivo}
+                    disabled={!rubroMasivo}
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedProveedores(new Set())}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpiar
+                </Button>
+              </div>
+            )}
+
+            {/* Filtros y acciones */}
+            <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+              <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar proveedor..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectSinRubro}
+              >
+                <AlertCircle className="h-4 w-4 mr-1" />
+                Seleccionar sin rubro ({proveedoresSinRubroCount})
+              </Button>
+
+              <div className="text-sm text-muted-foreground ml-auto">
+                {proveedoresFiltrados.length} de {proveedores.length} proveedores
+                {searchFilter && " (filtrados)"}
+              </div>
+            </div>
+
             <Alert className="flex-shrink-0">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Asignar rubros</AlertTitle>
               <AlertDescription>
-                Se guardaron {comprasParsed.length} compras de{" "}
-                {proveedores.length} proveedores. Los rubros marcados con ✓ son sugerencias basadas en compras anteriores. Confirma o cambia los rubros según sea necesario.
+                Se guardaron {comprasParsed.length} compras de {proveedores.length} proveedores. 
+                Usa los checkboxes para seleccionar varios y asignar rubros masivamente, 
+                o asigna individualmente con el selector de cada fila.
               </AlertDescription>
             </Alert>
 
+            {/* Tabla con scroll horizontal */}
             <div className="border rounded-lg flex-1 overflow-auto">
               <TooltipProvider>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="max-w-[250px]">Proveedor</TableHead>
-                      <TableHead className="text-center hidden sm:table-cell"># Compras</TableHead>
-                      <TableHead className="text-right hidden lg:table-cell">Valor S/I</TableHead>
-                      <TableHead className="text-right hidden lg:table-cell">IVA</TableHead>
-                      <TableHead className="text-right hidden md:table-cell">Total</TableHead>
-                      <TableHead className="min-w-[200px]">Rubro</TableHead>
+                      <TableHead className="w-[50px] sticky left-0 bg-background z-10">
+                        <Checkbox
+                          checked={selectionStats.allInViewSelected}
+                          onCheckedChange={handleSelectAllVisible}
+                          aria-label="Seleccionar todos"
+                          className={selectionStats.someInViewSelected ? "opacity-50" : ""}
+                        />
+                      </TableHead>
+                      <TableHead className="min-w-[250px]">Proveedor</TableHead>
+                      <TableHead className="text-center min-w-[100px]"># Compras</TableHead>
+                      <TableHead className="text-right min-w-[120px]">Valor S/I</TableHead>
+                      <TableHead className="text-right min-w-[100px]">IVA</TableHead>
+                      <TableHead className="text-right min-w-[120px]">Total</TableHead>
+                      <TableHead className="min-w-[220px]">Rubro</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {proveedores.map((proveedor) => (
-                      <TableRow key={proveedor.ruc_proveedor}>
-                        <TableCell className="max-w-[250px]">
+                    {proveedoresFiltrados.map((proveedor) => (
+                      <TableRow 
+                        key={proveedor.ruc_proveedor}
+                        className={selectedProveedores.has(proveedor.ruc_proveedor) ? "bg-primary/5" : ""}
+                      >
+                        <TableCell className="sticky left-0 bg-background z-10">
+                          <Checkbox
+                            checked={selectedProveedores.has(proveedor.ruc_proveedor)}
+                            onCheckedChange={(checked) =>
+                              handleSelectProveedor(proveedor.ruc_proveedor, checked as boolean)
+                            }
+                            aria-label={`Seleccionar ${proveedor.razon_social_proveedor}`}
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-[250px]">
                           <div className="flex flex-col">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="font-medium text-sm truncate block cursor-help">
+                                <span className="font-medium text-sm truncate block cursor-help max-w-[230px]">
                                   {proveedor.razon_social_proveedor}
                                 </span>
                               </TooltipTrigger>
@@ -483,109 +662,101 @@ export function ImportarComprasDialog({
                                 <p className="text-sm">{proveedor.razon_social_proveedor}</p>
                               </TooltipContent>
                             </Tooltip>
-                            <span className="text-xs text-muted-foreground truncate">
+                            <span className="text-xs text-muted-foreground">
                               {proveedor.ruc_proveedor}
                             </span>
-                            {/* Mostrar info adicional en móviles */}
-                            <div className="flex gap-2 mt-1 sm:hidden flex-wrap">
-                              <Badge variant="secondary" className="text-xs">
-                                {proveedor.cantidad_compras} compras
-                              </Badge>
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {formatearMoneda(proveedor.total_compras)}
-                              </span>
-                            </div>
                           </div>
                         </TableCell>
-                      <TableCell className="text-center hidden sm:table-cell">
-                        <Badge variant="secondary">
-                          {proveedor.cantidad_compras}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right hidden lg:table-cell whitespace-nowrap">
-                        {formatearMoneda(proveedor.valor_sin_impuesto)}
-                      </TableCell>
-                      <TableCell className="text-right hidden lg:table-cell whitespace-nowrap">
-                        {formatearMoneda(proveedor.iva_total)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium hidden md:table-cell whitespace-nowrap">
-                        {formatearMoneda(proveedor.total_compras)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Select
-                            value={proveedor.rubro || ""}
-                            onValueChange={(value) =>
-                              handleRubroChange(
-                                proveedor.ruc_proveedor,
-                                value as RubroCompra
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Seleccionar">
-                                {proveedor.rubro && (
-                                  <div className="flex items-center gap-2">
-                                    {(() => {
-                                      const Icon = rubrosIconos[proveedor.rubro];
-                                      return <Icon className="h-4 w-4" />;
-                                    })()}
-                                    <span>
-                                      {rubrosCompra.find(r => r.value === proveedor.rubro)?.label}
-                                    </span>
-                                  </div>
-                                )}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {rubrosCompra.map((rubro) => {
-                                const Icon = rubro.icon;
-                                return (
-                                  <SelectItem key={rubro.value} value={rubro.value}>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">
+                            {proveedor.cantidad_compras}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {formatearMoneda(proveedor.valor_sin_impuesto)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {formatearMoneda(proveedor.iva_total)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium whitespace-nowrap">
+                          {formatearMoneda(proveedor.total_compras)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Select
+                              value={proveedor.rubro || ""}
+                              onValueChange={(value) =>
+                                handleRubroChange(
+                                  proveedor.ruc_proveedor,
+                                  value as RubroCompra
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Seleccionar">
+                                  {proveedor.rubro && (
                                     <div className="flex items-center gap-2">
-                                      <Icon className="h-4 w-4" />
-                                      <span>{rubro.label}</span>
+                                      {(() => {
+                                        const Icon = rubrosIconos[proveedor.rubro];
+                                        return <Icon className="h-4 w-4" />;
+                                      })()}
+                                      <span>
+                                        {rubrosCompra.find(r => r.value === proveedor.rubro)?.label}
+                                      </span>
                                     </div>
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                          {proveedor.rubro && (
-                            <span className="text-xs text-green-600 dark:text-green-400">
-                              ✓ Sugerido
-                            </span>
-                          )}
-                        </div>
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {rubrosCompra.map((rubro) => {
+                                  const Icon = rubro.icon;
+                                  return (
+                                    <SelectItem key={rubro.value} value={rubro.value}>
+                                      <div className="flex items-center gap-2">
+                                        <Icon className="h-4 w-4" />
+                                        <span>{rubro.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            {proveedor.rubro && (
+                              <span className="text-xs text-green-600 dark:text-green-400">
+                                ✓ Asignado
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell></TableCell>
+                      <TableCell className="font-bold">TOTAL</TableCell>
+                      <TableCell className="text-center font-bold">
+                        {proveedores.reduce((sum, p) => sum + p.cantidad_compras, 0)}
                       </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          proveedores.reduce((sum, p) => sum + p.valor_sin_impuesto, 0)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          proveedores.reduce((sum, p) => sum + p.iva_total, 0)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          proveedores.reduce((sum, p) => sum + p.total_compras, 0)
+                        )}
+                      </TableCell>
+                      <TableCell></TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell className="font-bold">TOTAL</TableCell>
-                    <TableCell className="text-center font-bold hidden sm:table-cell">
-                      {proveedores.reduce((sum, p) => sum + p.cantidad_compras, 0)}
-                    </TableCell>
-                    <TableCell className="text-right font-bold hidden lg:table-cell">
-                      {formatearMoneda(
-                        proveedores.reduce((sum, p) => sum + p.valor_sin_impuesto, 0)
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-bold hidden lg:table-cell">
-                      {formatearMoneda(
-                        proveedores.reduce((sum, p) => sum + p.iva_total, 0)
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-bold hidden md:table-cell">
-                      {formatearMoneda(
-                        proveedores.reduce((sum, p) => sum + p.total_compras, 0)
-                      )}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
+                  </TableFooter>
+                </Table>
               </TooltipProvider>
             </div>
           </div>
@@ -633,16 +804,14 @@ export function ImportarComprasDialog({
             <div className="space-y-2">
               <Progress value={progress} className="w-full" />
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>
-                  Actualizando proveedores...
-                </span>
+                <span>Actualizando proveedores...</span>
                 <span>{Math.round(progress)}%</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 4: Complete */}
+        {/* Step 5: Complete */}
         {step === "complete" && (
           <div className="space-y-4">
             <Alert className="border-green-500">
@@ -681,12 +850,25 @@ export function ImportarComprasDialog({
           )}
 
           {step === "assign" && (
-            <Button
-              onClick={handleActualizarRubros}
-              disabled={!todosRubrosAsignados}
-            >
-              Actualizar Rubros
-            </Button>
+            <div className="flex items-center gap-2 w-full justify-between">
+              <div className="text-sm text-muted-foreground">
+                {proveedoresSinRubroCount > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    {proveedoresSinRubroCount} proveedor{proveedoresSinRubroCount !== 1 ? "es" : ""} sin rubro
+                  </span>
+                ) : (
+                  <span className="text-green-600 dark:text-green-400">
+                    ✓ Todos los rubros asignados
+                  </span>
+                )}
+              </div>
+              <Button
+                onClick={handleActualizarRubros}
+                disabled={!todosRubrosAsignados}
+              >
+                Actualizar Rubros
+              </Button>
+            </div>
           )}
 
           {step === "updating" && (
@@ -705,4 +887,3 @@ export function ImportarComprasDialog({
     </Dialog>
   );
 }
-
