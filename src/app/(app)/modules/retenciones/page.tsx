@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { RetencionesTable } from "@/components/retenciones/retenciones-table";
 import { DetalleRetencionDialog } from "@/components/retenciones/detalle-retencion-dialog";
+import { ImportarRetencionesDialog } from "@/components/retenciones/importar-retenciones-dialog";
 import { Retencion } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
-import { Receipt, DollarSign, Calculator, Calendar } from "lucide-react";
+import { Receipt, DollarSign, Calculator, Calendar, Upload } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -24,8 +26,60 @@ export default function RetencionesPage() {
   const { years: availableYears } = useAvailableYears("retenciones");
 
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
+  const [showImportarDialog, setShowImportarDialog] = useState(false);
   const [retencionSeleccionada, setRetencionSeleccionada] =
     useState<Retencion | null>(null);
+
+  // Función para recargar retenciones
+  const recargarRetenciones = useCallback(async () => {
+    if (!contribuyente?.ruc) return;
+
+    setLoading(true);
+    try {
+      const { supabase } = await import("@/lib/supabase");
+
+      let query = supabase
+        .from("retenciones")
+        .select("*")
+        .eq("contribuyente_ruc", contribuyente.ruc)
+        .order("fecha_emision", { ascending: false });
+
+      if (selectedMonth !== null) {
+        const start = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .startOf("month")
+          .format("YYYY-MM-DD");
+        const end = dayjs()
+          .year(selectedYear)
+          .month(selectedMonth - 1)
+          .endOf("month")
+          .format("YYYY-MM-DD");
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
+      } else {
+        const start = dayjs()
+          .year(selectedYear)
+          .startOf("year")
+          .format("YYYY-MM-DD");
+        const end = dayjs()
+          .year(selectedYear)
+          .endOf("year")
+          .format("YYYY-MM-DD");
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setRetenciones(data || []);
+    } catch (error) {
+      console.error("Error al recargar retenciones:", error);
+      toast.error("Error al recargar las retenciones");
+    } finally {
+      setLoading(false);
+    }
+  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -145,16 +199,22 @@ export default function RetencionesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Receipt className="h-5 w-5" />
-          </span>
-          Retenciones
-        </h1>
-        <p className="text-muted-foreground">
-          Gestiona y visualiza las retenciones emitidas
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Receipt className="h-5 w-5" />
+            </span>
+            Retenciones
+          </h1>
+          <p className="text-muted-foreground">
+            Gestiona y visualiza las retenciones emitidas
+          </p>
+        </div>
+        <Button onClick={() => setShowImportarDialog(true)}>
+          <Upload className="h-4 w-4 mr-2" />
+          Importar XML
+        </Button>
       </div>
 
       <TaxPeriodFilter availableYears={availableYears} />
@@ -250,6 +310,14 @@ export default function RetencionesPage() {
           retencion={retencionSeleccionada}
         />
       )}
+
+      {/* Dialog de Importar */}
+      <ImportarRetencionesDialog
+        open={showImportarDialog}
+        onOpenChange={setShowImportarDialog}
+        contribuyenteRuc={contribuyente.ruc}
+        onRetencionesImportadas={recargarRetenciones}
+      />
     </div>
   );
 }
