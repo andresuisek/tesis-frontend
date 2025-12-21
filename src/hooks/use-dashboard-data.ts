@@ -61,7 +61,8 @@ export interface DashboardData {
 }
 
 export function useDashboardData(): DashboardData {
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const [data, setData] = useState<DashboardData>({
     kpis: {

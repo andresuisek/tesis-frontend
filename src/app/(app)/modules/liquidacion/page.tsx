@@ -24,7 +24,8 @@ import dayjs from "dayjs";
 import { DetalleLiquidacionDialog } from "@/components/liquidacion/detalle-liquidacion-dialog";
 
 export default function LiquidacionPage() {
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears, refresh: refreshAvailableYears } = useAvailableYears(
     "tax_liquidations",

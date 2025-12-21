@@ -19,7 +19,8 @@ import { useAvailableYears } from "@/hooks/use-available-years";
 dayjs.locale("es");
 
 export default function RetencionesPage() {
-  const { user, contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { user, contribuyenteEfectivo: contribuyente } = useAuth();
   const [retenciones, setRetenciones] = useState<Retencion[]>([]);
   const [loading, setLoading] = useState(true);
   const { year: selectedYear, month: selectedMonth } = useDateFilter();

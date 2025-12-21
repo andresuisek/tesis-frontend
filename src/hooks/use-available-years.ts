@@ -9,7 +9,8 @@ import { useAuth } from "@/contexts/auth-context";
 type YearRow = Record<string, string | null>;
 
 export function useAvailableYears(table: string, dateColumn = "fecha_emision") {
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const [years, setYears] = useState<number[]>([]);
   const isMountedRef = useRef(true);
 

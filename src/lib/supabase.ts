@@ -135,3 +135,48 @@ export interface TaxLiquidation {
   created_at: string;
   deleted_at?: string | null;
 }
+
+// =============================================================================
+// TIPOS PARA SISTEMA MULTI-ROL (CONTADOR/CONTRIBUYENTE)
+// =============================================================================
+
+export type UserType = "contribuyente" | "contador";
+
+export type RelacionEstado = "activo" | "inactivo" | "pendiente";
+
+export interface Contador {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  telefono?: string;
+  email: string;
+  direccion?: string;
+  numero_registro?: string; // Número de registro profesional
+  especialidad?: string;
+  estado: "activo" | "inactivo";
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface ContadorContribuyente {
+  id: string;
+  contador_id: string;
+  contribuyente_ruc: string;
+  estado: RelacionEstado;
+  fecha_asignacion: string;
+  fecha_desactivacion?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Tipo extendido para mostrar info del contribuyente en la lista del contador
+export interface ContadorContribuyenteConDetalle extends ContadorContribuyente {
+  contribuyente?: Contribuyente;
+}
+
+// Tipo extendido para mostrar info del contador en el perfil del contribuyente
+export interface ContribuyenteConContador extends Contribuyente {
+  contador?: Contador;
+}

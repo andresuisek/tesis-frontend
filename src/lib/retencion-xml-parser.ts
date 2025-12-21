@@ -247,3 +247,5 @@ export function calcularTotalRetencion(retencion: RetencionParsed): number {
   return (retencion.retencion_valor || 0) + (retencion.retencion_renta_valor || 0);
 }
 
+
+

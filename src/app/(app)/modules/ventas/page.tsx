@@ -29,7 +29,8 @@ import { useAvailableYears } from "@/hooks/use-available-years";
 dayjs.locale("es");
 
 export default function VentasPage() {
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ventasMesAnterior, setVentasMesAnterior] = useState<Venta[]>([]);
   const [loading, setLoading] = useState(true);

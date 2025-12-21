@@ -19,7 +19,8 @@ import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
 
 export default function ComprasPage() {
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const [comprasFiltradas, setComprasFiltradas] = useState<Compra[]>([]);
   const [todasLasComprasFiltradas, setTodasLasComprasFiltradas] = useState<Compra[]>([]); // Para KPIs
   const [loading, setLoading] = useState(true);

@@ -17,7 +17,8 @@ import { useAvailableYears } from "@/hooks/use-available-years";
 dayjs.locale("es");
 
 export default function NotasCreditoPage() {
-  const { user, contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { user, contribuyenteEfectivo: contribuyente } = useAuth();
   const [notasCredito, setNotasCredito] = useState<NotaCredito[]>([]);
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears } = useAvailableYears("notas_credito");

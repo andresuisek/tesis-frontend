@@ -17,7 +17,8 @@ const defaultSuggestions = [
 
 export function AgentComposer() {
   const [question, setQuestion] = useState("");
-  const { contribuyente } = useAuth();
+  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
   const { askAgent, isProcessing } = useAiAgent();
 
   const submitQuestion = async () => {
