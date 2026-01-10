@@ -58,3 +58,4 @@ sequenceDiagram
 - `actividades_economicas` - Catálogo de actividades del SRI
 - `contribuyente_actividad` - Relación contribuyente-actividades
 
+

@@ -223,3 +223,4 @@ Todos los usuarios autenticados (Usuario y Contador) pueden usar el asistente tr
 }
 ```
 
+

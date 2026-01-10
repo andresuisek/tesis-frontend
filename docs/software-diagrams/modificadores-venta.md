@@ -129,3 +129,4 @@ Ambas relaciones tienen `ON DELETE SET NULL`, lo que significa que si se elimina
 
 Solo el rol **Contador** puede registrar notas de crédito y retenciones. Los usuarios regulares solo pueden visualizar las ventas.
 
+

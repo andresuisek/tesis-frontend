@@ -83,3 +83,4 @@ Después de registrar una venta, el usuario puede asociar documentos adicionales
 - `nota_credito_id` - Relación con nota de crédito (si existe)
 - `retencion_id` - Relación con retención (si existe)
 
+

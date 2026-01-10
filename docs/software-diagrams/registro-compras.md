@@ -142,3 +142,4 @@ El sistema valida autom√°ticamente que los gastos declarados no excedan estos l√
 
 Solo el rol **Contador** puede registrar y clasificar compras. Los usuarios regulares solo pueden visualizar sus propias compras.
 
+

@@ -217,3 +217,4 @@ El dashboard se recarga automáticamente cuando:
 
 No requiere refresco manual de la página.
 
+
