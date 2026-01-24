@@ -6,6 +6,7 @@ import {
   validateSqlForUser,
 } from "@/lib/ai-agent/prompts";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 type AgentRequestPayload = {
   question?: string;
@@ -187,6 +188,17 @@ export async function POST(req: Request) {
   const contribuyenteRuc = payload.contribuyenteRuc ?? "desconocido";
   const schemaSummary = payload.schemaSummary ?? getSchemaSummary();
 
+  // Track AI query submission
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: contribuyenteRuc,
+    event: "ai_query_submitted",
+    properties: {
+      question_length: question.length,
+      contribuyente_ruc: contribuyenteRuc,
+    },
+  });
+
   const now = new Date();
 
   const systemPrompt = buildSystemPrompt({
@@ -247,6 +259,17 @@ export async function POST(req: Request) {
       ],
     });
 
+    // Track successful AI query
+    posthog.capture({
+      distinctId: contribuyenteRuc,
+      event: "ai_query_success",
+      properties: {
+        contribuyente_ruc: contribuyenteRuc,
+        row_count: rows.length,
+        has_follow_up: !!friendlyResponse.follow_up,
+      },
+    });
+
     return NextResponse.json({
       summary: friendlyResponse.summary,
       highlights: friendlyResponse.highlights ?? [],
@@ -255,6 +278,16 @@ export async function POST(req: Request) {
       previewRows,
     });
   } catch (error) {
+    // Track failed AI query
+    posthog.capture({
+      distinctId: contribuyenteRuc,
+      event: "ai_query_failed",
+      properties: {
+        contribuyente_ruc: contribuyenteRuc,
+        error_message: error instanceof Error ? error.message : "Unknown error",
+      },
+    });
+
     const message =
       error instanceof Error
         ? error.message

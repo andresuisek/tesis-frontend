@@ -25,6 +25,7 @@ import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import posthog from "posthog-js";
 
 dayjs.locale("es");
 
@@ -140,11 +141,23 @@ export default function VentasPage() {
   }, [contribuyente, selectedYear, selectedMonth]);
 
   const handleVentaCreada = () => {
+    // Track sale creation
+    posthog.capture("venta_created", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
     cargarVentas();
     refreshAvailableYears();
   };
 
   const handleVentasImportadas = () => {
+    // Track sales import
+    posthog.capture("ventas_imported", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
     cargarVentas();
     refreshAvailableYears();
   };

@@ -17,6 +17,7 @@ import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import posthog from "posthog-js";
 
 export default function ComprasPage() {
   // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
@@ -128,6 +129,12 @@ export default function ComprasPage() {
 
       if (error) throw error;
 
+      // Track purchase deletion
+      posthog.capture("compra_deleted", {
+        contribuyente_ruc: contribuyente?.ruc,
+        compra_id: compra.id,
+      });
+
       toast.success("Compra eliminada exitosamente");
       cargarCompras();
     } catch (error: unknown) {
@@ -212,6 +219,12 @@ export default function ComprasPage() {
         onOpenChange={setShowNuevaCompraDialog}
         contribuyenteRuc={contribuyente.ruc}
         onCompraCreada={() => {
+          // Track purchase creation
+          posthog.capture("compra_created", {
+            contribuyente_ruc: contribuyente.ruc,
+            selected_year: selectedYear,
+            selected_month: selectedMonth,
+          });
           cargarCompras();
           refreshAvailableYears();
         }}
@@ -223,6 +236,12 @@ export default function ComprasPage() {
         onOpenChange={setShowImportarDialog}
         contribuyenteRuc={contribuyente.ruc}
         onComprasImportadas={() => {
+          // Track purchases import
+          posthog.capture("compras_imported", {
+            contribuyente_ruc: contribuyente.ruc,
+            selected_year: selectedYear,
+            selected_month: selectedMonth,
+          });
           cargarCompras();
           refreshAvailableYears();
         }}

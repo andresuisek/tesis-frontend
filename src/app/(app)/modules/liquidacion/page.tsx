@@ -22,6 +22,7 @@ import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
 import dayjs from "dayjs";
 import { DetalleLiquidacionDialog } from "@/components/liquidacion/detalle-liquidacion-dialog";
+import posthog from "posthog-js";
 
 export default function LiquidacionPage() {
   // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
@@ -122,6 +123,12 @@ export default function LiquidacionPage() {
   };
 
   const handleCierreCreado = () => {
+    // Track tax liquidation creation
+    posthog.capture("liquidacion_created", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
     cargarLiquidaciones();
     refreshAvailableYears();
   };

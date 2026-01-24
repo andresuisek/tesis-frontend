@@ -16,6 +16,7 @@ import {
   FileX,
   ChevronRight,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 
 import {
@@ -51,6 +52,11 @@ const mainItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: Home,
+  },
+  {
+    title: "Asistente",
+    url: "/modules/assistant",
+    icon: Sparkles,
   },
   {
     title: "Ventas",

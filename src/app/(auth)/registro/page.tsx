@@ -31,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { supabase, ActividadEconomica, UserType } from "@/lib/supabase";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 // Tipo de datos para contribuyente
 interface ContribuyenteFormData {
@@ -312,6 +313,12 @@ export default function RegistroPage() {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
+      // Track signup started when user selects account type and proceeds
+      if (currentStep === 0 && formData.accountType) {
+        posthog.capture("user_signup_started", {
+          account_type: formData.accountType,
+        });
+      }
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     }
   };
@@ -446,12 +453,31 @@ export default function RegistroPage() {
         throw new Error(result.error || "Error al registrar");
       }
 
+      // Track successful signup
+      posthog.capture("user_signup_completed", {
+        account_type: "contribuyente",
+        actividades_count: c.actividades_economicas.length,
+        obligado_contab: c.obligado_contab,
+        agente_retencion: c.agente_retencion,
+        tipo_obligacion: c.tipo_obligacion,
+      });
+
       toast.success("¡Registro exitoso! Ya puedes iniciar sesión.");
       router.push("/login");
     } catch (error: unknown) {
       console.error("Error en registro:", error);
       const message =
         error instanceof Error ? error.message : "Error al registrar usuario";
+
+      // Track signup failure
+      posthog.capture("user_signup_failed", {
+        account_type: "contribuyente",
+        error_message: message,
+      });
+      if (error instanceof Error) {
+        posthog.captureException(error);
+      }
+
       toast.error(message);
     } finally {
       setLoading(false);
@@ -488,12 +514,29 @@ export default function RegistroPage() {
         throw new Error(result.error || "Error al registrar");
       }
 
+      // Track successful signup
+      posthog.capture("user_signup_completed", {
+        account_type: "contador",
+        has_numero_registro: !!ct.numero_registro,
+        has_especialidad: !!ct.especialidad,
+      });
+
       toast.success("¡Registro de contador exitoso! Ya puedes iniciar sesión.");
       router.push("/login");
     } catch (error: unknown) {
       console.error("Error en registro:", error);
       const message =
         error instanceof Error ? error.message : "Error al registrar usuario";
+
+      // Track signup failure
+      posthog.capture("user_signup_failed", {
+        account_type: "contador",
+        error_message: message,
+      });
+      if (error instanceof Error) {
+        posthog.captureException(error);
+      }
+
       toast.error(message);
     } finally {
       setLoading(false);

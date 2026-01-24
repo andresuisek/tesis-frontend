@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Trash2,
 } from "lucide-react";
+import posthog from "posthog-js";
 
 // Tipo de datos para mensajes
 type Mensaje = {
@@ -157,6 +158,12 @@ export default function ChatbotPage() {
 
   const enviarMensaje = async () => {
     if (!mensajeActual.trim()) return;
+
+    // Track chatbot message sent
+    posthog.capture("chatbot_message_sent", {
+      message_length: mensajeActual.length,
+      session_message_count: mensajes.filter((m) => m.tipo === "usuario").length + 1,
+    });
 
     const nuevoMensajeUsuario: Mensaje = {
       id: Date.now().toString(),

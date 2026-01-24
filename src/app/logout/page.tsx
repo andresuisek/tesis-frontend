@@ -10,9 +10,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, CheckCircle } from "lucide-react";
+import posthog from "posthog-js";
 
 export default function LogoutPage() {
   useEffect(() => {
+    // Capture logout event and reset PostHog user
+    posthog.capture("user_logged_out");
+    posthog.reset();
+
     // Aquí harías la limpieza de la sesión
     // localStorage.clear()
     // sessionStorage.clear()

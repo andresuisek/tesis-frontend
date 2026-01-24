@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -73,6 +74,18 @@ export default function LoginPage() {
         console.log("Datos completos:", data);
         toast.success("¡Bienvenido al sistema!");
 
+        // Identify user in PostHog
+        posthog.identify(data.user.id, {
+          email: data.user.email,
+          user_type: data.user.user_metadata?.user_type,
+        });
+
+        // Capture login success event
+        posthog.capture("user_login_success", {
+          email: data.user.email,
+          user_type: data.user.user_metadata?.user_type,
+        });
+
         // Redirección directa e inmediata
         console.log("Redirigiendo al dashboard...");
         router.push("/dashboard");
@@ -81,15 +94,26 @@ export default function LoginPage() {
       console.error("Error en login:", error);
 
       let errorMessage = "Error al iniciar sesión";
+      let errorType = "unknown";
 
       if (error instanceof Error) {
         if (error.message === "Invalid login credentials") {
           errorMessage = "Credenciales incorrectas";
+          errorType = "invalid_credentials";
         } else if (error.message === "Email not confirmed") {
           errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+          errorType = "email_not_confirmed";
         } else {
           errorMessage = error.message;
+          errorType = "other";
         }
+
+        // Capture login failure event and exception
+        posthog.capture("user_login_failed", {
+          error_type: errorType,
+          error_message: errorMessage,
+        });
+        posthog.captureException(error);
       }
 
       toast.error(errorMessage);
