@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<autorizacion>
+<estado>AUTORIZADO</estado>
+<numeroAutorizacion>2111202507099293947800120010010000024313121521418</numeroAutorizacion>
+<fechaAutorizacion>2025-11-21T14:08:42-05:00</fechaAutorizacion>
+<ambiente>PRODUCCIÓN</ambiente>
+<comprobante><![CDATA[<?xml version="1.0" encoding="utf-8" standalone="no"?><comprobanteRetencion version="2.0.0" id="comprobante">
+  <infoTributaria>
+    <ambiente>2</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>Jelou SA</razonSocial>
+    <nombreComercial>JELOU S.A.</nombreComercial>
+    <ruc>0992939478001</ruc>
+    <claveAcceso>2111202507099293947800120010010000024313121521418</claveAcceso>
+    <codDoc>07</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000002431</secuencial>
+    <dirMatriz>LUIS ORRANTIA 26 Y NAHIM ISAIAS</dirMatriz>
+  </infoTributaria>
+  <infoCompRetencion>
+    <fechaEmision>21/11/2025</fechaEmision>
+    <dirEstablecimiento>LUIS ORRANTIA 26 Y NAHIM ISAIAS</dirEstablecimiento>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionSujetoRetenido>04</tipoIdentificacionSujetoRetenido>
+    <parteRel>NO</parteRel>
+    <razonSocialSujetoRetenido>ONTIVEROS TERAN ANDRES ALEJANDRO</razonSocialSujetoRetenido>
+    <identificacionSujetoRetenido>0962428348001</identificacionSujetoRetenido>
+    <periodoFiscal>11/2025</periodoFiscal>
+  </infoCompRetencion>
+  <docsSustento>
+    <docSustento>
+      <codSustento>01</codSustento>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001100000000015</numDocSustento>
+      <fechaEmisionDocSustento>17/11/2025</fechaEmisionDocSustento>
+      <pagoLocExt>01</pagoLocExt>
+      <totalSinImpuestos>2500.00</totalSinImpuestos>
+      <importeTotal>2875.00</importeTotal>
+      <impuestosDocSustento>
+        <impuestoDocSustento>
+          <codImpuestoDocSustento>2</codImpuestoDocSustento>
+          <codigoPorcentaje>4</codigoPorcentaje>
+          <baseImponible>2500.00</baseImponible>
+          <tarifa>15.00</tarifa>
+          <valorImpuesto>375.00</valorImpuesto>
+        </impuestoDocSustento>
+      </impuestosDocSustento>
+      <retenciones>
+        <retencion>
+          <codigo>1</codigo>
+          <codigoRetencion>303</codigoRetencion>
+          <baseImponible>2500.00</baseImponible>
+          <porcentajeRetener>10.00</porcentajeRetener>
+          <valorRetenido>250.00</valorRetenido>
+        </retencion>
+        <retencion>
+          <codigo>2</codigo>
+          <codigoRetencion>3</codigoRetencion>
+          <baseImponible>375.00</baseImponible>
+          <porcentajeRetener>100.00</porcentajeRetener>
+          <valorRetenido>375.00</valorRetenido>
+        </retencion>
+      </retenciones>
+      <pagos>
+        <pago>
+          <formaPago>20</formaPago>
+          <total>2875.00</total>
+        </pago>
+      </pagos>
+    </docSustento>
+  </docsSustento>
+  <infoAdicional>
+    <campoAdicional nombre="Direccion">Barrio: CDLA ALBORADA ETAPA IV Numero: SOLA 001 Manzana: 137 </campoAdicional>
+    <campoAdicional nombre="Email">andres.ontiveros@jelou.ai</campoAdicional>
+  </infoAdicional>
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="Signature085efe36-55fc-4b25-9509-cca9b18d76ad">
+<ds:SignedInfo>
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" Id="SignedPropertiesID9a359a6b-0a51-47f1-9cbe-c655b03c24af" URI="#Signature085efe36-55fc-4b25-9509-cca9b18d76ad-SignedPropertiesID9c54e89b-f36f-44bc-b2c3-2cfb20c48c25">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>KQc9X3+vfPw6iQuB0I3DdKL3lIQ=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference URI="#Certificate1ac41f56-0314-4f96-ae48-8f48575903b8">
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>ncaPRZrHS6Ay3I2GZjDf7jOncn0=</ds:DigestValue>
+</ds:Reference>
+<ds:Reference URI="#comprobante" Id="Reference-ID-239d3577-e0bb-4e34-a0d7-b3c04930438c">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<ds:DigestValue>3ccEQAv9iKkvsCpShkzDu5Mvmqg=</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue>c1uEp8NvXc5wXKqZr/+O0g8A/GyjKQeVcRJ50oGNuv+robEcvG1xxiNfnZkHQOZmLVMJKgRWztm2
+W3hX7wwyQT/sjozPTMhbNN/Evj1fefbMWITlXO9bB1p2FmpEBw1+BLKDPIb3AOk5duf+7L6Q2BCn
+PWCySyECnMCPfJ82X5TI8P8Ys3hld4qvfkEVmxkx4/nZkJF4G4/GMnH+S26+BW+40ImbfjNqEqg3
+fmTTnU2XuQkDwDHMJC8/DcAeKYrjHAUinkJq3T58I4E4JkLGHrFMsorztQswFwG+oNXRn7nI6tFC
+Ye0ACUHmFdGjS/6if+28Myf4o8YHORQ32qYuOg==
+</ds:SignatureValue>
+<ds:KeyInfo Id="Certificate1ac41f56-0314-4f96-ae48-8f48575903b8">
+<ds:X509Data>
+<ds:X509Certificate>MIIH8zCCBdugAwIBAgIQNI2/DnfgGu59l5mXASf94TANBgkqhkiG9w0BAQsFADCBtTELMAkGA1UE
+BhMCRUMxGDAWBgNVBAoMD0RhdGlsbWVkaWEgUy5BLjEwMC4GA1UECwwnRW50aWRhZCBkZSBjZXJ0
+aWZpY2FjaW9uIGRlIGluZm9ybWFjaW9uMQ8wDQYDVQQIDAZHdWF5YXMxNTAzBgNVBAMMLERhdGls
+IEF1dG9yaWRhZCBkZSBDZXJ0aWZpY2FjaW9uIFN1Ym9yZGluYWRhMRIwEAYDVQQHDAlHdWF5YXF1
+aWwwHhcNMjQwNTAyMjAzMzUxWhcNMjYwNTAyMjEzMzUxWjCBhzEjMCEGA1UEAwwaQWxiZXJ0byBG
+YWJyaWNpbyBWZXJhIExlbWExHTAbBgkqhkiG9w0BCQEWDmFkbWluQGplbG91LmFpMRMwEQYDVQQK
+DApKZWxvdSBTLkEuMR8wHQYDVQQLDBZDZXJ0aWZpY2Fkb3MgRGlnaXRhbGVzMQswCQYDVQQGEwJF
+QzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKBi0LTlpOL5aOYK8zPbQYIu+fmW6h16
+tTrhsQkNtiMEod7Ba1xyIJtdS9MQu6boXFpTRy5Sg8L1PvYMqlwA7wh1uuYt74zgSB+iCXRADZjZ
+O/C8XdDGnPTqU2PJywzGTuK6Rzny/pbaaCH4PzRfSnBkXfTLcN8n5rZw4Ec+5Zc+/5NxoyJRavxa
+vlwWVnNz/ruHqOqy8+y23SwHCm4o+G4hO1bkIpc11D8dPLPNhBKhw6YAm5JmLBMJhAmt+lDO+Pcq
+o3TyZh7HKJYh36zt+EAO9QT+IomN8f5dK5t0qQgBlsuT24ycpjzf/lEA/AdojiGY4YDddotBN7b+
+p/vMJsMCAwEAAaOCAykwggMlMBkGA1UdEQQSMBCBDmFkbWluQGplbG91LmFpMAkGA1UdEwQCMAAw
+HwYDVR0jBBgwFoAU5Wb5snh2G2r0z8t4UMUFHzqd4HcwHQYDVR0OBBYEFHgPxvrCwgDSvcjjNvVF
+lSduRaeuMIGjBgNVHSAEgZswgZgwgZUGCysGAQQBg5sjAgUBMIGFMIGCBggrBgEFBQcCARZ2aHR0
+cHM6Ly9kYXRpbC1vcy1wdWJsaWMuczMudXMtd2VzdC0yLmFtYXpvbmF3cy5jb20vOThlMjFkYmQt
+YjZlYy00ZTgzLWI5ZTktZDRhZTEyYjRkOTY3L0RhdGlsX0NQU19QZXJzb25hX0p1cmlkaWNhLnBk
+ZjBvBgNVHR8EaDBmMGSgYqBghl5odHRwOi8vZGF0aWwtc3ViY2EtY3JsLnMzLnVzLXdlc3QtMi5h
+bWF6b25hd3MuY29tL2NybC9hMDc4OGVlMC03OGJiLTQwNmItYjM4YS0zMmUzNmFhNGRiZGIuY3Js
+MEcGCCsGAQUFBwEBBDswOTA3BggrBgEFBQcwAYYraHR0cDovL29jc3AuYWNtLXBjYS51cy13ZXN0
+LTIuYW1hem9uYXdzLmNvbTAOBgNVHQ8BAf8EBAMCBsAwGgYKKwYBBAGDmyMDAQQMDAowOTA5NTI2
+NTE5MCAGCisGAQQBg5sjAwIEEgwQQWxiZXJ0byBGYWJyaWNpbzAUBgorBgEEAYObIwMDBAYMBFZl
+cmEwFAYKKwYBBAGDmyMDBAQGDARMZW1hMB8GCisGAQQBg5sjAwUEEQwPR2VyZW50ZSBHZW5lcmFs
+MBkGCisGAQQBg5sjAwcECwwJR3VheWFxdWlsMBoGCisGAQQBg5sjAwgEDAwKMDk5OTk5OTk5OTAZ
+BgorBgEEAYObIwMJBAsMCUd1YXlhcXVpbDAaBgorBgEEAYObIwMKBAwMCkplbG91IFMuQS4wHQYK
+KwYBBAGDmyMDCwQPDA0wOTkyOTM5NDc4MDAxMBIGCisGAQQBg5sjAwwEBAwCRUMwIQYKKwYBBAGD
+myMDIAQTDBEwMDEtMDAxLTAwMDAzMTgwMDANBgkqhkiG9w0BAQsFAAOCAgEAjwJ73Er6W42xHduW
+nNQiN7X7q564cQdAqH4eQ5ZFg8AEfqVx/KhXQ3ciZKSI2TB8GhOXcCAHlPS2OhQ0aFgDuov7eV2L
+uMLdzJ3x2cjur3bPnSfx4drOoyU25SNZRUFWhF/cSc9SNRsOSrGcGuvzWHg47f49PYGjXgVs6+5N
+Bxce5WcPBhK/NJb0DJhaXkJt3dxQiD2euoxn0aPlzph7mDjtRXqSBDRQePM6g8hruQ+5pIR6GeWm
+GqbXpisAIl3KlIUU71qWT8BGlEwOMdt0733IS2mJk1oqQkB5dTSUB4rjjOSiOghs/SJ9ic6DP6O4
+MvCIaZAz03ahKQotQhjGrOh5qQBPr4O1Fj5eHnIn3Nhtmqk7OSpfLViVL/YnM9JFTwMWHqN6j3cs
+TiEXz6qM/n+Q+qJwidhicxLZTIgJjhYqQjLehaotgKCdhDUkcUDCVg5DrDY3TKBihYtS93G24NBQ
+HcExdqMZZg1Kjx/hOj5U1uaG3vnou9zX54n1iajBOiDG/HyhTIcNBVnem0DI4DXXZcipsyzBhv4J
+02GKSNDk5UrhI/NN/01TPP0z4ViqEaTgv6G8bvdzuf/icge9r2Z/lih/mvzsKnhkF4xat6kVv8dh
+hSdVBUYlF+oyknXN/y4mlPdhDadQ12rNAZVP0LYaR9rGzh8sfofmRjpaCt0=
+</ds:X509Certificate>
+</ds:X509Data>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>oGLQtOWk4vlo5grzM9tBgi75+ZbqHXq1OuGxCQ22IwSh3sFrXHIgm11L0xC7puhcWlNHLlKDwvU+
+9gyqXADvCHW65i3vjOBIH6IJdEANmNk78Lxd0Mac9OpTY8nLDMZO4rpHOfL+ltpoIfg/NF9KcGRd
+9Mtw3yfmtnDgRz7llz7/k3GjIlFq/Fq+XBZWc3P+u4eo6rLz7LbdLAcKbij4biE7VuQilzXUPx08
+s82EEqHDpgCbkmYsEwmECa36UM749yqjdPJmHscoliHfrO34QA71BP4iiY3x/l0rm3SpCAGWy5Pb
+jJymPN/+UQD8B2iOIZjhgN12i0E3tv6n+8wmww==
+</ds:Modulus>
+<ds:Exponent>AQAB
+</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+</ds:KeyInfo>
+<ds:Object><etsi:QualifyingProperties xmlns:etsi="http://uri.etsi.org/01903/v1.3.2#" Target="#Signature085efe36-55fc-4b25-9509-cca9b18d76ad" Id="Signature085efe36-55fc-4b25-9509-cca9b18d76ad"><etsi:SignedProperties Id="Signature085efe36-55fc-4b25-9509-cca9b18d76ad-SignedPropertiesID9c54e89b-f36f-44bc-b2c3-2cfb20c48c25"><etsi:SignedSignatureProperties><etsi:SigningCertificate><etsi:Cert><etsi:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><ds:DigestValue>MD2oLtgsjzia+cOn9Xihm1A1Ip0=</ds:DigestValue></etsi:CertDigest><etsi:IssuerSerial><ds:X509IssuerName>L=Guayaquil,CN=Datil Autoridad de Certificacion Subordinada,ST=Guayas,OU=Entidad de certificacion de informacion,O=Datilmedia S.A.,C=EC</ds:X509IssuerName><ds:X509SerialNumber>69855844724397251488609722468703665633</ds:X509SerialNumber></etsi:IssuerSerial></etsi:Cert></etsi:SigningCertificate><etsi:SignaturePolicyIdentifier><etsi:SignaturePolicyImplied/></etsi:SignaturePolicyIdentifier></etsi:SignedSignatureProperties><etsi:SignedDataObjectProperties><etsi:DataObjectFormat ObjectReference="#Reference-ID-239d3577-e0bb-4e34-a0d7-b3c04930438c"><etsi:Description>contenido comprobante</etsi:Description><etsi:MimeType>text/xml</etsi:MimeType></etsi:DataObjectFormat></etsi:SignedDataObjectProperties></etsi:SignedProperties></etsi:QualifyingProperties></ds:Object></ds:Signature></comprobanteRetencion>
+]]></comprobante>
+<mensajes/>
+</autorizacion>
+

@@ -118,8 +118,37 @@ const initialState: WizardState = {
   resumen: null,
 };
 
+/**
+ * Contribuyente mock para demostración y pruebas.
+ * Este mock se activa automáticamente solo en modo desarrollo cuando:
+ * - No hay un usuario autenticado con perfil de contribuyente
+ * - O no hay un contribuyente activo seleccionado (para contadores)
+ * 
+ * NOTA: En producción, este mock no se usa nunca.
+ * El RUC corresponde a los archivos de prueba en /docs/data-test/
+ */
+const DEMO_CONTRIBUYENTE = {
+  id: "demo-id",
+  user_id: "demo-user-id",
+  ruc: "0962428348001",
+  razon_social: "USUARIO DEMO (Modo Desarrollo)",
+  nombre_comercial: "Demo Contribuyente",
+  direccion: "Dirección de Demostración",
+  telefono: "0999999999",
+  email: "demo@demo.com",
+  obligado_contabilidad: false,
+  tipo_contribuyente: "natural" as const,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 export function ImportWizard() {
-  const { contribuyenteEfectivo: contribuyente } = useAuth();
+  const { contribuyenteEfectivo } = useAuth();
+  
+  // En desarrollo: usar mock si no hay contribuyente real
+  // En producción: siempre requerir contribuyente real
+  const isDevelopment = process.env.NODE_ENV === "development";
+  const contribuyente = contribuyenteEfectivo || (isDevelopment ? DEMO_CONTRIBUYENTE : null);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [wizardState, setWizardState] = useState<WizardState>(initialState);
