@@ -39,6 +39,46 @@ export async function POST(request: NextRequest) {
   try {
     const body: RegistroBody = await request.json();
 
+    // Usar cliente admin para verificar si el email ya existe
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Verificar si el email ya está registrado en auth.users
+    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+    const userExists = existingUser?.users?.find((u) => u.email === body.email);
+
+    if (userExists) {
+      // Verificar si ya tiene un perfil de contribuyente o contador
+      const { data: contribuyente } = await supabaseAdmin
+        .from("contribuyentes")
+        .select("ruc, first_name, last_name")
+        .eq("user_id", userExists.id)
+        .maybeSingle();
+
+      const { data: contador } = await supabaseAdmin
+        .from("contadores")
+        .select("id, first_name, last_name")
+        .eq("user_id", userExists.id)
+        .maybeSingle();
+
+      if (contribuyente) {
+        return NextResponse.json(
+          {
+            error: `Este email ya está registrado como contribuyente (${contribuyente.first_name} ${contribuyente.last_name}). Por favor, usa otro email o inicia sesión.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (contador) {
+        return NextResponse.json(
+          {
+            error: `Este email ya está registrado como contador (${contador.first_name} ${contador.last_name}). Por favor, usa otro email o inicia sesión.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Crear cliente de Supabase para auth (anon key)
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -70,9 +110,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    // Usar cliente admin para bypasear RLS
-    const supabaseAdmin = getSupabaseAdmin();
 
     if (body.type === "contribuyente") {
       // Crear perfil de contribuyente
