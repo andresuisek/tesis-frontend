@@ -17,9 +17,8 @@ const defaultSuggestions = [
 
 export function AgentComposer() {
   const [question, setQuestion] = useState("");
-  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const { askAgent, isProcessing } = useAiAgent();
+  const { askAgentStream, isProcessing } = useAiAgent();
 
   const submitQuestion = async () => {
     if (!question.trim()) {
@@ -31,8 +30,9 @@ export function AgentComposer() {
       return;
     }
 
-    await askAgent(question, contribuyente.ruc);
+    const q = question;
     setQuestion("");
+    await askAgentStream(q, contribuyente.ruc);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -49,8 +49,14 @@ export function AgentComposer() {
     }
   };
 
-  const handleSuggestion = (suggestion: string) => {
-    setQuestion(suggestion);
+  const handleSuggestion = async (suggestion: string) => {
+    if (!contribuyente?.ruc) {
+      toast.error("No encontramos un RUC activo en tu sesión.");
+      return;
+    }
+
+    setQuestion("");
+    await askAgentStream(suggestion, contribuyente.ruc);
   };
 
   return (

@@ -183,3 +183,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* AI Agent animations */
+@keyframes agent-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-agent-fade-in {
+  animation: agent-fade-in 0.3s ease-out;
+}
+
+@keyframes agent-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.623 0.214 259.815 / 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px oklch(0.623 0.214 259.815 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.623 0.214 259.815 / 0);
+  }
+}
+
+.animate-agent-pulse-ring {
+  animation: agent-pulse-ring 2s ease-in-out infinite;
+}

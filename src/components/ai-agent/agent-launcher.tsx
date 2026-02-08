@@ -22,7 +22,7 @@ export function AgentLauncher() {
             <Button
               type="button"
               size="lg"
-              className="pointer-events-auto flex items-center gap-2 rounded-full px-5 py-6 shadow-2xl"
+              className="pointer-events-auto flex items-center gap-2 rounded-full px-5 py-6 shadow-2xl animate-agent-pulse-ring"
               onClick={openPanel}
               disabled={isProcessing}
             >
@@ -42,4 +42,3 @@ export function AgentLauncher() {
     </div>
   );
 }
-

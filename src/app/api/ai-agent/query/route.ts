@@ -76,6 +76,19 @@ const friendlyResponseFormat = {
           type: "string",
           description: "Siguiente pregunta sugerida.",
         },
+        chart: {
+          type: ["object", "null"],
+          description:
+            "Configuracion de grafico. bar: comparaciones. line: tendencias. pie: distribuciones. null si no aplica.",
+          properties: {
+            type: { type: "string", enum: ["bar", "line", "pie"] },
+            title: { type: "string" },
+            xKey: { type: "string" },
+            yKeys: { type: "array", items: { type: "string" } },
+          },
+          required: ["type", "title", "xKey", "yKeys"],
+          additionalProperties: false,
+        },
       },
       required: ["summary"],
     },
@@ -298,12 +311,23 @@ export async function POST(req: Request) {
       },
     });
 
+    const chartConfig = friendlyResponse.chart
+      ? {
+          type: friendlyResponse.chart.type,
+          title: friendlyResponse.chart.title,
+          xKey: friendlyResponse.chart.xKey,
+          yKeys: friendlyResponse.chart.yKeys,
+          data: previewRows,
+        }
+      : undefined;
+
     return NextResponse.json({
       summary: friendlyResponse.summary,
       highlights: friendlyResponse.highlights ?? [],
       followUp: friendlyResponse.follow_up,
       rowCount: rows.length,
       previewRows,
+      chartConfig,
     });
   } catch (error) {
     // Track failed AI query
