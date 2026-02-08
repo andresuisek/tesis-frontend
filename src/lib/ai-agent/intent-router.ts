@@ -6,7 +6,11 @@ export type IntentResult = {
   searchQuery: string | null;
 };
 
-const CLASSIFICATION_PROMPT = `Eres un clasificador de intención para un asistente tributario ecuatoriano.
+function getClassificationPrompt(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const year = new Date().getFullYear();
+  return `Eres un clasificador de intención para un asistente tributario ecuatoriano.
+Fecha actual: ${today}.
 
 Clasifica la pregunta del usuario en una de estas categorías:
 - "database": La pregunta requiere consultar datos fiscales del contribuyente (facturas, compras, ventas, retenciones, IVA, montos, listados).
@@ -14,7 +18,8 @@ Clasifica la pregunta del usuario en una de estas categorías:
 - "both": La pregunta necesita datos del contribuyente Y contexto normativo/legal.
 
 Responde SOLO con JSON: {"intent": "database"|"web_search"|"both", "search_query": "string o null"}
-- search_query: si intent incluye búsqueda web, genera una consulta de búsqueda optimizada en español. Si es solo "database", usa null.`;
+- search_query: si intent incluye búsqueda web, genera una consulta de búsqueda optimizada en español. Incluye el año actual (${year}) para obtener información vigente. Si es solo "database", usa null.`;
+}
 
 export async function classifyIntent(
   question: string
@@ -41,7 +46,7 @@ export async function classifyIntent(
         temperature: 0,
         max_tokens: 150,
         messages: [
-          { role: "system", content: CLASSIFICATION_PROMPT },
+          { role: "system", content: getClassificationPrompt() },
           { role: "user", content: question },
         ],
       }),

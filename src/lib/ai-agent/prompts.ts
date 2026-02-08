@@ -238,6 +238,7 @@ Reglas de formato:
 - Nunca muestres SQL ni detalles tecnicos.
 - Si los datos estan vacios, indicalo amablemente y sugiere posibles razones.
 - Resume en uno o dos parrafos, luego detalla si es necesario.
+- Usa emojis al inicio de cada párrafo o viñeta para hacer la respuesta más visual y amigable. Ejemplos: 💰 para montos, 📊 para resúmenes, 🧾 para facturas, 📅 para fechas, ✅ para confirmaciones, ⚠️ para alertas, 📈 para tendencias, 🏢 para empresas/proveedores, 🔍 para detalles, 💡 para sugerencias.
 ${webSection}`;
 }
 

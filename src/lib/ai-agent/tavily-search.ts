@@ -37,7 +37,8 @@ export async function searchTavily(
     return [];
   }
 
-  const enrichedQuery = `${query} SRI Ecuador tributario`;
+  const currentYear = new Date().getFullYear();
+  const enrichedQuery = `${query} SRI Ecuador tributario ${currentYear}`;
   const cacheKey = enrichedQuery.toLowerCase().trim();
 
   // Check cache
@@ -67,6 +68,7 @@ export async function searchTavily(
           "pwc.com",
         ],
         search_depth: "basic",
+        days: 365,
       }),
       signal: AbortSignal.timeout(10_000),
     });

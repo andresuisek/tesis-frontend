@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   Sparkles,
   Globe,
+  Search,
+  Code2,
+  FileText,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -20,11 +23,26 @@ import { AgentChart } from "@/components/ai-agent/agent-chart";
 import { EmptyState } from "@/components/ai-agent/empty-state";
 import type { StreamPhase } from "@/contexts/ai-agent-context";
 
-const phaseLabels: Record<Exclude<StreamPhase, null>, string> = {
-  routing: "Analizando tu pregunta...",
-  generating_sql: "Generando consulta segura...",
-  executing_query: "Consultando base de datos...",
-  formatting: "Redactando respuesta...",
+const phaseConfig: Record<
+  Exclude<StreamPhase, null>,
+  { label: string; icon: React.ReactNode }
+> = {
+  routing: {
+    label: "Analizando tu pregunta...",
+    icon: <Search className="h-3.5 w-3.5 animate-spin" />,
+  },
+  generating_sql: {
+    label: "Generando consulta segura...",
+    icon: <Code2 className="h-3.5 w-3.5 animate-pulse" />,
+  },
+  executing_query: {
+    label: "Consultando base de datos...",
+    icon: <Database className="h-3.5 w-3.5 animate-pulse" />,
+  },
+  formatting: {
+    label: "Redactando respuesta...",
+    icon: <FileText className="h-3.5 w-3.5 animate-pulse" />,
+  },
 };
 
 function HighlightsList({ items }: { items: string[] }) {
@@ -55,12 +73,23 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
     return null;
   }
 
-  const columns = Object.keys(rows[0]).slice(0, 5);
+  const hiddenColumns = new Set(["id", "contribuyente_ruc", "user_id", "created_at", "updated_at", "deleted_at"]);
+  const columns = Object.keys(rows[0])
+    .filter((col) => !hiddenColumns.has(col))
+    .slice(0, 5);
   if (!columns.length) {
     return null;
   }
 
   const limitedRows = rows.slice(0, 5);
+
+  // Hide table if all cell values are null/undefined/empty
+  const hasAnyValue = limitedRows.some((row) =>
+    columns.some((col) => row[col] !== null && row[col] !== undefined && row[col] !== "")
+  );
+  if (!hasAnyValue) {
+    return null;
+  }
 
   return (
     <div className="rounded-xl border border-border/60 bg-background/80 p-3">
@@ -287,8 +316,17 @@ export function MessageList() {
 
       {isProcessing && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground animate-agent-fade-in">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {streamPhase ? phaseLabels[streamPhase] : "Generando respuesta segura..."}
+          {streamPhase ? (
+            <>
+              {phaseConfig[streamPhase].icon}
+              {phaseConfig[streamPhase].label}
+            </>
+          ) : (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Generando respuesta segura...
+            </>
+          )}
         </div>
       )}
     </div>
