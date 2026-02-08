@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import { supabase } from "@/lib/supabase";
@@ -8,66 +9,54 @@ import { useAuth } from "@/contexts/auth-context";
 
 type YearRow = Record<string, string | null>;
 
+async function fetchAvailableYears(
+  ruc: string,
+  table: string,
+  dateColumn: string,
+): Promise<number[]> {
+  const { data, error } = await supabase
+    .from(table)
+    .select(dateColumn)
+    .eq("contribuyente_ruc", ruc);
+
+  if (error) throw error;
+
+  const yearSet = new Set<number>();
+  const rows = data as unknown as YearRow[] | null;
+  rows?.forEach((row: YearRow) => {
+    const rawDate = row[dateColumn];
+    if (!rawDate) return;
+    const parsed = dayjs(rawDate);
+    if (parsed.isValid()) {
+      yearSet.add(parsed.year());
+    }
+  });
+
+  yearSet.add(dayjs().year());
+  return Array.from(yearSet).sort((a, b) => b - a);
+}
+
 export function useAvailableYears(table: string, dateColumn = "fecha_emision") {
   // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const [years, setYears] = useState<number[]>([]);
-  const isMountedRef = useRef(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const ruc = contribuyente?.ruc ?? null;
+
+  const { data: years = [] } = useQuery({
+    queryKey: ["available-years", ruc, table, dateColumn],
+    queryFn: () => fetchAvailableYears(ruc!, table, dateColumn),
+    enabled: !!ruc,
+    // Los años disponibles cambian muy poco, staleTime alto
+    staleTime: 10 * 60 * 1000,
+  });
 
   const refresh = useCallback(async () => {
-    if (!contribuyente?.ruc) {
-      if (isMountedRef.current) {
-        setYears([]);
-      }
-      return [];
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .select(dateColumn)
-        .eq("contribuyente_ruc", contribuyente.ruc);
-
-      if (error) throw error;
-
-      const yearSet = new Set<number>();
-      const rows = data as unknown as YearRow[] | null;
-      rows?.forEach((row: YearRow) => {
-        const rawDate = row[dateColumn];
-        if (!rawDate) return;
-        const parsed = dayjs(rawDate);
-        if (parsed.isValid()) {
-          yearSet.add(parsed.year());
-        }
-      });
-
-      yearSet.add(dayjs().year());
-      const sorted = Array.from(yearSet).sort((a, b) => b - a);
-
-      if (isMountedRef.current) {
-        setYears(sorted);
-      }
-
-      return sorted;
-    } catch (error) {
-      console.warn("No se pudieron cargar los años disponibles:", error);
-      return [];
-    }
-  }, [contribuyente?.ruc, dateColumn, table]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    refresh();
-  }, [refresh]);
+    await queryClient.invalidateQueries({
+      queryKey: ["available-years", ruc, table, dateColumn],
+    });
+    return years;
+  }, [queryClient, ruc, table, dateColumn, years]);
 
   return { years, refresh };
 }
-
-
-

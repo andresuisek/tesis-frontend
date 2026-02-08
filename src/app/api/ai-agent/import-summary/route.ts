@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import {
+  getAuthenticatedUser,
+  verifyRucOwnership,
+} from "@/lib/auth-helpers";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -37,8 +41,34 @@ const MESES = [
 ];
 
 export async function POST(request: NextRequest) {
+  // --- Authentication: validate user session ---
+  const auth = await getAuthenticatedUser();
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { error: "No autenticado. Inicia sesión para continuar." },
+      { status: 401 }
+    );
+  }
+
   try {
     const body: ImportSummaryRequest = await request.json();
+
+    // --- Authorization: verify the RUC belongs to the authenticated user ---
+    const contribuyenteRuc = body.contribuyenteRuc?.trim();
+    if (!contribuyenteRuc) {
+      return NextResponse.json(
+        { error: "Debes enviar la propiedad 'contribuyenteRuc'." },
+        { status: 400 }
+      );
+    }
+
+    const hasAccess = await verifyRucOwnership(auth.user.id, contribuyenteRuc);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No tienes acceso a los datos de este contribuyente." },
+        { status: 403 }
+      );
+    }
 
     const {
       periodo,

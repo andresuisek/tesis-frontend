@@ -7,6 +7,10 @@ import {
 } from "@/lib/ai-agent/prompts";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getPostHogClient } from "@/lib/posthog-server";
+import {
+  getAuthenticatedUser,
+  verifyRucOwnership,
+} from "@/lib/auth-helpers";
 
 type AgentRequestPayload = {
   question?: string;
@@ -166,6 +170,15 @@ function prepareRowsForModel(
 }
 
 export async function POST(req: Request) {
+  // --- Authentication: validate user session ---
+  const auth = await getAuthenticatedUser();
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { error: "No autenticado. Inicia sesión para continuar." },
+      { status: 401 }
+    );
+  }
+
   let payload: AgentRequestPayload;
 
   try {
@@ -185,7 +198,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const contribuyenteRuc = payload.contribuyenteRuc ?? "desconocido";
+  const contribuyenteRuc = payload.contribuyenteRuc?.trim();
+  if (!contribuyenteRuc) {
+    return NextResponse.json(
+      { error: "Debes enviar la propiedad 'contribuyenteRuc'." },
+      { status: 400 }
+    );
+  }
+
+  // --- Authorization: verify the RUC belongs to the authenticated user ---
+  const hasAccess = await verifyRucOwnership(auth.user.id, contribuyenteRuc);
+  if (!hasAccess) {
+    return NextResponse.json(
+      { error: "No tienes acceso a los datos de este contribuyente." },
+      { status: 403 }
+    );
+  }
   const schemaSummary = payload.schemaSummary ?? getSchemaSummary();
 
   // Track AI query submission
@@ -235,7 +263,7 @@ export async function POST(req: Request) {
     }
 
     console.info("[AI-Agent] Ejecutando SQL seguro:", sanitizedSql);
-    const rows = await executeQueryViaRpc(sanitizedSql);
+    const rows = await executeQueryViaRpc(sanitizedSql, contribuyenteRuc);
     const previewRows = prepareRowsForModel(rows);
 
     const friendlyResponse = await callOpenAi({
@@ -296,10 +324,11 @@ export async function POST(req: Request) {
   }
 }
 
-async function executeQueryViaRpc(sql: string) {
+async function executeQueryViaRpc(sql: string, allowedRuc: string) {
   const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin.rpc("execute_sql_query", {
     query_text: sql,
+    allowed_ruc: allowedRuc,
   });
 
   if (error) {

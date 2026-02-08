@@ -1,21 +1,20 @@
-import { NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-export async function middleware() {
-  // TEMPORALMENTE DESHABILITADO - Dejar que el contexto de auth maneje las redirecciones
-  console.log("Middleware: Permitiendo acceso a todas las rutas");
-  return NextResponse.next();
+export async function middleware(request: NextRequest) {
+  return await updateSession(request);
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - public folder assets
+     * - ingest (PostHog reverse proxy)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico|public|ingest).*)",
   ],
 };
