@@ -30,6 +30,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase, ActividadEconomica, UserType } from "@/lib/supabase";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import posthog from "posthog-js";
 
@@ -848,74 +856,72 @@ export default function RegistroPage() {
           </FormFieldWrapper>
 
           <FormFieldWrapper label="Tipo de Régimen">
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Select
               value={c.tipo_regimen}
-              onChange={(e) =>
-                handleInputChange(
-                  "contribuyente.tipo_regimen",
-                  e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
-                )
+              onValueChange={(value) =>
+                handleInputChange("contribuyente.tipo_regimen", value)
               }
               disabled={loading}
             >
-              <option value="general">Régimen General</option>
-              <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
-              <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">Régimen General</SelectItem>
+                <SelectItem value="rimpe_negocio_popular">RIMPE - Negocio Popular</SelectItem>
+                <SelectItem value="rimpe_emprendedor">RIMPE - Emprendedor</SelectItem>
+              </SelectContent>
+            </Select>
           </FormFieldWrapper>
 
           <FormFieldWrapper label="Tipo de Obligación">
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            <Select
               value={c.tipo_obligacion}
-              onChange={(e) =>
-                handleInputChange(
-                  "contribuyente.tipo_obligacion",
-                  e.target.value as "mensual" | "semestral" | "anual"
-                )
+              onValueChange={(value) =>
+                handleInputChange("contribuyente.tipo_obligacion", value)
               }
               disabled={loading}
             >
-              <option value="mensual">Mensual</option>
-              <option value="semestral">Semestral</option>
-              {c.tipo_regimen === "rimpe_negocio_popular" && (
-                <option value="anual">Anual</option>
-              )}
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mensual">Mensual</SelectItem>
+                <SelectItem value="semestral">Semestral</SelectItem>
+                {c.tipo_regimen === "rimpe_negocio_popular" && (
+                  <SelectItem value="anual">Anual</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </FormFieldWrapper>
 
           <div className="space-y-3">
             <label className="text-sm font-medium">Características</label>
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={c.obligado_contab}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     handleInputChange(
                       "contribuyente.obligado_contab",
-                      e.target.checked
+                      !!checked
                     )
                   }
                   disabled={loading}
-                  className="h-4 w-4"
                 />
                 <span className="text-sm">Obligado a llevar contabilidad</span>
               </label>
 
               <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={c.agente_retencion}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     handleInputChange(
                       "contribuyente.agente_retencion",
-                      e.target.checked
+                      !!checked
                     )
                   }
                   disabled={loading}
-                  className="h-4 w-4"
                 />
                 <span className="text-sm">Agente de retención</span>
               </label>

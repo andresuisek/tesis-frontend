@@ -40,6 +40,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase, Contribuyente, ActividadEconomica } from "@/lib/supabase";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface NuevoContribuyenteForm {
   ruc: string;
@@ -658,68 +666,60 @@ export default function ClientesPage() {
                   </FormFieldWrapper>
 
                   <FormFieldWrapper label="Tipo Régimen">
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    <Select
                       value={formData.tipo_regimen}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "tipo_regimen",
-                          e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
-                        )
+                      onValueChange={(value) =>
+                        handleInputChange("tipo_regimen", value)
                       }
                     >
-                      <option value="general">General</option>
-                      <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
-                      <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="rimpe_negocio_popular">RIMPE - Negocio Popular</SelectItem>
+                        <SelectItem value="rimpe_emprendedor">RIMPE - Emprendedor</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormFieldWrapper>
 
                   <FormFieldWrapper label="Tipo Obligación">
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    <Select
                       value={formData.tipo_obligacion}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "tipo_obligacion",
-                          e.target.value as "mensual" | "semestral" | "anual"
-                        )
+                      onValueChange={(value) =>
+                        handleInputChange("tipo_obligacion", value)
                       }
                     >
-                      <option value="mensual">Mensual</option>
-                      <option value="semestral">Semestral</option>
-                      {formData.tipo_regimen === "rimpe_negocio_popular" && (
-                        <option value="anual">Anual</option>
-                      )}
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mensual">Mensual</SelectItem>
+                        <SelectItem value="semestral">Semestral</SelectItem>
+                        {formData.tipo_regimen === "rimpe_negocio_popular" && (
+                          <SelectItem value="anual">Anual</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </FormFieldWrapper>
                 </div>
 
                 <div className="flex gap-4">
                   <label className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={formData.obligado_contab}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "obligado_contab",
-                          e.target.checked
-                        )
+                      onCheckedChange={(checked) =>
+                        handleInputChange("obligado_contab", !!checked)
                       }
-                      className="h-4 w-4"
                     />
                     <span>Obligado a llevar contabilidad</span>
                   </label>
                   <label className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={formData.agente_retencion}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "agente_retencion",
-                          e.target.checked
-                        )
+                      onCheckedChange={(checked) =>
+                        handleInputChange("agente_retencion", !!checked)
                       }
-                      className="h-4 w-4"
                     />
                     <span>Agente de retención</span>
                   </label>
