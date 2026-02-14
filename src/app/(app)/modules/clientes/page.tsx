@@ -95,6 +95,7 @@ export default function ClientesPage() {
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [creandoActividad, setCreandoActividad] = useState(false);
 
   // Redireccionar si no es contador (solo cuando ya sabemos el tipo)
   useEffect(() => {
@@ -160,6 +161,50 @@ export default function ClientesPage() {
       );
     } else {
       handleInputChange("actividades_economicas", [...current, codigo]);
+    }
+  };
+
+  const crearActividad = async () => {
+    const descripcion = searchActividad.trim();
+    if (!descripcion) return;
+
+    setCreandoActividad(true);
+    try {
+      // Generate a code from the description (uppercase, no spaces, max 5 chars)
+      const codigo = `CUST_${descripcion
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .substring(0, 10)
+        .toUpperCase()}`;
+
+      const { data, error } = await supabase
+        .from("actividades_economicas")
+        .insert({ codigo, descripcion, aplica_iva: true })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Ya existe una actividad con ese código");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setActividadesDisponibles((prev) => [...prev, data]);
+      handleInputChange("actividades_economicas", [
+        ...formData.actividades_economicas,
+        data.codigo,
+      ]);
+      setSearchActividad("");
+      toast.success(`Actividad "${descripcion}" creada`);
+    } catch (error) {
+      console.error("Error creando actividad:", error);
+      toast.error("Error al crear la actividad");
+    } finally {
+      setCreandoActividad(false);
     }
   };
 
@@ -688,6 +733,26 @@ export default function ClientesPage() {
                         </div>
                       </div>
                     ))}
+                    {searchActividad.trim() &&
+                      !actividadesFiltradas.some(
+                        (a) =>
+                          a.descripcion.toLowerCase() ===
+                          searchActividad.trim().toLowerCase()
+                      ) && (
+                        <div
+                          onClick={crearActividad}
+                          className="p-2 rounded cursor-pointer text-sm hover:bg-muted border-t mt-1 pt-2 flex items-center gap-2 text-primary"
+                        >
+                          {creandoActividad ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                          <span>
+                            Crear &quot;{searchActividad.trim()}&quot;
+                          </span>
+                        </div>
+                      )}
                   </div>
 
                   {formData.actividades_economicas.length > 0 && (
