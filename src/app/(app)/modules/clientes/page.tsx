@@ -657,6 +657,23 @@ export default function ClientesPage() {
                     />
                   </FormFieldWrapper>
 
+                  <FormFieldWrapper label="Tipo Régimen">
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.tipo_regimen}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "tipo_regimen",
+                          e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
+                        )
+                      }
+                    >
+                      <option value="general">General</option>
+                      <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
+                      <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
+                    </select>
+                  </FormFieldWrapper>
+
                   <FormFieldWrapper label="Tipo Obligación">
                     <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -673,23 +690,6 @@ export default function ClientesPage() {
                       {formData.tipo_regimen === "rimpe_negocio_popular" && (
                         <option value="anual">Anual</option>
                       )}
-                    </select>
-                  </FormFieldWrapper>
-
-                  <FormFieldWrapper label="Tipo Régimen">
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={formData.tipo_regimen}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "tipo_regimen",
-                          e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
-                        )
-                      }
-                    >
-                      <option value="general">General</option>
-                      <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
-                      <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
                     </select>
                   </FormFieldWrapper>
                 </div>

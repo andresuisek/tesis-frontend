@@ -847,6 +847,24 @@ export default function RegistroPage() {
             />
           </FormFieldWrapper>
 
+          <FormFieldWrapper label="Tipo de Régimen">
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={c.tipo_regimen}
+              onChange={(e) =>
+                handleInputChange(
+                  "contribuyente.tipo_regimen",
+                  e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
+                )
+              }
+              disabled={loading}
+            >
+              <option value="general">Régimen General</option>
+              <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
+              <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
+            </select>
+          </FormFieldWrapper>
+
           <FormFieldWrapper label="Tipo de Obligación">
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -864,24 +882,6 @@ export default function RegistroPage() {
               {c.tipo_regimen === "rimpe_negocio_popular" && (
                 <option value="anual">Anual</option>
               )}
-            </select>
-          </FormFieldWrapper>
-
-          <FormFieldWrapper label="Tipo de Régimen">
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={c.tipo_regimen}
-              onChange={(e) =>
-                handleInputChange(
-                  "contribuyente.tipo_regimen",
-                  e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
-                )
-              }
-              disabled={loading}
-            >
-              <option value="general">Régimen General</option>
-              <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
-              <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
             </select>
           </FormFieldWrapper>
 
