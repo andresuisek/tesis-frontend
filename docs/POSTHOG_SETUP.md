@@ -231,3 +231,4 @@ Si el build falla después de instalar PostHog:
 **Versión de PostHog:** posthog-js@1.335.2, posthog-node@5.24.2
 
 
+
