@@ -13,7 +13,7 @@ export interface Contribuyente {
   first_name?: string;
   last_name?: string;
   estado: "activo" | "inactivo";
-  tipo_obligacion: "mensual" | "semestral";
+  tipo_obligacion: "mensual" | "semestral" | "anual";
   tipo_regimen: TipoRegimen;
   cargas_familiares: number;
   obligado_contab: boolean;

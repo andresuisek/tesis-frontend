@@ -43,7 +43,7 @@ interface ContribuyenteFormData {
   cargas_familiares: number;
   obligado_contab: boolean;
   agente_retencion: boolean;
-  tipo_obligacion: "mensual" | "semestral";
+  tipo_obligacion: "mensual" | "semestral" | "anual";
   tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
@@ -196,10 +196,14 @@ export default function RegistroPage() {
   ) => {
     if (field.startsWith("contribuyente.")) {
       const subField = field.replace("contribuyente.", "");
-      setFormData((prev) => ({
-        ...prev,
-        contribuyente: { ...prev.contribuyente, [subField]: value },
-      }));
+      setFormData((prev) => {
+        const updated = { ...prev.contribuyente, [subField]: value };
+        // Si cambia el régimen y ya no es rimpe_negocio_popular, resetear "anual" a "mensual"
+        if (subField === "tipo_regimen" && value !== "rimpe_negocio_popular" && updated.tipo_obligacion === "anual") {
+          updated.tipo_obligacion = "mensual";
+        }
+        return { ...prev, contribuyente: updated };
+      });
     } else if (field.startsWith("contador.")) {
       const subField = field.replace("contador.", "");
       setFormData((prev) => ({
@@ -850,13 +854,16 @@ export default function RegistroPage() {
               onChange={(e) =>
                 handleInputChange(
                   "contribuyente.tipo_obligacion",
-                  e.target.value as "mensual" | "semestral"
+                  e.target.value as "mensual" | "semestral" | "anual"
                 )
               }
               disabled={loading}
             >
               <option value="mensual">Mensual</option>
               <option value="semestral">Semestral</option>
+              {c.tipo_regimen === "rimpe_negocio_popular" && (
+                <option value="anual">Anual</option>
+              )}
             </select>
           </FormFieldWrapper>
 

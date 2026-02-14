@@ -51,7 +51,7 @@ interface NuevoContribuyenteForm {
   cargas_familiares: number;
   obligado_contab: boolean;
   agente_retencion: boolean;
-  tipo_obligacion: "mensual" | "semestral";
+  tipo_obligacion: "mensual" | "semestral" | "anual";
   tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
@@ -148,7 +148,14 @@ export default function ClientesPage() {
     field: keyof NuevoContribuyenteForm,
     value: string | number | boolean | string[]
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      // Si cambia el régimen y ya no es rimpe_negocio_popular, resetear "anual" a "mensual"
+      if (field === "tipo_regimen" && value !== "rimpe_negocio_popular" && updated.tipo_obligacion === "anual") {
+        updated.tipo_obligacion = "mensual";
+      }
+      return updated;
+    });
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -657,12 +664,15 @@ export default function ClientesPage() {
                       onChange={(e) =>
                         handleInputChange(
                           "tipo_obligacion",
-                          e.target.value as "mensual" | "semestral"
+                          e.target.value as "mensual" | "semestral" | "anual"
                         )
                       }
                     >
                       <option value="mensual">Mensual</option>
                       <option value="semestral">Semestral</option>
+                      {formData.tipo_regimen === "rimpe_negocio_popular" && (
+                        <option value="anual">Anual</option>
+                      )}
                     </select>
                   </FormFieldWrapper>
 
@@ -962,7 +972,7 @@ export default function ClientesPage() {
                       {c.estado}
                     </Badge>
                     <Badge variant="outline">
-                      {c.tipo_obligacion === "mensual" ? "Mensual" : "Semestral"}
+                      {c.tipo_obligacion === "mensual" ? "Mensual" : c.tipo_obligacion === "semestral" ? "Semestral" : "Anual"}
                     </Badge>
                   </div>
 

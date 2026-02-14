@@ -17,7 +17,7 @@ interface RegistroContribuyenteBody {
   cargas_familiares: number;
   obligado_contab: boolean;
   agente_retencion: boolean;
-  tipo_obligacion: "mensual" | "semestral";
+  tipo_obligacion: "mensual" | "semestral" | "anual";
   tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
