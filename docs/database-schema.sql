@@ -570,11 +570,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================================================
 
 -- NOTA: Las políticas RLS específicas se encuentran en archivos separados:
--- - supabase-ventas-rls-policies.sql
--- - supabase-compras-rls-policies.sql
--- - supabase-retenciones-rls.sql
--- - supabase-notas-credito-rls.sql
--- - supabase-tax-liquidations-rls-policies.sql
+-- - sql/supabase-ventas-rls-policies.sql
+-- - sql/supabase-compras-rls-policies.sql
+-- - sql/supabase-retenciones-rls.sql
+-- - sql/supabase-notas-credito-rls.sql
+-- - sql/supabase-tax-liquidations-rls-policies.sql
 --
 -- Estas políticas garantizan que cada usuario solo puede acceder a sus propios
 -- registros basándose en la relación contribuyente_ruc <-> user_id
