@@ -112,7 +112,56 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.type === "contribuyente") {
-      // Crear perfil de contribuyente
+      // Check if a contribuyente with this RUC already exists (e.g. created by a contador)
+      const { data: existingContribuyente } = await supabaseAdmin
+        .from("contribuyentes")
+        .select("ruc, user_id")
+        .eq("ruc", body.ruc)
+        .maybeSingle();
+
+      if (existingContribuyente && existingContribuyente.user_id) {
+        // RUC already linked to another user account
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        return NextResponse.json(
+          { error: "Este RUC ya está asociado a otra cuenta. Por favor, inicia sesión o usa otro RUC." },
+          { status: 400 }
+        );
+      }
+
+      if (existingContribuyente && !existingContribuyente.user_id) {
+        // RUC exists but without a user account (created by a contador) — link it
+        const { error: updateError } = await supabaseAdmin
+          .from("contribuyentes")
+          .update({
+            user_id: authData.user.id,
+            email: body.email,
+            first_name: body.first_name,
+            last_name: body.last_name,
+            telefono: body.telefono,
+            direccion: body.direccion,
+            cargas_familiares: body.cargas_familiares,
+            obligado_contab: body.obligado_contab,
+            agente_retencion: body.agente_retencion,
+            tipo_obligacion: body.tipo_obligacion,
+          })
+          .eq("ruc", body.ruc);
+
+        if (updateError) {
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          return NextResponse.json(
+            { error: `Error al vincular perfil existente: ${updateError.message}` },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Cuenta vinculada exitosamente al contribuyente existente",
+          user_id: authData.user.id,
+        });
+      }
+
+      // No existing contribuyente — create a new one
       const { error: contribuyenteError } = await supabaseAdmin
         .from("contribuyentes")
         .insert({
@@ -131,7 +180,6 @@ export async function POST(request: NextRequest) {
         });
 
       if (contribuyenteError) {
-        // Intentar eliminar el usuario de auth si falla la creación del perfil
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return NextResponse.json(
           { error: `Error al crear perfil: ${contribuyenteError.message}` },
@@ -154,7 +202,6 @@ export async function POST(request: NextRequest) {
 
         if (actividadesError) {
           console.error("Error al asociar actividades:", actividadesError);
-          // No es crítico, continuar
         }
       }
 
