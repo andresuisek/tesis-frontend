@@ -18,6 +18,7 @@ interface RegistroContribuyenteBody {
   obligado_contab: boolean;
   agente_retencion: boolean;
   tipo_obligacion: "mensual" | "semestral";
+  tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
 
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
             obligado_contab: body.obligado_contab,
             agente_retencion: body.agente_retencion,
             tipo_obligacion: body.tipo_obligacion,
+            tipo_regimen: body.tipo_regimen,
           })
           .eq("ruc", body.ruc);
 
@@ -175,6 +177,7 @@ export async function POST(request: NextRequest) {
           obligado_contab: body.obligado_contab,
           agente_retencion: body.agente_retencion,
           tipo_obligacion: body.tipo_obligacion,
+          tipo_regimen: body.tipo_regimen,
           estado: "activo",
           user_id: authData.user.id,
         });

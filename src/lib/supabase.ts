@@ -6,12 +6,15 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 // Types for our database tables
+export type TipoRegimen = "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
+
 export interface Contribuyente {
   ruc: string;
   first_name?: string;
   last_name?: string;
   estado: "activo" | "inactivo";
   tipo_obligacion: "mensual" | "semestral";
+  tipo_regimen: TipoRegimen;
   cargas_familiares: number;
   obligado_contab: boolean;
   agente_retencion: boolean;

@@ -52,6 +52,7 @@ interface NuevoContribuyenteForm {
   obligado_contab: boolean;
   agente_retencion: boolean;
   tipo_obligacion: "mensual" | "semestral";
+  tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
 
@@ -91,6 +92,7 @@ export default function ClientesPage() {
     obligado_contab: false,
     agente_retencion: false,
     tipo_obligacion: "mensual",
+    tipo_regimen: "general",
     actividades_economicas: [],
   });
 
@@ -260,6 +262,7 @@ export default function ClientesPage() {
           obligado_contab: formData.obligado_contab,
           agente_retencion: formData.agente_retencion,
           tipo_obligacion: formData.tipo_obligacion,
+          tipo_regimen: formData.tipo_regimen,
           estado: "activo",
           user_id: null, // No tiene cuenta propia, es gestionado por el contador
         });
@@ -427,6 +430,7 @@ export default function ClientesPage() {
       obligado_contab: false,
       agente_retencion: false,
       tipo_obligacion: "mensual",
+    tipo_regimen: "general",
       actividades_economicas: [],
     });
     setErrors({});
@@ -662,39 +666,53 @@ export default function ClientesPage() {
                     </select>
                   </FormFieldWrapper>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Opciones</label>
-                    <div className="space-y-1">
-                      <label className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={formData.obligado_contab}
-                          onChange={(e) =>
-                            handleInputChange(
-                              "obligado_contab",
-                              e.target.checked
-                            )
-                          }
-                          className="h-4 w-4"
-                        />
-                        <span>Obligado contab.</span>
-                      </label>
-                      <label className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={formData.agente_retencion}
-                          onChange={(e) =>
-                            handleInputChange(
-                              "agente_retencion",
-                              e.target.checked
-                            )
-                          }
-                          className="h-4 w-4"
-                        />
-                        <span>Agente retención</span>
-                      </label>
-                    </div>
-                  </div>
+                  <FormFieldWrapper label="Tipo Régimen">
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.tipo_regimen}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "tipo_regimen",
+                          e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
+                        )
+                      }
+                    >
+                      <option value="general">General</option>
+                      <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
+                      <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
+                    </select>
+                  </FormFieldWrapper>
+                </div>
+
+                <div className="flex gap-4">
+                  <label className="flex items-center space-x-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={formData.obligado_contab}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "obligado_contab",
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+                    <span>Obligado a llevar contabilidad</span>
+                  </label>
+                  <label className="flex items-center space-x-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={formData.agente_retencion}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "agente_retencion",
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+                    <span>Agente de retención</span>
+                  </label>
                 </div>
 
                 {/* Actividades Económicas */}

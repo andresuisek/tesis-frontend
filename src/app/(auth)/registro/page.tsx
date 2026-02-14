@@ -44,6 +44,7 @@ interface ContribuyenteFormData {
   obligado_contab: boolean;
   agente_retencion: boolean;
   tipo_obligacion: "mensual" | "semestral";
+  tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
   actividades_economicas: string[];
 }
 
@@ -152,6 +153,7 @@ export default function RegistroPage() {
       obligado_contab: false,
       agente_retencion: false,
       tipo_obligacion: "mensual",
+      tipo_regimen: "general",
       actividades_economicas: [],
     },
     contador: {
@@ -443,6 +445,7 @@ export default function RegistroPage() {
           obligado_contab: c.obligado_contab,
           agente_retencion: c.agente_retencion,
           tipo_obligacion: c.tipo_obligacion,
+          tipo_regimen: c.tipo_regimen,
           actividades_economicas: c.actividades_economicas,
         }),
       });
@@ -854,6 +857,24 @@ export default function RegistroPage() {
             >
               <option value="mensual">Mensual</option>
               <option value="semestral">Semestral</option>
+            </select>
+          </FormFieldWrapper>
+
+          <FormFieldWrapper label="Tipo de Régimen">
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={c.tipo_regimen}
+              onChange={(e) =>
+                handleInputChange(
+                  "contribuyente.tipo_regimen",
+                  e.target.value as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor"
+                )
+              }
+              disabled={loading}
+            >
+              <option value="general">Régimen General</option>
+              <option value="rimpe_negocio_popular">RIMPE - Negocio Popular</option>
+              <option value="rimpe_emprendedor">RIMPE - Emprendedor</option>
             </select>
           </FormFieldWrapper>
 
