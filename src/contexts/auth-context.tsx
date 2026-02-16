@@ -152,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           obligado_contab: boolean;
           agente_retencion: boolean;
           tipo_obligacion: string;
+          tipo_regimen: string;
           contribuyente_estado: string;
           contribuyente_user_id: string;
           contribuyente_created_at: string;
@@ -174,7 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             cargas_familiares: item.cargas_familiares,
             obligado_contab: item.obligado_contab,
             agente_retencion: item.agente_retencion,
-            tipo_obligacion: item.tipo_obligacion as "mensual" | "semestral",
+            tipo_obligacion: item.tipo_obligacion as "mensual" | "semestral" | "anual",
+            tipo_regimen: (item.tipo_regimen || "general") as "general" | "rimpe_negocio_popular" | "rimpe_emprendedor",
             estado: item.contribuyente_estado as "activo" | "inactivo" | "suspendido",
             user_id: item.contribuyente_user_id,
             created_at: item.contribuyente_created_at,

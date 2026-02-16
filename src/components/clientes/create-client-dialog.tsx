@@ -1,0 +1,465 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { FormFieldWrapper } from "@/components/forms/form-field-wrapper";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase, ActividadEconomica } from "@/lib/supabase";
+
+interface NuevoContribuyenteForm {
+  ruc: string;
+  first_name: string;
+  last_name: string;
+  telefono: string;
+  email: string;
+  direccion: string;
+  cargas_familiares: number;
+  obligado_contab: boolean;
+  agente_retencion: boolean;
+  tipo_obligacion: "mensual" | "semestral" | "anual";
+  tipo_regimen: "general" | "rimpe_negocio_popular" | "rimpe_emprendedor";
+  actividades_economicas: string[];
+}
+
+interface CreateClientDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  contadorId: string;
+  onSuccess: () => void;
+}
+
+export function CreateClientDialog({
+  open,
+  onOpenChange,
+  contadorId,
+  onSuccess,
+}: CreateClientDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const [actividadesDisponibles, setActividadesDisponibles] = useState<ActividadEconomica[]>([]);
+  const [searchActividad, setSearchActividad] = useState("");
+  const [creandoActividad, setCreandoActividad] = useState(false);
+
+  const [formData, setFormData] = useState<NuevoContribuyenteForm>({
+    ruc: "",
+    first_name: "",
+    last_name: "",
+    telefono: "",
+    email: "",
+    direccion: "",
+    cargas_familiares: 0,
+    obligado_contab: false,
+    agente_retencion: false,
+    tipo_obligacion: "mensual",
+    tipo_regimen: "general",
+    actividades_economicas: [],
+  });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const cargarActividades = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("actividades_economicas")
+          .select("*")
+          .order("descripcion");
+        if (error) throw error;
+        setActividadesDisponibles(data || []);
+      } catch (error) {
+        console.error("Error cargando actividades:", error);
+      }
+    };
+    cargarActividades();
+  }, []);
+
+  const actividadesFiltradas = actividadesDisponibles.filter((actividad) =>
+    actividad.descripcion.toLowerCase().includes(searchActividad.toLowerCase()),
+  );
+
+  const handleInputChange = (
+    field: keyof NuevoContribuyenteForm,
+    value: string | number | boolean | string[],
+  ) => {
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (field === "tipo_regimen" && value !== "rimpe_negocio_popular" && updated.tipo_obligacion === "anual") {
+        updated.tipo_obligacion = "mensual";
+      }
+      return updated;
+    });
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const toggleActividad = (codigo: string) => {
+    const current = formData.actividades_economicas;
+    if (current.includes(codigo)) {
+      handleInputChange("actividades_economicas", current.filter((c) => c !== codigo));
+    } else {
+      handleInputChange("actividades_economicas", [...current, codigo]);
+    }
+  };
+
+  const crearActividad = async () => {
+    const descripcion = searchActividad.trim();
+    if (!descripcion) return;
+
+    setCreandoActividad(true);
+    try {
+      const codigo = `CUST_${descripcion
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .substring(0, 10)
+        .toUpperCase()}`;
+
+      const { data, error } = await supabase
+        .from("actividades_economicas")
+        .insert({ codigo, descripcion, aplica_iva: true })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Ya existe una actividad con ese código");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setActividadesDisponibles((prev) => [...prev, data]);
+      handleInputChange("actividades_economicas", [...formData.actividades_economicas, data.codigo]);
+      setSearchActividad("");
+      toast.success(`Actividad "${descripcion}" creada`);
+    } catch (error) {
+      console.error("Error creando actividad:", error);
+      toast.error("Error al crear la actividad");
+    } finally {
+      setCreandoActividad(false);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.ruc) {
+      newErrors.ruc = "El RUC es requerido";
+    } else if (!/^\d{13}$/.test(formData.ruc)) {
+      newErrors.ruc = "El RUC debe tener exactamente 13 dígitos";
+    }
+    if (!formData.first_name.trim()) newErrors.first_name = "El nombre es requerido";
+    if (!formData.last_name.trim()) newErrors.last_name = "El apellido es requerido";
+    if (!formData.email.trim()) {
+      newErrors.email = "El email es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email inválido";
+    }
+    if (!formData.telefono.trim()) newErrors.telefono = "El teléfono es requerido";
+    if (formData.actividades_economicas.length === 0) {
+      newErrors.actividades_economicas = "Debe seleccionar al menos una actividad";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCrear = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const { error: contribuyenteError } = await supabase.from("contribuyentes").insert({
+        ruc: formData.ruc,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        telefono: formData.telefono,
+        direccion: formData.direccion,
+        cargas_familiares: formData.cargas_familiares,
+        obligado_contab: formData.obligado_contab,
+        agente_retencion: formData.agente_retencion,
+        tipo_obligacion: formData.tipo_obligacion,
+        tipo_regimen: formData.tipo_regimen,
+        estado: "activo",
+        user_id: null,
+      });
+
+      if (contribuyenteError) {
+        if (contribuyenteError.code === "23505") throw new Error("Ya existe un contribuyente con ese RUC");
+        throw new Error(contribuyenteError.message);
+      }
+
+      if (formData.actividades_economicas.length > 0) {
+        const actividadesRelaciones = formData.actividades_economicas.map((codigo) => ({
+          contribuyente_ruc: formData.ruc,
+          actividad_codigo: codigo,
+        }));
+        const { error: actividadesError } = await supabase
+          .from("contribuyente_actividad")
+          .insert(actividadesRelaciones);
+        if (actividadesError) console.error("Error al asociar actividades:", actividadesError);
+      }
+
+      const { error: relacionError } = await supabase.from("contador_contribuyente").insert({
+        contador_id: contadorId,
+        contribuyente_ruc: formData.ruc,
+        estado: "activo",
+      });
+
+      if (relacionError) throw new Error(`Error al vincular contribuyente: ${relacionError.message}`);
+
+      toast.success("Contribuyente creado y vinculado exitosamente");
+      onOpenChange(false);
+      resetForm();
+      onSuccess();
+    } catch (error: unknown) {
+      console.error("Error al crear contribuyente:", error);
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      ruc: "",
+      first_name: "",
+      last_name: "",
+      telefono: "",
+      email: "",
+      direccion: "",
+      cargas_familiares: 0,
+      obligado_contab: false,
+      agente_retencion: false,
+      tipo_obligacion: "mensual",
+      tipo_regimen: "general",
+      actividades_economicas: [],
+    });
+    setErrors({});
+    setSearchActividad("");
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) resetForm();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Cliente
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Registrar Nuevo Contribuyente</DialogTitle>
+          <DialogDescription>Crea un nuevo contribuyente y vincúlalo a tu cartera</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <FormFieldWrapper label="RUC" required error={errors.ruc} description="Registro Único de Contribuyentes (13 dígitos)">
+            <Input
+              type="text"
+              value={formData.ruc}
+              onChange={(e) => handleInputChange("ruc", e.target.value.replace(/\D/g, "").slice(0, 13))}
+              placeholder="1234567890001"
+              maxLength={13}
+            />
+          </FormFieldWrapper>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormFieldWrapper label="Nombres" required error={errors.first_name}>
+              <Input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) => handleInputChange("first_name", e.target.value)}
+                placeholder="Juan Carlos"
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper label="Apellidos" required error={errors.last_name}>
+              <Input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => handleInputChange("last_name", e.target.value)}
+                placeholder="Pérez González"
+              />
+            </FormFieldWrapper>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormFieldWrapper label="Email" required error={errors.email}>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="cliente@email.com"
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper label="Teléfono" required error={errors.telefono}>
+              <Input
+                type="tel"
+                value={formData.telefono}
+                onChange={(e) => handleInputChange("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="0987654321"
+                maxLength={10}
+              />
+            </FormFieldWrapper>
+          </div>
+
+          <FormFieldWrapper label="Dirección">
+            <Input
+              type="text"
+              value={formData.direccion}
+              onChange={(e) => handleInputChange("direccion", e.target.value)}
+              placeholder="Av. Principal 123"
+            />
+          </FormFieldWrapper>
+
+          <div className="grid grid-cols-3 gap-4">
+            <FormFieldWrapper label="Cargas Familiares">
+              <Input
+                type="number"
+                min="0"
+                value={formData.cargas_familiares}
+                onChange={(e) => handleInputChange("cargas_familiares", parseInt(e.target.value) || 0)}
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper label="Tipo Régimen">
+              <Select value={formData.tipo_regimen} onValueChange={(v) => handleInputChange("tipo_regimen", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="rimpe_negocio_popular">RIMPE - Negocio Popular</SelectItem>
+                  <SelectItem value="rimpe_emprendedor">RIMPE - Emprendedor</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormFieldWrapper>
+            <FormFieldWrapper label="Tipo Obligación">
+              <Select value={formData.tipo_obligacion} onValueChange={(v) => handleInputChange("tipo_obligacion", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mensual">Mensual</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  {formData.tipo_regimen === "rimpe_negocio_popular" && (
+                    <SelectItem value="anual">Anual</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </FormFieldWrapper>
+          </div>
+
+          <div className="flex gap-4">
+            <label className="flex items-center space-x-2 text-sm">
+              <Checkbox
+                checked={formData.obligado_contab}
+                onCheckedChange={(checked) => handleInputChange("obligado_contab", !!checked)}
+              />
+              <span>Obligado a llevar contabilidad</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <Checkbox
+                checked={formData.agente_retencion}
+                onCheckedChange={(checked) => handleInputChange("agente_retencion", !!checked)}
+              />
+              <span>Agente de retención</span>
+            </label>
+          </div>
+
+          <div className="space-y-3">
+            <FormFieldWrapper label="Actividades Económicas" required error={errors.actividades_economicas}>
+              <Input
+                type="text"
+                value={searchActividad}
+                onChange={(e) => setSearchActividad(e.target.value)}
+                placeholder="Buscar actividades..."
+              />
+            </FormFieldWrapper>
+
+            <div className="max-h-40 overflow-y-auto space-y-1 border rounded-md p-2">
+              {actividadesFiltradas.slice(0, 20).map((actividad) => (
+                <div
+                  key={actividad.codigo}
+                  onClick={() => toggleActividad(actividad.codigo)}
+                  className={`p-2 rounded cursor-pointer text-sm ${
+                    formData.actividades_economicas.includes(actividad.codigo)
+                      ? "bg-primary/10 border border-primary"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{actividad.descripcion}</span>
+                    {formData.actividades_economicas.includes(actividad.codigo) && (
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {searchActividad.trim() &&
+                !actividadesFiltradas.some(
+                  (a) => a.descripcion.toLowerCase() === searchActividad.trim().toLowerCase(),
+                ) && (
+                  <div
+                    onClick={crearActividad}
+                    className="p-2 rounded cursor-pointer text-sm hover:bg-muted border-t mt-1 pt-2 flex items-center gap-2 text-primary"
+                  >
+                    {creandoActividad ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    <span>Crear &quot;{searchActividad.trim()}&quot;</span>
+                  </div>
+                )}
+            </div>
+
+            {formData.actividades_economicas.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {formData.actividades_economicas.map((codigo) => {
+                  const act = actividadesDisponibles.find((a) => a.codigo === codigo);
+                  return (
+                    <Badge key={codigo} variant="secondary" className="cursor-pointer" onClick={() => toggleActividad(codigo)}>
+                      {act?.descripcion || codigo}
+                      <XCircle className="h-3 w-3 ml-1" />
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { onOpenChange(false); resetForm(); }}>
+            Cancelar
+          </Button>
+          <Button onClick={handleCrear} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+            Crear y Vincular
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

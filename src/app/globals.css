@@ -215,3 +215,17 @@
 .animate-agent-pulse-ring {
   animation: agent-pulse-ring 2s ease-in-out infinite;
 }
+
+/* Deadline vencido pulse animation */
+@keyframes deadline-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-deadline-pulse {
+  animation: deadline-pulse 2s ease-in-out infinite;
+}
