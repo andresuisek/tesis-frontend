@@ -27,6 +27,7 @@ import {
   X,
   Calculator,
   Users,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase, ActividadEconomica, UserType } from "@/lib/supabase";
@@ -1269,7 +1270,7 @@ export default function RegistroPage() {
                   >
                     {loading ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         Registrando...
                       </>
                     ) : (
@@ -1292,7 +1293,7 @@ export default function RegistroPage() {
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground">
-          © 2024 Sistema Tributario. Todos los derechos reservados.
+          © {new Date().getFullYear()} Sistema Tributario. Todos los derechos reservados.
         </div>
       </div>
     </div>

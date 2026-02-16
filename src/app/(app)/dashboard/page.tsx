@@ -33,7 +33,6 @@ import {
   ShoppingCart,
   Calculator,
   Receipt,
-  Loader2,
   AlertCircle,
   BarChart3,
   Layers,
@@ -48,6 +47,8 @@ import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useAvailableYears } from "@/hooks/use-available-years";
 import { useDateFilter } from "@/contexts/date-filter-context";
+import { SkeletonStatCard, SkeletonChartCard } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -183,10 +184,34 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="space-y-4 text-center">
-          <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-          <p className="text-muted-foreground">Cargando datos del dashboard...</p>
+      <div className="space-y-8 p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="mt-2 h-4 w-80" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-6 w-28 rounded-full" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-14 w-full" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-7">
+          <div className="lg:col-span-4"><SkeletonChartCard /></div>
+          <div className="lg:col-span-3"><SkeletonChartCard /></div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-7">
+          <div className="lg:col-span-4"><SkeletonChartCard /></div>
+          <div className="lg:col-span-3"><SkeletonChartCard /></div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-7">
+          <div className="lg:col-span-4"><SkeletonChartCard /></div>
+          <div className="lg:col-span-3"><SkeletonChartCard /></div>
         </div>
       </div>
     );

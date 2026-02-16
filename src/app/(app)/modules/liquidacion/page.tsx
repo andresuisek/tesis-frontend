@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { FileText, PlusCircle } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { SkeletonStatCard } from "@/components/skeletons";
 import { supabase, TaxLiquidation } from "@/lib/supabase";
 import { toast } from "sonner";
 import { LiquidacionesTable } from "@/components/liquidacion/liquidaciones-table";
@@ -168,10 +169,18 @@ export default function LiquidacionPage() {
 
       <TaxPeriodFilter availableYears={availableYears} />
 
-      <LiquidacionKPIs
-        resumen={resumenSeleccionado}
-        periodoLabel={resumenSeleccionado?.periodo.label}
-      />
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <LiquidacionKPIs
+          resumen={resumenSeleccionado}
+          periodoLabel={resumenSeleccionado?.periodo.label}
+        />
+      )}
 
       <Card>
         <CardHeader>

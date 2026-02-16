@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { Venta, TipoComprobante } from "@/lib/supabase";
+import { SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
@@ -116,16 +117,7 @@ export function VentasTable({
   });
 
   if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="animate-pulse">
-          <div className="h-10 bg-muted rounded w-full mb-4"></div>
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-muted rounded w-full mb-2"></div>
-          ))}
-        </div>
-      </div>
-    );
+    return <SkeletonTableRows rows={5} columns={8} />;
   }
 
   return (

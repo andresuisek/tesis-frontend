@@ -12,6 +12,9 @@ import { NuevaCompraDialog } from "@/components/compras/nueva-compra-dialog";
 import { ImportarComprasDialog } from "@/components/compras/importar-compras-dialog";
 import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
@@ -181,21 +184,33 @@ export default function ComprasPage() {
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
-      {!loading && <ComprasKPIs compras={todasLasComprasFiltradas} />}
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <ComprasKPIs compras={todasLasComprasFiltradas} />
+      )}
 
       {/* Gastos Personales */}
-      {!loading && (
-        <GastosPersonalesSummary 
-          compras={todasLasComprasFiltradas} 
+      {loading ? (
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-32 w-full" />
+          </CardContent>
+        </Card>
+      ) : (
+        <GastosPersonalesSummary
+          compras={todasLasComprasFiltradas}
           cargasFamiliares={contribuyente.cargas_familiares}
         />
       )}
 
       {/* Tabla */}
       {loading ? (
-        <div className="flex items-center justify-center h-[300px]">
-          <p className="text-muted-foreground">Cargando compras...</p>
-        </div>
+        <SkeletonTableRows rows={8} columns={7} />
       ) : (
         <ComprasTable
           compras={comprasFiltradas}
@@ -204,7 +219,9 @@ export default function ComprasPage() {
       )}
 
       {/* Paginación */}
-      {!loading && (
+      {loading ? (
+        <Skeleton className="h-9 w-64" />
+      ) : (
         <ComprasPagination
           paginaActual={paginaActual}
           totalItems={totalCompras}

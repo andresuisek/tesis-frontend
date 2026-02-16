@@ -8,6 +8,7 @@ import { NotaCredito } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { FileX, DollarSign, TrendingDown, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { SkeletonStatCardSimple, SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
@@ -130,14 +131,6 @@ export default function NotasCreditoPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground">Cargando notas de crédito...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -156,87 +149,99 @@ export default function NotasCreditoPage() {
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Notas de Crédito
-            </CardTitle>
-            <FileX className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalNotasCredito}</div>
-            <p className="text-xs text-muted-foreground">
-              Notas emitidas en total
-            </p>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCardSimple key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Notas de Crédito
+              </CardTitle>
+              <FileX className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalNotasCredito}</div>
+              <p className="text-xs text-muted-foreground">
+                Notas emitidas en total
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monto Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-primary">
-              {formatearMoneda(totalMonto)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Total en notas de crédito
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Monto Total</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold text-primary">
+                {formatearMoneda(totalMonto)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total en notas de crédito
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Periodo seleccionado
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold capitalize">
-              {periodoLabel}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {selectedMonth !== null ? "Detalle mensual" : "Resumen anual"}
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Periodo seleccionado
+              </CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-semibold capitalize">
+                {periodoLabel}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {selectedMonth !== null ? "Detalle mensual" : "Resumen anual"}
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Promedio por nota
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-primary">
-              {formatearMoneda(promedioPeriodo)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Calculado para el periodo seleccionado
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Promedio por nota
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold text-primary">
+                {formatearMoneda(promedioPeriodo)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Calculado para el periodo seleccionado
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Tabla de Notas de Crédito */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileX className="h-5 w-5 text-primary" />
-            Listado de Notas de Crédito
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NotasCreditoTable
-            notasCredito={notasCredito}
-            onView={handleVerDetalle}
-          />
-        </CardContent>
-      </Card>
+      {loading ? (
+        <SkeletonTableRows rows={5} columns={7} />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileX className="h-5 w-5 text-primary" />
+              Listado de Notas de Crédito
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NotasCreditoTable
+              notasCredito={notasCredito}
+              onView={handleVerDetalle}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dialog de Detalle */}
       {notaCreditoSeleccionada && showDetalleDialog && (

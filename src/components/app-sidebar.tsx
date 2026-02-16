@@ -1,17 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  Building2,
   Calculator,
-  ChartBar,
   FileText,
   Home,
-  MessageSquare,
   Receipt,
   ShoppingCart,
   TrendingUp,
-  Users,
-  Settings,
   LogOut,
   FileX,
   ChevronRight,
@@ -33,6 +30,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarHeader,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
@@ -54,7 +52,7 @@ const mainItems = [
     icon: Home,
   },
   {
-    title: "Asistente",
+    title: "Carga Tributaria",
     url: "/modules/assistant",
     icon: Sparkles,
   },
@@ -85,11 +83,6 @@ const mainItems = [
     url: "/modules/liquidacion",
     icon: Calculator,
   },
-  {
-    title: "Registro RUC",
-    url: "/modules/registro-ruc",
-    icon: Building2,
-  },
 ];
 
 // Menú exclusivo para contadores
@@ -101,33 +94,15 @@ const contadorItems = [
   },
 ];
 
-// Menú de administración
-const adminItems = [
-  {
-    title: "Usuarios",
-    url: "/modules/usuarios",
-    icon: Users,
-  },
-  {
-    title: "Reportes",
-    url: "/modules/reportes",
-    icon: ChartBar,
-  },
-  {
-    title: "Chatbot",
-    url: "/modules/chatbot",
-    icon: MessageSquare,
-  },
-  {
-    title: "Configuración",
-    url: "/modules/ajustes",
-    icon: Settings,
-  },
-];
 
 export function AppSidebar() {
   const { user, userType, contribuyente, contador, contribuyenteActivo } =
     useAuth();
+  const pathname = usePathname();
+
+  // Helper para detectar ruta activa
+  const isActive = (url: string) =>
+    pathname === url || pathname.startsWith(url + "/");
 
   // Obtener nombre para mostrar
   const displayName = (() => {
@@ -155,36 +130,33 @@ export function AppSidebar() {
   const roleLabel = userType === "contador" ? "Contador" : "Contribuyente";
 
   // Determinar si debe mostrar los módulos tributarios
-  // - Contribuyentes: siempre ven los módulos
-  // - Contadores: solo ven los módulos si tienen un cliente activo seleccionado
-  const showTributaryModules = userType === "contribuyente" || 
+  const showTributaryModules =
+    userType === "contribuyente" ||
     (userType === "contador" && contribuyenteActivo !== null);
 
   return (
-    <Sidebar className="border-r border-gray-200 dark:border-gray-800">
-      <SidebarHeader className="p-4 bg-gradient-to-r from-[#0A192F] to-[#1D4ED8] text-white">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-            <FileText className="h-5 w-5 text-white" />
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="p-4 bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:p-2">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+            <FileText className="h-4 w-4" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold">Sistema Tributario</span>
-            <span className="text-xs text-white/80">v1.0.0 - Profesional</span>
+            <span className="text-xs opacity-80">v1.0.0 - Profesional</span>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="bg-white dark:bg-gray-950">
+      <SidebarContent>
         {/* Selector de contribuyente para contadores */}
         {userType === "contador" && (
-          <SidebarGroup className="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
-            <SidebarGroupLabel className="text-[#0A192F] dark:text-white font-semibold text-xs uppercase tracking-wide mb-2">
-              Cliente Activo
-            </SidebarGroupLabel>
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupLabel>Cliente Activo</SidebarGroupLabel>
             <SidebarGroupContent>
               <SelectorContribuyente compact />
               {contribuyenteActivo && (
-                <div className="mt-2 text-xs text-muted-foreground">
+                <div className="mt-2 px-2 text-xs text-muted-foreground">
                   Trabajando con:{" "}
                   <span className="font-medium">
                     {contribuyenteActivo.first_name}{" "}
@@ -198,27 +170,21 @@ export function AppSidebar() {
 
         {/* Módulos exclusivos para contadores */}
         {userType === "contador" && (
-          <SidebarGroup className="px-3 py-2">
-            <SidebarGroupLabel className="text-[#0A192F] dark:text-white font-semibold text-xs uppercase tracking-wide mb-2">
-              Gestión de Clientes
-            </SidebarGroupLabel>
+          <SidebarGroup>
+            <SidebarGroupLabel>Gestión de Clientes</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu>
                 {contadorItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className="hover:bg-[#14B8A6]/10 hover:text-[#14B8A6] transition-all duration-200 rounded-lg group"
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
                     >
-                      <a
-                        href={item.url}
-                        className="flex items-center gap-3 px-3 py-2"
-                      >
-                        <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#14B8A6]" />
-                        <span className="text-[#0A192F] dark:text-white group-hover:text-[#14B8A6] font-medium">
-                          {item.title}
-                        </span>
-                      </a>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -229,112 +195,89 @@ export function AppSidebar() {
 
         {/* Módulos principales - Solo visible cuando hay un contribuyente activo */}
         {showTributaryModules && (
-          <SidebarGroup className="px-3 py-2">
-            <SidebarGroupLabel className="text-[#0A192F] dark:text-white font-semibold text-xs uppercase tracking-wide mb-2">
-              Módulos Principales
-            </SidebarGroupLabel>
+          <SidebarGroup>
+            <SidebarGroupLabel>Módulos Principales</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {mainItems.map((item) => (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={false}
-                    className="group/collapsible"
-                  >
-                    <SidebarMenuItem>
-                      {item.items ? (
-                        <>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton className="hover:bg-[#1D4ED8]/10 hover:text-[#1D4ED8] transition-all duration-200 rounded-lg group">
-                              <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8]" />
-                              <span className="text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8] font-medium">
-                                {item.title}
-                              </span>
-                              <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton asChild>
-                                  <a href={item.url}>
-                                    <span>Ver Todas</span>
-                                  </a>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                              {item.items.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.title}>
-                                  <SidebarMenuSubButton asChild>
-                                    <a href={subItem.url}>
-                                      <subItem.icon className="h-4 w-4" />
-                                      <span>{subItem.title}</span>
-                                    </a>
+              <SidebarMenu>
+                {mainItems.map((item) => {
+                  const parentActive =
+                    isActive(item.url) ||
+                    !!item.items?.some((sub) => isActive(sub.url));
+
+                  return (
+                    <Collapsible
+                      key={item.title}
+                      asChild
+                      defaultOpen={parentActive}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        {item.items ? (
+                          <>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton
+                                tooltip={item.title}
+                                isActive={parentActive}
+                              >
+                                <item.icon />
+                                <span>{item.title}</span>
+                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                                <SidebarMenuSubItem>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={isActive(item.url)}
+                                  >
+                                    <Link href={item.url}>
+                                      <span>Ver Todas</span>
+                                    </Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </>
-                      ) : (
-                        <SidebarMenuButton
-                          asChild
-                          className="hover:bg-[#1D4ED8]/10 hover:text-[#1D4ED8] transition-all duration-200 rounded-lg group"
-                        >
-                          <a
-                            href={item.url}
-                            className="flex items-center gap-3 px-3 py-2"
+                                {item.items.map((subItem) => (
+                                  <SidebarMenuSubItem key={subItem.title}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isActive(subItem.url)}
+                                    >
+                                      <Link href={subItem.url}>
+                                        <subItem.icon />
+                                        <span>{subItem.title}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </>
+                        ) : (
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive(item.url)}
+                            tooltip={item.title}
                           >
-                            <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8]" />
-                            <span className="text-[#0A192F] dark:text-white group-hover:text-[#1D4ED8] font-medium">
-                              {item.title}
-                            </span>
-                          </a>
-                        </SidebarMenuButton>
-                      )}
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ))}
+                            <Link href={item.url}>
+                              <item.icon />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        )}
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
-        {/* Administración - Solo visible cuando hay un contribuyente activo */}
-        {showTributaryModules && (
-          <SidebarGroup className="px-3 py-2">
-            <SidebarGroupLabel className="text-[#0A192F] dark:text-white font-semibold text-xs uppercase tracking-wide mb-2">
-              Administración
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className="hover:bg-[#14B8A6]/10 hover:text-[#14B8A6] transition-all duration-200 rounded-lg group"
-                    >
-                      <a
-                        href={item.url}
-                        className="flex items-center gap-3 px-3 py-2"
-                      >
-                        <item.icon className="h-4 w-4 text-[#0A192F] dark:text-white group-hover:text-[#14B8A6]" />
-                        <span className="text-[#0A192F] dark:text-white group-hover:text-[#14B8A6] font-medium">
-                          {item.title}
-                        </span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         {/* Mensaje para contadores sin cliente activo */}
         {userType === "contador" && !contribuyenteActivo && (
-          <SidebarGroup className="px-3 py-4">
-            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-4">
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <div className="mx-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-4">
               <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
                 Selecciona un cliente para acceder a los módulos tributarios
               </p>
@@ -343,17 +286,17 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-[#1D4ED8]">
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
+            <Avatar className="h-8 w-8 shrink-0 border-2 border-sidebar-primary">
               <AvatarImage src="/avatars/01.png" />
-              <AvatarFallback className="bg-[#1D4ED8] text-white font-bold">
+              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-[#0A192F] dark:text-white truncate max-w-[120px]">
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-semibold truncate max-w-[120px]">
                 {displayName}
               </span>
               <Badge
@@ -364,22 +307,24 @@ export function AppSidebar() {
               </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
             <ModeToggle />
             <Button
               variant="ghost"
               size="icon"
               asChild
-              className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
             >
-              <a href="/logout">
+              <Link href="/logout">
                 <LogOut className="h-4 w-4" />
                 <span className="sr-only">Cerrar sesión</span>
-              </a>
+              </Link>
             </Button>
           </div>
         </div>
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

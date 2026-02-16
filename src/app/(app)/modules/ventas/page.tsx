@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Plus, Upload } from "lucide-react";
 import { supabase, Venta } from "@/lib/supabase";
+import { SkeletonStatCard } from "@/components/skeletons";
 import { useAuth } from "@/contexts/auth-context";
 import { VentasKPIs } from "@/components/ventas/ventas-kpis";
 import { VentasTable } from "@/components/ventas/ventas-table";
@@ -258,7 +259,15 @@ export default function VentasPage() {
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs de ventas */}
-      <VentasKPIs ventas={ventas} mesAnterior={ventasMesAnterior} />
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <VentasKPIs ventas={ventas} mesAnterior={ventasMesAnterior} />
+      )}
 
       {/* Tabla de ventas */}
       <Card>
