@@ -135,11 +135,15 @@ export function StepWelcome({
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Cargar tu archivo de <strong>Compras</strong> del SRI (formato TXT)
+                  Cargar <strong>Notas de Crédito</strong> emitidas (formato TXT)
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Cargar los XML de <strong>Retenciones</strong> recibidas
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Cargar tu archivo de <strong>Compras</strong> del SRI (formato TXT)
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />

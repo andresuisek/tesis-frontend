@@ -3,13 +3,6 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Collapsible,
@@ -18,27 +11,24 @@ import {
 } from "@/components/ui/collapsible";
 import { AgentMessage } from "../agent-message";
 import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown } from "lucide-react";
-import { VentaParsed, VentasParseResult, TasaIVA } from "@/lib/ventas-parser";
-
-const TASAS_IVA: TasaIVA[] = [0, 8, 12, 15];
+import { NotaCreditoParsed, NotasCreditoParseResult } from "@/lib/notas-credito-parser";
 import { cn } from "@/lib/utils";
 
-interface StepVentasProps {
-  ventas: {
+interface StepNotasCreditoProps {
+  notasCredito: {
     archivo: File | null;
-    parsed: VentaParsed[];
-    tasaIVA: TasaIVA;
+    parsed: NotaCreditoParsed[];
     guardadas: boolean;
   };
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
-  onFileProcess: (file: File, tasaIVA: TasaIVA) => Promise<VentasParseResult>;
+  onFileProcess: (file: File) => Promise<NotasCreditoParseResult>;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function StepVentas({
-  ventas,
+export function StepNotasCredito({
+  notasCredito,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   periodo,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -46,10 +36,9 @@ export function StepVentas({
   onFileProcess,
   onNext,
   onBack,
-}: StepVentasProps) {
+}: StepNotasCreditoProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tasaIVA, setTasaIVA] = useState<TasaIVA>(ventas.tasaIVA);
   const [error, setError] = useState<string | null>(null);
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [skippedCount, setSkippedCount] = useState(0);
@@ -77,7 +66,7 @@ export function StepVentas({
     setSkippedCount(0);
 
     try {
-      const result = await onFileProcess(file, tasaIVA);
+      const result = await onFileProcess(file);
       if (result.warnings.length > 0) {
         setParseWarnings(result.warnings);
         setSkippedCount(result.skippedCount);
@@ -100,7 +89,7 @@ export function StepVentas({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tasaIVA]
+    []
   );
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,66 +100,30 @@ export function StepVentas({
   };
 
   // Calcular totales
-  const totalVentas = ventas.parsed.reduce((sum, v) => sum + v.subtotal, 0);
-  const totalIVA = ventas.parsed.reduce((sum, v) => sum + v.iva, 0);
+  const totalMonto = notasCredito.parsed.reduce((sum, nc) => sum + nc.total, 0);
+  const totalIVA = notasCredito.parsed.reduce((sum, nc) => sum + nc.iva, 0);
 
-  const hasVentas = ventas.parsed.length > 0;
+  const hasNotasCredito = notasCredito.parsed.length > 0;
 
   return (
     <div className="space-y-6">
       {/* Mensaje del agente */}
       <AgentMessage
         message={
-          hasVentas
-            ? `¡Excelente! He procesado ${ventas.parsed.length} ventas con un total de $${totalVentas.toFixed(2)}. El IVA generado es de $${totalIVA.toFixed(2)}. Puedes continuar al siguiente paso o cargar otro archivo si lo necesitas.`
-            : "Primero, sube el archivo TXT de ventas que descargaste del portal del SRI. Este archivo contiene todas tus facturas emitidas del período seleccionado."
+          hasNotasCredito
+            ? `He procesado ${notasCredito.parsed.length} notas de crédito por un total de $${totalMonto.toFixed(2)}. El IVA asociado es de $${totalIVA.toFixed(2)}. Puedes continuar o cargar otro archivo.`
+            : "Si emitiste notas de crédito en este período, sube el archivo TXT del SRI. Las notas de crédito reducen el IVA en ventas de tu declaración."
         }
-        animate={!hasVentas}
+        animate={!hasNotasCredito}
       />
-
-      {/* Selector de tasa IVA */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-foreground">
-                Tasa de IVA del período
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Selecciona la tasa de IVA vigente para este período
-              </p>
-            </div>
-            <Select
-              value={tasaIVA.toString()}
-              onValueChange={(value) => setTasaIVA(parseInt(value) as TasaIVA)}
-              disabled={hasVentas}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASAS_IVA.map((tasa) => (
-                  <SelectItem key={tasa} value={tasa.toString()}>
-                    {tasa}%
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            <AlertTriangle className="inline h-3 w-3 mr-1" />
-            Esta tasa se aplica a todas las ventas. Si tienes ventas con tarifa 0% y {tasaIVA}% en el mismo período, el cálculo de IVA será aproximado.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Zona de carga */}
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
           isDragging && "border-primary bg-primary/5",
-          hasVentas && "border-primary/30 bg-primary/5",
-          !isDragging && !hasVentas && "border-border hover:border-primary"
+          hasNotasCredito && "border-primary/30 bg-primary/5",
+          !isDragging && !hasNotasCredito && "border-border hover:border-primary"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -186,17 +139,17 @@ export function StepVentas({
               disabled={isProcessing}
             />
 
-            {hasVentas ? (
+            {hasNotasCredito ? (
               <>
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                   <Check className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-primary">
-                    {ventas.archivo?.name}
+                    {notasCredito.archivo?.name}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {ventas.parsed.length} ventas procesadas • Click para cambiar archivo
+                    {notasCredito.parsed.length} notas de crédito procesadas • Click para cambiar archivo
                   </p>
                 </div>
               </>
@@ -232,7 +185,7 @@ export function StepVentas({
                       : "Arrastra tu archivo aquí o haz clic"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Formato: .TXT del portal SRI
+                    Formato: .TXT del portal SRI (Notas de Crédito emitidas)
                   </p>
                 </div>
               </>
@@ -250,33 +203,33 @@ export function StepVentas({
         </Alert>
       )}
 
-      {/* Preview de ventas */}
-      {hasVentas && (
+      {/* Preview de notas de crédito */}
+      {hasNotasCredito && (
         <Card>
           <CardContent className="pt-6">
             <h4 className="font-medium text-foreground mb-4">
-              Resumen de Ventas
+              Resumen de Notas de Crédito
             </h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-primary/5">
                 <p className="text-sm text-primary">
-                  Total Facturas
+                  Total Notas
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {ventas.parsed.length}
+                  {notasCredito.parsed.length}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-primary/5">
                 <p className="text-sm text-primary">
-                  Total Ventas
+                  Total Monto
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  ${totalVentas.toFixed(2)}
+                  ${totalMonto.toFixed(2)}
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-primary/5">
                 <p className="text-sm text-primary">
-                  IVA Generado
+                  IVA
                 </p>
                 <p className="text-2xl font-bold text-foreground">
                   ${totalIVA.toFixed(2)}
@@ -321,7 +274,7 @@ export function StepVentas({
           Atrás
         </Button>
         <div className="flex gap-2">
-          {!hasVentas && (
+          {!hasNotasCredito && (
             <Button variant="ghost" onClick={onNext} className="text-muted-foreground">
               <SkipForward className="mr-2 h-4 w-4" />
               Omitir
@@ -329,9 +282,9 @@ export function StepVentas({
           )}
           <Button
             onClick={onNext}
-            disabled={!hasVentas}
+            disabled={!hasNotasCredito}
           >
-            Continuar a Notas de Crédito
+            Continuar a Retenciones
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

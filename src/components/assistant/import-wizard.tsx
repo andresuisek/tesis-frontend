@@ -4,18 +4,20 @@ import { useState } from "react";
 import { WizardNavigation, WizardStep } from "./wizard-navigation";
 import { StepWelcome } from "./wizard-steps/step-welcome";
 import { StepVentas } from "./wizard-steps/step-ventas";
-import { StepCompras } from "./wizard-steps/step-compras";
+import { StepNotasCredito } from "./wizard-steps/step-notas-credito";
 import { StepRetenciones } from "./wizard-steps/step-retenciones";
+import { StepCompras } from "./wizard-steps/step-compras";
 import { StepProcessing } from "./wizard-steps/step-processing";
 import { StepSummary } from "./wizard-steps/step-summary";
 import { useAuth } from "@/contexts/auth-context";
 import { parsearArchivoVentas, VentaParsed, TasaIVA } from "@/lib/ventas-parser";
-import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor } from "@/lib/compras-parser";
-import { parsearXMLRetencion, RetencionParsed } from "@/lib/retencion-xml-parser";
+import { parsearArchivoNotasCredito, NotaCreditoParsed } from "@/lib/notas-credito-parser";
+import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
+import { parsearXMLRetencion, RetencionParsed, validarRucRetencion } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
 import { toast } from "sonner";
 
-// Definición de los pasos del wizard
+// Nuevo orden: Inicio → Ventas → Notas de Crédito → Retenciones → Compras → Procesando → Resumen
 const WIZARD_STEPS: WizardStep[] = [
   {
     id: "welcome",
@@ -28,14 +30,19 @@ const WIZARD_STEPS: WizardStep[] = [
     description: "Carga el archivo de ventas",
   },
   {
-    id: "compras",
-    title: "Compras",
-    description: "Carga el archivo de compras",
+    id: "notas-credito",
+    title: "Notas de Crédito",
+    description: "Carga notas de crédito emitidas",
   },
   {
     id: "retenciones",
     title: "Retenciones",
     description: "Carga los archivos XML",
+  },
+  {
+    id: "compras",
+    title: "Compras",
+    description: "Carga el archivo de compras",
   },
   {
     id: "processing",
@@ -61,6 +68,11 @@ export interface WizardState {
     tasaIVA: TasaIVA;
     guardadas: boolean;
   };
+  notasCredito: {
+    archivo: File | null;
+    parsed: NotaCreditoParsed[];
+    guardadas: boolean;
+  };
   compras: {
     archivo: File | null;
     parsed: CompraParsed[];
@@ -79,10 +91,13 @@ export interface WizardState {
 export interface ImportSummary {
   ventasTotal: number;
   ventasCount: number;
+  notasCreditoTotal: number;
+  notasCreditoCount: number;
   comprasTotal: number;
   comprasCount: number;
   ivaVentas: number;
   ivaCompras: number;
+  ivaNotasCredito: number;
   ivaAPagar: number;
   retencionesTotal: number;
   retencionesCount: number;
@@ -102,6 +117,11 @@ const initialState: WizardState = {
     archivo: null,
     parsed: [],
     tasaIVA: 15,
+    guardadas: false,
+  },
+  notasCredito: {
+    archivo: null,
+    parsed: [],
     guardadas: false,
   },
   compras: {
@@ -124,7 +144,7 @@ const initialState: WizardState = {
  * Este mock se activa automáticamente solo en modo desarrollo cuando:
  * - No hay un usuario autenticado con perfil de contribuyente
  * - O no hay un contribuyente activo seleccionado (para contadores)
- * 
+ *
  * NOTA: En producción, este mock no se usa nunca.
  * El RUC corresponde a los archivos de prueba en /docs/data-test/
  */
@@ -145,7 +165,7 @@ const DEMO_CONTRIBUYENTE = {
 
 export function ImportWizard() {
   const { contribuyenteEfectivo } = useAuth();
-  
+
   // En desarrollo: usar mock si no hay contribuyente real
   // En producción: siempre requerir contribuyente real
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -154,29 +174,47 @@ export function ImportWizard() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [wizardState, setWizardState] = useState<WizardState>(initialState);
 
-  // Función para avanzar al siguiente paso
+  // Skip logic: si ventas está vacío, saltar NC (2) y Retenciones (3) → ir a Compras (4)
   const goToNextStep = () => {
-    // Validar que al menos 1 tipo de dato esté cargado antes de procesar
-    if (currentStep === 3) {
+    // Validar que al menos 1 tipo de dato esté cargado antes de procesar (step 4 = Compras)
+    if (currentStep === 4) {
       const hasAnyData =
         wizardState.ventas.parsed.length > 0 ||
+        wizardState.notasCredito.parsed.length > 0 ||
         wizardState.compras.parsed.length > 0 ||
         wizardState.retenciones.parsed.length > 0;
       if (!hasAnyData) {
-        toast.error("Debes cargar al menos un tipo de dato (ventas, compras o retenciones) para procesar.");
+        toast.error("Debes cargar al menos un tipo de dato (ventas, compras, notas de crédito o retenciones) para procesar.");
         return;
       }
     }
+
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
-    setCurrentStep((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
+
+    let nextStep = currentStep + 1;
+
+    // Si estamos en Ventas (1) y no hay ventas cargadas, saltar NC y Retenciones → ir a Compras (4)
+    if (currentStep === 1 && wizardState.ventas.parsed.length === 0) {
+      // Marcar NC y Retenciones como completados (skipped)
+      setCompletedSteps((prev) => new Set([...prev, currentStep, 2, 3]));
+      nextStep = 4;
+    }
+
+    setCurrentStep(Math.min(nextStep, WIZARD_STEPS.length - 1));
   };
 
-  // Función para retroceder
+  // Reverse skip: si en Compras (4) y ventas vacío, volver a Ventas (1)
   const goToPreviousStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    let prevStep = currentStep - 1;
+
+    if (currentStep === 4 && wizardState.ventas.parsed.length === 0) {
+      prevStep = 1;
+    }
+
+    setCurrentStep(Math.max(prevStep, 0));
   };
 
-  // Función para ir a un paso específico (actualmente no usada, pero útil para navegación futura)
+  // Función para ir a un paso específico
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const goToStep = (step: number) => {
     if (step <= currentStep || completedSteps.has(step - 1)) {
@@ -215,6 +253,24 @@ export function ImportWizard() {
     return result;
   };
 
+  // Procesar archivo de notas de crédito
+  const processNotasCreditoFile = async (file: File) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
+    const text = await file.text();
+    const result = parsearArchivoNotasCredito(text, wizardState.periodo.mes, wizardState.periodo.anio);
+    setWizardState((prev) => ({
+      ...prev,
+      notasCredito: {
+        archivo: file,
+        parsed: result.data,
+        guardadas: false,
+      },
+    }));
+    return result;
+  };
+
   // Procesar archivo de compras
   const processComprasFile = async (file: File) => {
     if (file.size > MAX_TXT_SIZE) {
@@ -222,6 +278,13 @@ export function ImportWizard() {
     }
     const text = await file.text();
     const result = parsearArchivoCompras(text, wizardState.periodo.mes, wizardState.periodo.anio);
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucCompras(result.data, contribuyente!.ruc);
+    if (rucError) {
+      toast.warning(rucError);
+    }
+
     const proveedores = agruparPorProveedor(result.data);
     setWizardState((prev) => ({
       ...prev,
@@ -235,7 +298,7 @@ export function ImportWizard() {
     return { compras: result.data, proveedores, warnings: result.warnings, skippedCount: result.skippedCount };
   };
 
-  // Actualizar rubros de proveedores
+  // Actualizar rubro de un proveedor
   const updateProveedorRubro = (ruc: string, rubro: string) => {
     setWizardState((prev) => ({
       ...prev,
@@ -246,6 +309,23 @@ export function ImportWizard() {
         ),
         parsed: prev.compras.parsed.map((c) =>
           c.ruc_proveedor === ruc ? { ...c, rubro: rubro as RubroCompra } : c
+        ),
+      },
+    }));
+  };
+
+  // Actualizar rubro en masa para múltiples proveedores
+  const updateBulkProveedorRubro = (rucs: string[], rubro: string) => {
+    const rucSet = new Set(rucs);
+    setWizardState((prev) => ({
+      ...prev,
+      compras: {
+        ...prev.compras,
+        proveedores: prev.compras.proveedores.map((p) =>
+          rucSet.has(p.ruc_proveedor) ? { ...p, rubro: rubro as RubroCompra } : p
+        ),
+        parsed: prev.compras.parsed.map((c) =>
+          rucSet.has(c.ruc_proveedor) ? { ...c, rubro: rubro as RubroCompra } : c
         ),
       },
     }));
@@ -263,10 +343,15 @@ export function ImportWizard() {
       const text = await file.text();
       const result = parsearXMLRetencion(text, file.name);
       if (result.success && result.retencion) {
+        // Validar RUC del archivo vs contribuyente
+        const rucError = validarRucRetencion(result.retencion, contribuyente!.ruc);
+        if (rucError) {
+          toast.warning(`${file.name}: ${rucError}`);
+        }
         allParsed.push(result.retencion);
       }
     }
-    
+
     setWizardState((prev) => ({
       ...prev,
       retenciones: {
@@ -276,7 +361,7 @@ export function ImportWizard() {
         vinculadas: 0,
       },
     }));
-    
+
     return allParsed;
   };
 
@@ -285,6 +370,14 @@ export function ImportWizard() {
     setWizardState((prev) => ({
       ...prev,
       ventas: { ...prev.ventas, guardadas },
+    }));
+  };
+
+  // Marcar notas de crédito como guardadas
+  const setNotasCreditoGuardadas = (guardadas: boolean) => {
+    setWizardState((prev) => ({
+      ...prev,
+      notasCredito: { ...prev.notasCredito, guardadas },
     }));
   };
 
@@ -369,12 +462,11 @@ export function ImportWizard() {
           />
         )}
         {currentStep === 2 && (
-          <StepCompras
-            compras={wizardState.compras}
+          <StepNotasCredito
+            notasCredito={wizardState.notasCredito}
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
-            onFileProcess={processComprasFile}
-            onRubroChange={updateProveedorRubro}
+            onFileProcess={processNotasCreditoFile}
             onNext={goToNextStep}
             onBack={goToPreviousStep}
           />
@@ -390,17 +482,30 @@ export function ImportWizard() {
           />
         )}
         {currentStep === 4 && (
+          <StepCompras
+            compras={wizardState.compras}
+            periodo={wizardState.periodo}
+            contribuyenteRuc={contribuyente.ruc}
+            onFileProcess={processComprasFile}
+            onRubroChange={updateProveedorRubro}
+            onBulkRubroChange={updateBulkProveedorRubro}
+            onNext={goToNextStep}
+            onBack={goToPreviousStep}
+          />
+        )}
+        {currentStep === 5 && (
           <StepProcessing
             wizardState={wizardState}
             contribuyenteRuc={contribuyente.ruc}
             onVentasGuardadas={setVentasGuardadas}
+            onNotasCreditoGuardadas={setNotasCreditoGuardadas}
             onComprasGuardadas={setComprasGuardadas}
             onRetencionesGuardadas={setRetencionesGuardadas}
             onResumenReady={setResumen}
             onComplete={goToNextStep}
           />
         )}
-        {currentStep === 5 && (
+        {currentStep === 6 && (
           <StepSummary
             wizardState={wizardState}
             periodo={wizardState.periodo}
@@ -411,4 +516,3 @@ export function ImportWizard() {
     </div>
   );
 }
-

@@ -218,6 +218,29 @@ export function parsearXMLRetencion(xmlContent: string, fileName?: string): Pars
 }
 
 /**
+ * Valida que el RUC del sujeto retenido (contribuyente_ruc) coincida con el contribuyente.
+ * Retorna un mensaje de error si no coincide, o null si está OK.
+ */
+export function validarRucRetencion(
+  retencion: RetencionParsed,
+  contribuyenteRuc: string
+): string | null {
+  const rucArchivo = retencion.contribuyente_ruc?.trim();
+  const rucUsuario = contribuyenteRuc.trim();
+
+  if (!rucArchivo) return null;
+
+  // Normalizar a 13 dígitos (RUC ecuatoriano) — XMLs a veces omiten el 0 inicial
+  const normalizar = (ruc: string) => ruc.padStart(13, "0");
+
+  if (normalizar(rucArchivo) !== normalizar(rucUsuario)) {
+    return `La retención está dirigida al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo las retenciones correctas.`;
+  }
+
+  return null;
+}
+
+/**
  * Parsea múltiples archivos XML
  */
 export async function parsearMultiplesXML(files: File[]): Promise<ParseResult[]> {

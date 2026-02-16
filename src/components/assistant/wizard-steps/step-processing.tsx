@@ -12,6 +12,7 @@ interface StepProcessingProps {
   wizardState: WizardState;
   contribuyenteRuc: string;
   onVentasGuardadas: (guardadas: boolean) => void;
+  onNotasCreditoGuardadas: (guardadas: boolean) => void;
   onComprasGuardadas: (guardadas: boolean) => void;
   onRetencionesGuardadas: (guardadas: boolean, vinculadas: number) => void;
   onResumenReady: (resumen: ImportSummary) => void;
@@ -24,6 +25,7 @@ export function StepProcessing({
   wizardState,
   contribuyenteRuc,
   onVentasGuardadas,
+  onNotasCreditoGuardadas,
   onComprasGuardadas,
   onRetencionesGuardadas,
   onResumenReady,
@@ -46,7 +48,7 @@ export function StepProcessing({
     try {
       // Paso 1: Guardar todo en una sola transacción atómica
       setCurrentProcessingStep("saving");
-      setMessage("Guardando ventas, compras y retenciones...");
+      setMessage("Guardando ventas, notas de crédito, compras y retenciones...");
       setProgress(10);
 
       const result = await guardarTodo();
@@ -55,6 +57,7 @@ export function StepProcessing({
       setProgress(60);
       setCurrentProcessingStep("saved");
       onVentasGuardadas(true);
+      onNotasCreditoGuardadas(true);
       onComprasGuardadas(true);
       onRetencionesGuardadas(true, result.retenciones_vinculadas);
 
@@ -87,13 +90,14 @@ export function StepProcessing({
 
   interface ImportResult {
     ventas_inserted: number;
+    notas_credito_inserted: number;
     compras_inserted: number;
     retenciones_inserted: number;
     retenciones_vinculadas: number;
   }
 
   const guardarTodo = async (): Promise<ImportResult> => {
-    const { ventas, compras, retenciones } = wizardState;
+    const { ventas, notasCredito, compras, retenciones } = wizardState;
 
     const response = await fetch("/api/import/process", {
       method: "POST",
@@ -101,6 +105,7 @@ export function StepProcessing({
       body: JSON.stringify({
         contribuyenteRuc,
         ventas: ventas.parsed,
+        notasCredito: notasCredito.parsed,
         compras: compras.parsed,
         retenciones: retenciones.parsed,
       }),
@@ -115,11 +120,14 @@ export function StepProcessing({
   };
 
   const generarResumen = async (vinculadas: number): Promise<ImportSummary> => {
-    const { ventas, compras, retenciones } = wizardState;
+    const { ventas, notasCredito, compras, retenciones } = wizardState;
 
     // Calcular totales
     const ventasTotal = ventas.parsed.reduce((sum, v) => sum + v.total, 0);
     const ivaVentas = ventas.parsed.reduce((sum, v) => sum + v.iva, 0);
+
+    const notasCreditoTotal = notasCredito.parsed.reduce((sum, nc) => sum + nc.total, 0);
+    const ivaNotasCredito = notasCredito.parsed.reduce((sum, nc) => sum + nc.iva, 0);
 
     const comprasTotal = compras.parsed.reduce((sum, c) => sum + c.total, 0);
     const ivaCompras = compras.parsed.reduce((sum, c) => sum + c.iva, 0);
@@ -133,7 +141,8 @@ export function StepProcessing({
       0
     );
 
-    const ivaAPagar = Math.max(0, ivaVentas - ivaCompras - totalRetencionesIVA);
+    // IVA a pagar: IVA ventas - IVA NC - crédito tributario (compras) - retenciones IVA
+    const ivaAPagar = Math.max(0, ivaVentas - ivaNotasCredito - ivaCompras - totalRetencionesIVA);
 
     // Generar alertas locales
     const alerts: ImportSummary["alerts"] = [];
@@ -163,6 +172,14 @@ export function StepProcessing({
         type: "info",
         icon: "info",
         message: `${facturasSinRetencion} facturas de venta aún no tienen retención asociada`,
+      });
+    }
+
+    if (notasCredito.parsed.length > 0) {
+      alerts.push({
+        type: "info",
+        icon: "info",
+        message: `${notasCredito.parsed.length} notas de crédito reducen el IVA en ventas por $${ivaNotasCredito.toFixed(2)}`,
       });
     }
 
@@ -204,10 +221,13 @@ export function StepProcessing({
           periodo: wizardState.periodo,
           ventasTotal,
           ventasCount: ventas.parsed.length,
+          notasCreditoTotal,
+          notasCreditoCount: notasCredito.parsed.length,
           comprasTotal,
           comprasCount: compras.parsed.length,
           ivaVentas,
           ivaCompras,
+          ivaNotasCredito,
           retencionesTotal: totalRetencionesRenta + totalRetencionesIVA,
           retencionIVA: totalRetencionesIVA,
           retencionRenta: totalRetencionesRenta,
@@ -229,10 +249,13 @@ export function StepProcessing({
     return {
       ventasTotal,
       ventasCount: ventas.parsed.length,
+      notasCreditoTotal,
+      notasCreditoCount: notasCredito.parsed.length,
       comprasTotal,
       comprasCount: compras.parsed.length,
       ivaVentas,
       ivaCompras,
+      ivaNotasCredito,
       ivaAPagar,
       retencionesTotal: totalRetencionesRenta + totalRetencionesIVA,
       retencionesCount: retenciones.parsed.length,
@@ -270,6 +293,11 @@ export function StepProcessing({
           <div className="space-y-1 border-t border-primary/10 pt-4">
             <ProcessingIndicator
               label={`Ventas guardadas (${wizardState.ventas.parsed.length})`}
+              isComplete={isSaved}
+              isActive={currentProcessingStep === "saving"}
+            />
+            <ProcessingIndicator
+              label={`Notas de crédito guardadas (${wizardState.notasCredito.parsed.length})`}
               isComplete={isSaved}
               isActive={currentProcessingStep === "saving"}
             />

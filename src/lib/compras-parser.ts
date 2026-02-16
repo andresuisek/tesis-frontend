@@ -318,6 +318,33 @@ export function agruparPorProveedor(
 }
 
 /**
+ * Valida que el RUC del archivo de compras (identificacion_receptor) coincida con el contribuyente.
+ * Retorna un mensaje de error si no coincide, o null si está OK.
+ */
+export function validarRucCompras(
+  compras: CompraParsed[],
+  contribuyenteRuc: string
+): string | null {
+  if (compras.length === 0) return null;
+
+  // Verificar que el identificacion_receptor coincida con el RUC del contribuyente
+  const primerRegistro = compras.find((c) => c.identificacion_receptor?.trim());
+  if (!primerRegistro || !primerRegistro.identificacion_receptor) return null;
+
+  const rucArchivo = primerRegistro.identificacion_receptor.trim();
+  const rucUsuario = contribuyenteRuc.trim();
+
+  // Normalizar a 13 dígitos (RUC ecuatoriano) — archivos a veces omiten el 0 inicial
+  const normalizar = (ruc: string) => ruc.padStart(13, "0");
+
+  if (normalizar(rucArchivo) !== normalizar(rucUsuario)) {
+    return `El archivo pertenece al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo el archivo correcto.`;
+  }
+
+  return null;
+}
+
+/**
  * Asigna rubros a las compras basándose en el mapeo de proveedores
  */
 export function asignarRubrosACompras(

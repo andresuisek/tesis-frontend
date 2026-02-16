@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, Upload, Check, AlertCircle, FileText, X, Play, SkipForward } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, FileText, X, Play, SkipForward } from "lucide-react";
 import { RetencionParsed } from "@/lib/retencion-xml-parser";
 import { cn } from "@/lib/utils";
 
@@ -377,8 +377,8 @@ export function StepRetenciones({
             onClick={onNext}
             disabled={!hasRetenciones && !hasPendingFiles}
           >
-            <Play className="mr-2 h-4 w-4" />
-            Procesar Todo
+            Continuar a Compras
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>

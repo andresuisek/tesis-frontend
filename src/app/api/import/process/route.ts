@@ -17,6 +17,16 @@ interface ImportProcessRequest {
     iva: number;
     total: number;
   }>;
+  notasCredito: Array<{
+    tipo_comprobante: string;
+    numero_comprobante: string;
+    fecha_emision: string;
+    subtotal_0: number;
+    subtotal_8: number;
+    subtotal_15: number;
+    iva: number;
+    total: number;
+  }>;
   compras: Array<{
     tipo_comprobante: string;
     numero_comprobante: string;
@@ -78,6 +88,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin.rpc("import_periodo_completo", {
       p_ruc: contribuyenteRuc,
       p_ventas: body.ventas,
+      p_notas_credito: body.notasCredito || [],
       p_compras: body.compras,
       p_retenciones: body.retenciones,
     });
