@@ -22,7 +22,8 @@
       "mcp__plugin_playwright_playwright__browser_run_code",
       "mcp__plugin_playwright_playwright__browser_tabs",
       "mcp__plugin_playwright_playwright__browser_hover",
-      "mcp__plugin_playwright_playwright__browser_resize"
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__supabase__list_migrations"
     ]
   },
   "enableAllProjectMcpServers": true,
