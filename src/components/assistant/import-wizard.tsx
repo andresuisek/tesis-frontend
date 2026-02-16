@@ -331,7 +331,7 @@ export function ImportWizard() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="space-y-6">
       {/* Título */}
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
