@@ -11,8 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, Upload, Check, AlertCircle, FileText, X, Play } from "lucide-react";
+import { ArrowLeft, Upload, Check, AlertCircle, FileText, X, Play, SkipForward } from "lucide-react";
 import { RetencionParsed } from "@/lib/retencion-xml-parser";
 import { cn } from "@/lib/utils";
 
@@ -66,7 +67,7 @@ export function StepRetenciones({
     }
 
     setError(null);
-    
+
     // Si ya hay retenciones procesadas, agregar a las existentes
     if (retenciones.parsed.length > 0) {
       const allFiles = [...retenciones.archivos, ...xmlFiles];
@@ -152,9 +153,9 @@ export function StepRetenciones({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
-          hasRetenciones && "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-700",
-          !isDragging && !hasRetenciones && "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600"
+          isDragging && "border-primary bg-primary/5",
+          hasRetenciones && "border-primary/30 bg-primary/5",
+          !isDragging && !hasRetenciones && "border-border hover:border-primary"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -173,14 +174,14 @@ export function StepRetenciones({
 
             {hasRetenciones ? (
               <>
-                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Check className="h-6 w-6 text-primary" />
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                  <p className="font-medium text-primary">
                     {retenciones.parsed.length} retenciones procesadas
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Click para agregar más archivos
                   </p>
                 </div>
@@ -190,29 +191,29 @@ export function StepRetenciones({
                 <div
                   className={cn(
                     "h-12 w-12 rounded-full flex items-center justify-center transition-colors",
-                    isDragging ? "bg-blue-100 dark:bg-blue-900" : "bg-gray-100 dark:bg-gray-800"
+                    isDragging ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
-                    <div className="h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Upload
                       className={cn(
                         "h-6 w-6",
-                        isDragging ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
+                        isDragging ? "text-primary" : "text-muted-foreground"
                       )}
                     />
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-gray-700 dark:text-gray-300">
+                  <p className="font-medium text-foreground">
                     {isProcessing
                       ? "Procesando archivos..."
                       : isDragging
                       ? "Suelta los archivos aquí"
                       : "Arrastra los XML de retenciones aquí"}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Múltiples archivos permitidos • Formato .XML
                   </p>
                 </div>
@@ -224,10 +225,11 @@ export function StepRetenciones({
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Archivos pendientes */}
@@ -235,18 +237,17 @@ export function StepRetenciones({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-medium text-gray-900 dark:text-white">
+              <h4 className="font-medium text-foreground">
                 Archivos Listos ({pendingFiles.length})
               </h4>
               <Button
                 size="sm"
                 onClick={processAllFiles}
                 disabled={isProcessing}
-                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {isProcessing ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
                     Procesando...
                   </>
                 ) : (
@@ -262,11 +263,11 @@ export function StepRetenciones({
               {pendingFiles.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border"
                 >
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[300px]">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground truncate max-w-[300px]">
                       {file.name}
                     </span>
                   </div>
@@ -290,26 +291,26 @@ export function StepRetenciones({
         <>
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="bg-rose-50 dark:bg-rose-950/30 border-rose-100 dark:border-rose-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-rose-600 dark:text-rose-400">Total Retenciones</p>
-                <p className="text-2xl font-bold text-rose-900 dark:text-rose-100">
+                <p className="text-sm text-primary">Total Retenciones</p>
+                <p className="text-2xl font-bold text-foreground">
                   {retenciones.parsed.length}
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-amber-600 dark:text-amber-400">Retención Renta</p>
-                <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+                <p className="text-sm text-primary">Retención Renta</p>
+                <p className="text-2xl font-bold text-foreground">
                   ${totalRetencionRenta.toFixed(2)}
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-cyan-50 dark:bg-cyan-950/30 border-cyan-100 dark:border-cyan-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-cyan-600 dark:text-cyan-400">Retención IVA</p>
-                <p className="text-2xl font-bold text-cyan-900 dark:text-cyan-100">
+                <p className="text-sm text-primary">Retención IVA</p>
+                <p className="text-2xl font-bold text-foreground">
                   ${totalRetencionIVA.toFixed(2)}
                 </p>
               </CardContent>
@@ -319,13 +320,13 @@ export function StepRetenciones({
           {/* Tabla de retenciones */}
           <Card>
             <CardContent className="pt-6">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+              <h4 className="font-medium text-foreground mb-4">
                 Detalle de Retenciones
               </h4>
 
-              <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800">
+              <div className="max-h-64 overflow-y-auto rounded-lg border">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-gray-50 dark:bg-gray-900">
+                  <TableHeader className="sticky top-0 bg-muted/50">
                     <TableRow>
                       <TableHead>Comprobante</TableHead>
                       <TableHead>Sujeto Retenido</TableHead>
@@ -365,16 +366,22 @@ export function StepRetenciones({
           <ArrowLeft className="mr-2 h-4 w-4" />
           Atrás
         </Button>
-        <Button
-          onClick={onNext}
-          disabled={!hasRetenciones && !hasPendingFiles}
-          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
-        >
-          <Play className="mr-2 h-4 w-4" />
-          Procesar Todo
-        </Button>
+        <div className="flex gap-2">
+          {!hasRetenciones && !hasPendingFiles && (
+            <Button variant="ghost" onClick={onNext} className="text-muted-foreground">
+              <SkipForward className="mr-2 h-4 w-4" />
+              Omitir retenciones
+            </Button>
+          )}
+          <Button
+            onClick={onNext}
+            disabled={!hasRetenciones && !hasPendingFiles}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Procesar Todo
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-

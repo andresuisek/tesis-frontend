@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { AgentMessage } from "../agent-message";
 import { ProcessingIndicator } from "../wizard-navigation";
 import { WizardState, ImportSummary } from "../import-wizard";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface StepProcessingProps {
@@ -19,7 +18,7 @@ interface StepProcessingProps {
   onComplete: () => void;
 }
 
-type ProcessingStep = "idle" | "ventas" | "compras" | "retenciones" | "summary" | "complete";
+type ProcessingStep = "idle" | "saving" | "saved" | "summary" | "complete";
 
 export function StepProcessing({
   wizardState,
@@ -44,46 +43,29 @@ export function StepProcessing({
   }, []);
 
   const processAll = async () => {
-    const totalSteps = 4;
-    let currentStep = 0;
-
     try {
-      // Paso 1: Guardar ventas
-      setCurrentProcessingStep("ventas");
-      setMessage("Guardando ventas en la base de datos...");
-      await guardarVentas();
-      currentStep++;
-      setProgress((currentStep / totalSteps) * 100);
+      // Paso 1: Guardar todo en una sola transacción atómica
+      setCurrentProcessingStep("saving");
+      setMessage("Guardando ventas, compras y retenciones...");
+      setProgress(10);
+
+      const result = await guardarTodo();
+
+      // Marcar todo como guardado
+      setProgress(60);
+      setCurrentProcessingStep("saved");
       onVentasGuardadas(true);
-
-      // Pequeña pausa para efecto visual
-      await sleep(500);
-
-      // Paso 2: Guardar compras
-      setCurrentProcessingStep("compras");
-      setMessage("Guardando compras y asignando rubros...");
-      await guardarCompras();
-      currentStep++;
-      setProgress((currentStep / totalSteps) * 100);
       onComprasGuardadas(true);
+      onRetencionesGuardadas(true, result.retenciones_vinculadas);
 
       await sleep(500);
 
-      // Paso 3: Guardar retenciones
-      setCurrentProcessingStep("retenciones");
-      setMessage("Guardando retenciones y vinculando con facturas...");
-      const vinculadas = await guardarRetenciones();
-      currentStep++;
-      setProgress((currentStep / totalSteps) * 100);
-      onRetencionesGuardadas(true, vinculadas);
-
-      await sleep(500);
-
-      // Paso 4: Generar resumen
+      // Paso 2: Generar resumen
       setCurrentProcessingStep("summary");
       setMessage("Generando resumen ejecutivo con alertas...");
-      const resumen = await generarResumen(vinculadas);
-      currentStep++;
+      setProgress(75);
+
+      const resumen = await generarResumen(result.retenciones_vinculadas);
       setProgress(100);
       onResumenReady(resumen);
 
@@ -93,136 +75,43 @@ export function StepProcessing({
       setCurrentProcessingStep("complete");
       setMessage("¡Proceso completado exitosamente!");
 
-      // Avanzar al siguiente paso automáticamente
       setTimeout(() => {
         onComplete();
       }, 1000);
     } catch (error) {
       console.error("Error en procesamiento:", error);
-      toast.error("Error durante el procesamiento. Por favor intenta de nuevo.");
+      const msg = error instanceof Error ? error.message : "Error durante el procesamiento.";
+      toast.error(msg);
     }
   };
 
-  const guardarVentas = async () => {
-    const { ventas, periodo } = wizardState;
-    
-    if (ventas.parsed.length === 0) return;
+  interface ImportResult {
+    ventas_inserted: number;
+    compras_inserted: number;
+    retenciones_inserted: number;
+    retenciones_vinculadas: number;
+  }
 
-    // Preparar datos para inserción
-    const ventasToInsert = ventas.parsed.map((v) => ({
-      contribuyente_ruc: contribuyenteRuc,
-      tipo_comprobante: v.tipo_comprobante,
-      numero_comprobante: v.numero_comprobante,
-      autorizacion: v.clave_acceso,
-      fecha_emision: v.fecha_emision,
-      cliente_ruc: v.ruc_cliente,
-      cliente_razon_social: v.razon_social_cliente,
-      subtotal: v.subtotal,
-      iva: v.iva,
-      total: v.total,
-      tasa_iva: ventas.tasaIVA,
-      periodo_mes: periodo.mes,
-      periodo_anio: periodo.anio,
-    }));
+  const guardarTodo = async (): Promise<ImportResult> => {
+    const { ventas, compras, retenciones } = wizardState;
 
-    // Insertar en batch
-    const { error } = await supabase
-      .from("ventas")
-      .upsert(ventasToInsert, {
-        onConflict: "contribuyente_ruc,numero_comprobante",
-        ignoreDuplicates: true,
-      });
+    const response = await fetch("/api/import/process", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contribuyenteRuc,
+        ventas: ventas.parsed,
+        compras: compras.parsed,
+        retenciones: retenciones.parsed,
+      }),
+    });
 
-    if (error) throw error;
-  };
-
-  const guardarCompras = async () => {
-    const { compras, periodo } = wizardState;
-    
-    if (compras.parsed.length === 0) return;
-
-    // Preparar datos para inserción
-    const comprasToInsert = compras.parsed.map((c) => ({
-      contribuyente_ruc: contribuyenteRuc,
-      tipo_comprobante: c.tipo_comprobante,
-      numero_comprobante: c.numero_comprobante,
-      autorizacion: c.clave_acceso,
-      fecha_emision: c.fecha_emision,
-      proveedor_ruc: c.ruc_proveedor,
-      proveedor_razon_social: c.razon_social_proveedor,
-      subtotal: c.valor_sin_impuesto,
-      iva: c.iva,
-      total: c.total,
-      rubro: c.rubro || "no_definido",
-      periodo_mes: periodo.mes,
-      periodo_anio: periodo.anio,
-    }));
-
-    // Insertar en batch
-    const { error } = await supabase
-      .from("compras")
-      .upsert(comprasToInsert, {
-        onConflict: "contribuyente_ruc,numero_comprobante",
-        ignoreDuplicates: true,
-      });
-
-    if (error) throw error;
-  };
-
-  const guardarRetenciones = async (): Promise<number> => {
-    const { retenciones, periodo } = wizardState;
-    
-    if (retenciones.parsed.length === 0) return 0;
-
-    let vinculadas = 0;
-
-    for (const retencion of retenciones.parsed) {
-      // Calcular totales de retención
-      const totalRetencionRenta = retencion.retencion_renta_valor || 0;
-      const totalRetencionIVA = retencion.retencion_valor || 0;
-
-      // Insertar retención
-      const { error } = await supabase.from("retenciones").upsert(
-        {
-          contribuyente_ruc: contribuyenteRuc,
-          numero_comprobante: retencion.serie_comprobante,
-          fecha_emision: retencion.fecha_emision,
-          agente_ruc: retencion.ruc_emisor || "",
-          agente_razon_social: retencion.razon_social_emisor || "",
-          sujeto_ruc: retencion.contribuyente_ruc,
-          sujeto_razon_social: "",
-          retencion_renta: totalRetencionRenta,
-          retencion_iva: totalRetencionIVA,
-          total_retenido: totalRetencionRenta + totalRetencionIVA,
-          periodo_mes: periodo.mes,
-          periodo_anio: periodo.anio,
-        },
-        {
-          onConflict: "contribuyente_ruc,numero_comprobante",
-          ignoreDuplicates: true,
-        }
-      );
-
-      if (!error) {
-        // Intentar vincular con factura de venta
-        // Buscar venta con el mismo cliente
-        const { data: ventaVinculada } = await supabase
-          .from("ventas")
-          .select("id")
-          .eq("contribuyente_ruc", contribuyenteRuc)
-          .eq("cliente_ruc", retencion.ruc_emisor || "")
-          .eq("periodo_mes", periodo.mes)
-          .eq("periodo_anio", periodo.anio)
-          .limit(1)
-          .single();
-
-        if (ventaVinculada) {
-          vinculadas++;
-        }
-      }
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Error al guardar los datos.");
     }
 
-    return vinculadas;
+    return response.json();
   };
 
   const generarResumen = async (vinculadas: number): Promise<ImportSummary> => {
@@ -244,15 +133,13 @@ export function StepProcessing({
       0
     );
 
-    // Calcular IVA a pagar
     const ivaAPagar = Math.max(0, ivaVentas - ivaCompras - totalRetencionesIVA);
 
-    // Generar alertas
+    // Generar alertas locales
     const alerts: ImportSummary["alerts"] = [];
     const recommendations: string[] = [];
     const insights: string[] = [];
 
-    // Alerta de IVA
     if (ivaAPagar > 0) {
       alerts.push({
         type: "warning",
@@ -268,10 +155,9 @@ export function StepProcessing({
       });
     }
 
-    // Alerta de retenciones
     const facturasConRetenciones = vinculadas;
     const facturasSinRetencion = ventas.parsed.length - facturasConRetenciones;
-    
+
     if (facturasSinRetencion > 0 && facturasSinRetencion < ventas.parsed.length) {
       alerts.push({
         type: "info",
@@ -280,11 +166,10 @@ export function StepProcessing({
       });
     }
 
-    // Alerta de rubros
     const proveedoresSinRubro = compras.proveedores.filter(
       (p) => !p.rubro || p.rubro === "no_definido"
     ).length;
-    
+
     if (proveedoresSinRubro > 0) {
       alerts.push({
         type: "info",
@@ -294,7 +179,6 @@ export function StepProcessing({
       recommendations.push("Revisa los rubros de los proveedores para maximizar deducciones");
     }
 
-    // Insights
     if (ventas.parsed.length > 0) {
       const promedioVenta = ventasTotal / ventas.parsed.length;
       insights.push(`Promedio por venta: $${promedioVenta.toFixed(2)}`);
@@ -310,7 +194,7 @@ export function StepProcessing({
       }
     }
 
-    // Intentar obtener alertas de IA si hay API disponible
+    // Intentar obtener alertas de IA
     try {
       const response = await fetch("/api/ai-agent/import-summary", {
         method: "POST",
@@ -325,6 +209,8 @@ export function StepProcessing({
           ivaVentas,
           ivaCompras,
           retencionesTotal: totalRetencionesRenta + totalRetencionesIVA,
+          retencionIVA: totalRetencionesIVA,
+          retencionRenta: totalRetencionesRenta,
           facturasSinRetencion,
           proveedoresSinRubro,
         }),
@@ -337,7 +223,6 @@ export function StepProcessing({
         if (aiData.insights) insights.push(...aiData.insights);
       }
     } catch {
-      // Silently fail - usar alertas locales
       console.log("AI summary not available, using local alerts");
     }
 
@@ -360,14 +245,7 @@ export function StepProcessing({
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const isStepComplete = (step: ProcessingStep) => {
-    const stepOrder: ProcessingStep[] = ["ventas", "compras", "retenciones", "summary"];
-    const currentIndex = stepOrder.indexOf(currentProcessingStep);
-    const stepIndex = stepOrder.indexOf(step);
-    return stepIndex < currentIndex;
-  };
-
-  const isStepActive = (step: ProcessingStep) => currentProcessingStep === step;
+  const isSaved = currentProcessingStep === "saved" || currentProcessingStep === "summary" || currentProcessingStep === "complete";
 
   return (
     <div className="space-y-6">
@@ -375,13 +253,13 @@ export function StepProcessing({
       <AgentMessage message={message} animate={false} />
 
       {/* Progreso */}
-      <Card className="border-2 border-blue-100 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           {/* Barra de progreso */}
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600 dark:text-gray-400">Progreso</span>
-              <span className="font-medium text-blue-600 dark:text-blue-400">
+              <span className="text-muted-foreground">Progreso</span>
+              <span className="font-medium text-primary">
                 {Math.round(progress)}%
               </span>
             </div>
@@ -389,26 +267,26 @@ export function StepProcessing({
           </div>
 
           {/* Indicadores de proceso */}
-          <div className="space-y-1 border-t border-blue-100 dark:border-blue-800 pt-4">
+          <div className="space-y-1 border-t border-primary/10 pt-4">
             <ProcessingIndicator
               label={`Ventas guardadas (${wizardState.ventas.parsed.length})`}
-              isComplete={isStepComplete("ventas")}
-              isActive={isStepActive("ventas")}
+              isComplete={isSaved}
+              isActive={currentProcessingStep === "saving"}
             />
             <ProcessingIndicator
               label={`Compras guardadas (${wizardState.compras.parsed.length})`}
-              isComplete={isStepComplete("compras")}
-              isActive={isStepActive("compras")}
+              isComplete={isSaved}
+              isActive={currentProcessingStep === "saving"}
             />
             <ProcessingIndicator
               label={`Retenciones procesadas (${wizardState.retenciones.parsed.length})`}
-              isComplete={isStepComplete("retenciones")}
-              isActive={isStepActive("retenciones")}
+              isComplete={isSaved}
+              isActive={currentProcessingStep === "saving"}
             />
             <ProcessingIndicator
               label="Generando resumen ejecutivo"
-              isComplete={isStepComplete("summary") || currentProcessingStep === "complete"}
-              isActive={isStepActive("summary")}
+              isComplete={currentProcessingStep === "complete"}
+              isActive={currentProcessingStep === "summary"}
             />
           </div>
         </CardContent>
@@ -418,17 +296,17 @@ export function StepProcessing({
       {currentProcessingStep !== "complete" && (
         <div className="flex justify-center py-8">
           <div className="relative">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 animate-pulse" />
-            <div className="absolute inset-0 h-20 w-20 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 animate-ping opacity-25" />
+            <div className="h-20 w-20 rounded-full bg-primary animate-pulse" />
+            <div className="absolute inset-0 h-20 w-20 rounded-full bg-primary animate-ping opacity-25" />
           </div>
         </div>
       )}
 
       {currentProcessingStep === "complete" && (
         <div className="flex justify-center py-8">
-          <div className="h-20 w-20 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center">
+          <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center">
             <svg
-              className="h-10 w-10 text-white"
+              className="h-10 w-10 text-primary-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -446,4 +324,3 @@ export function StepProcessing({
     </div>
   );
 }
-

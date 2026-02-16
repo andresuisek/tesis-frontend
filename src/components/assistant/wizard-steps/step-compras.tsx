@@ -18,8 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, Building2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, Building2, SkipForward, ChevronDown } from "lucide-react";
 import { CompraParsed, ProveedorResumen } from "@/lib/compras-parser";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +39,7 @@ interface StepComprasProps {
   };
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
-  onFileProcess: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[] }>;
+  onFileProcess: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[]; warnings?: string[]; skippedCount?: number }>;
   onRubroChange: (ruc: string, rubro: string) => void;
   onNext: () => void;
   onBack: () => void;
@@ -63,6 +70,9 @@ export function StepCompras({
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [warningsOpen, setWarningsOpen] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -82,11 +92,18 @@ export function StepCompras({
 
     setIsProcessing(true);
     setError(null);
+    setParseWarnings([]);
+    setSkippedCount(0);
 
     try {
-      await onFileProcess(file);
-    } catch {
-      setError("Error al procesar el archivo. Verifica que sea el formato correcto del SRI.");
+      const result = await onFileProcess(file);
+      if (result.warnings && result.warnings.length > 0) {
+        setParseWarnings(result.warnings);
+        setSkippedCount(result.skippedCount || 0);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al procesar el archivo. Verifica que sea el formato correcto del SRI.";
+      setError(message);
     } finally {
       setIsProcessing(false);
     }
@@ -136,9 +153,9 @@ export function StepCompras({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
-          hasCompras && "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-700",
-          !isDragging && !hasCompras && "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600"
+          isDragging && "border-primary bg-primary/5",
+          hasCompras && "border-primary/30 bg-primary/5",
+          !isDragging && !hasCompras && "border-border hover:border-primary"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -156,14 +173,14 @@ export function StepCompras({
 
             {hasCompras ? (
               <>
-                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Check className="h-6 w-6 text-primary" />
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                  <p className="font-medium text-primary">
                     {compras.archivo?.name}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {compras.parsed.length} compras • {compras.proveedores.length} proveedores • Click para cambiar
                   </p>
                 </div>
@@ -173,29 +190,29 @@ export function StepCompras({
                 <div
                   className={cn(
                     "h-12 w-12 rounded-full flex items-center justify-center transition-colors",
-                    isDragging ? "bg-blue-100 dark:bg-blue-900" : "bg-gray-100 dark:bg-gray-800"
+                    isDragging ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
-                    <div className="h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Upload
                       className={cn(
                         "h-6 w-6",
-                        isDragging ? "text-blue-600 dark:text-blue-400" : "text-gray-400"
+                        isDragging ? "text-primary" : "text-muted-foreground"
                       )}
                     />
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-gray-700 dark:text-gray-300">
+                  <p className="font-medium text-foreground">
                     {isProcessing
                       ? "Procesando archivo..."
                       : isDragging
                       ? "Suelta el archivo aquí"
                       : "Arrastra tu archivo de compras aquí"}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Formato: .TXT del portal SRI
                   </p>
                 </div>
@@ -207,10 +224,11 @@ export function StepCompras({
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Preview de compras */}
@@ -218,26 +236,26 @@ export function StepCompras({
         <>
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-orange-600 dark:text-orange-400">Total Compras</p>
-                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                <p className="text-sm text-primary">Total Compras</p>
+                <p className="text-2xl font-bold text-foreground">
                   {compras.parsed.length}
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-teal-50 dark:bg-teal-950/30 border-teal-100 dark:border-teal-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-teal-600 dark:text-teal-400">Total Monto</p>
-                <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">
+                <p className="text-sm text-primary">Total Monto</p>
+                <p className="text-2xl font-bold text-foreground">
                   ${totalCompras.toFixed(2)}
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-violet-50 dark:bg-violet-950/30 border-violet-100 dark:border-violet-800">
+            <Card className="bg-primary/5">
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-violet-600 dark:text-violet-400">Crédito Tributario</p>
-                <p className="text-2xl font-bold text-violet-900 dark:text-violet-100">
+                <p className="text-sm text-primary">Crédito Tributario</p>
+                <p className="text-2xl font-bold text-foreground">
                   ${totalIVA.toFixed(2)}
                 </p>
               </CardContent>
@@ -248,20 +266,20 @@ export function StepCompras({
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-4">
-                <Building2 className="h-5 w-5 text-gray-500" />
-                <h4 className="font-medium text-gray-900 dark:text-white">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <h4 className="font-medium text-foreground">
                   Asignar Rubros a Proveedores
                 </h4>
                 {proveedoresSinRubro > 0 && (
-                  <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 rounded-full">
+                  <Badge variant="secondary">
                     {proveedoresSinRubro} pendientes
-                  </span>
+                  </Badge>
                 )}
               </div>
 
-              <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800">
+              <div className="max-h-64 overflow-y-auto rounded-lg border">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-gray-50 dark:bg-gray-900">
+                  <TableHeader className="sticky top-0 bg-muted/50">
                     <TableRow>
                       <TableHead className="w-[120px]">RUC</TableHead>
                       <TableHead>Proveedor</TableHead>
@@ -294,7 +312,7 @@ export function StepCompras({
                               className={cn(
                                 "h-8 text-xs",
                                 !proveedor.rubro &&
-                                  "border-amber-300 dark:border-amber-700"
+                                  "border-destructive/50"
                               )}
                             >
                               <SelectValue placeholder="Seleccionar..." />
@@ -318,22 +336,55 @@ export function StepCompras({
         </>
       )}
 
+      {/* Warnings del parseo */}
+      {parseWarnings.length > 0 && (
+        <Collapsible open={warningsOpen} onOpenChange={setWarningsOpen}>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>
+              {skippedCount > 0
+                ? `${skippedCount} registros omitidos por datos inválidos`
+                : `${parseWarnings.length} advertencias durante el parseo`}
+            </AlertTitle>
+            <AlertDescription>
+              <CollapsibleTrigger className="flex items-center gap-1 text-xs hover:underline cursor-pointer mt-1">
+                Ver detalle
+                <ChevronDown className={cn("h-3 w-3 transition-transform", warningsOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto text-xs">
+                  {parseWarnings.map((w, i) => (
+                    <li key={i}>• {w}</li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </AlertDescription>
+          </Alert>
+        </Collapsible>
+      )}
+
       {/* Navegación */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Atrás
         </Button>
-        <Button
-          onClick={onNext}
-          disabled={!hasCompras}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-        >
-          Continuar a Retenciones
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          {!hasCompras && (
+            <Button variant="ghost" onClick={onNext} className="text-muted-foreground">
+              <SkipForward className="mr-2 h-4 w-4" />
+              Omitir
+            </Button>
+          )}
+          <Button
+            onClick={onNext}
+            disabled={!hasCompras}
+          >
+            Continuar a Retenciones
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-

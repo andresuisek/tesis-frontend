@@ -45,12 +45,12 @@ export function AgentMessage({
     <div
       className={cn(
         "flex items-start gap-4 p-4 rounded-2xl",
-        "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40",
-        "border border-blue-100 dark:border-blue-800/50",
+        "bg-primary/5",
+        "border border-primary/10",
         className
       )}
     >
-      {/* Avatar del agente */}
+      {/* Avatar del agente — keep gradient for AI identity branding */}
       <div className="flex-shrink-0">
         <div className="relative">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -63,19 +63,16 @@ export function AgentMessage({
 
       {/* Mensaje */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+        <p className="text-sm font-medium text-foreground mb-1">
           Asistente Tributario
         </p>
-        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+        <p className="text-muted-foreground leading-relaxed">
           {displayedText}
           {isTyping && (
-            <span className="inline-block w-2 h-4 ml-1 bg-blue-500 animate-pulse rounded-sm" />
+            <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
           )}
         </p>
       </div>
     </div>
   );
 }
-
-
-

@@ -10,9 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle } from "lucide-react";
-import { VentaParsed, TasaIVA } from "@/lib/ventas-parser";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown } from "lucide-react";
+import { VentaParsed, VentasParseResult, TasaIVA } from "@/lib/ventas-parser";
 
 const TASAS_IVA: TasaIVA[] = [0, 8, 12, 15];
 import { cn } from "@/lib/utils";
@@ -26,7 +32,7 @@ interface StepVentasProps {
   };
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
-  onFileProcess: (file: File, tasaIVA: TasaIVA) => Promise<VentaParsed[]>;
+  onFileProcess: (file: File, tasaIVA: TasaIVA) => Promise<VentasParseResult>;
   onNext: () => void;
   onBack: () => void;
 }
@@ -45,6 +51,9 @@ export function StepVentas({
   const [isProcessing, setIsProcessing] = useState(false);
   const [tasaIVA, setTasaIVA] = useState<TasaIVA>(ventas.tasaIVA);
   const [error, setError] = useState<string | null>(null);
+  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [warningsOpen, setWarningsOpen] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -64,11 +73,18 @@ export function StepVentas({
 
     setIsProcessing(true);
     setError(null);
+    setParseWarnings([]);
+    setSkippedCount(0);
 
     try {
-      await onFileProcess(file, tasaIVA);
-    } catch {
-      setError("Error al procesar el archivo. Verifica que sea el formato correcto del SRI.");
+      const result = await onFileProcess(file, tasaIVA);
+      if (result.warnings.length > 0) {
+        setParseWarnings(result.warnings);
+        setSkippedCount(result.skippedCount);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al procesar el archivo. Verifica que sea el formato correcto del SRI.";
+      setError(message);
     } finally {
       setIsProcessing(false);
     }
@@ -113,14 +129,14 @@ export function StepVentas({
       />
 
       {/* Selector de tasa IVA */}
-      <Card className="border border-gray-200 dark:border-gray-800">
+      <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
+              <h4 className="font-medium text-foreground">
                 Tasa de IVA del período
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Selecciona la tasa de IVA vigente para este período
               </p>
             </div>
@@ -141,6 +157,10 @@ export function StepVentas({
               </SelectContent>
             </Select>
           </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            <AlertTriangle className="inline h-3 w-3 mr-1" />
+            Esta tasa se aplica a todas las ventas. Si tienes ventas con tarifa 0% y {tasaIVA}% en el mismo período, el cálculo de IVA será aproximado.
+          </p>
         </CardContent>
       </Card>
 
@@ -148,9 +168,9 @@ export function StepVentas({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-blue-500 bg-blue-50 dark:bg-blue-950/30",
-          hasVentas && "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-700",
-          !isDragging && !hasVentas && "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600"
+          isDragging && "border-primary bg-primary/5",
+          hasVentas && "border-primary/30 bg-primary/5",
+          !isDragging && !hasVentas && "border-border hover:border-primary"
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -168,14 +188,14 @@ export function StepVentas({
 
             {hasVentas ? (
               <>
-                <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                  <Check className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Check className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-emerald-700 dark:text-emerald-300">
+                  <p className="font-medium text-primary">
                     {ventas.archivo?.name}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {ventas.parsed.length} ventas procesadas • Click para cambiar archivo
                   </p>
                 </div>
@@ -186,32 +206,32 @@ export function StepVentas({
                   className={cn(
                     "h-16 w-16 rounded-full flex items-center justify-center transition-colors",
                     isDragging
-                      ? "bg-blue-100 dark:bg-blue-900"
-                      : "bg-gray-100 dark:bg-gray-800"
+                      ? "bg-primary/10"
+                      : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
-                    <div className="h-8 w-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Upload
                       className={cn(
                         "h-8 w-8",
                         isDragging
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-gray-400"
+                          ? "text-primary"
+                          : "text-muted-foreground"
                       )}
                     />
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-gray-700 dark:text-gray-300">
+                  <p className="font-medium text-foreground">
                     {isProcessing
                       ? "Procesando archivo..."
                       : isDragging
                       ? "Suelta el archivo aquí"
                       : "Arrastra tu archivo aquí o haz clic"}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Formato: .TXT del portal SRI
                   </p>
                 </div>
@@ -223,41 +243,42 @@ export function StepVentas({
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Preview de ventas */}
       {hasVentas && (
         <Card>
           <CardContent className="pt-6">
-            <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+            <h4 className="font-medium text-foreground mb-4">
               Resumen de Ventas
             </h4>
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800">
-                <p className="text-sm text-blue-600 dark:text-blue-400">
+              <div className="p-4 rounded-lg bg-primary/5">
+                <p className="text-sm text-primary">
                   Total Facturas
                 </p>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                <p className="text-2xl font-bold text-foreground">
                   {ventas.parsed.length}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800">
-                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              <div className="p-4 rounded-lg bg-primary/5">
+                <p className="text-sm text-primary">
                   Total Ventas
                 </p>
-                <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                <p className="text-2xl font-bold text-foreground">
                   ${totalVentas.toFixed(2)}
                 </p>
               </div>
-              <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-800">
-                <p className="text-sm text-purple-600 dark:text-purple-400">
+              <div className="p-4 rounded-lg bg-primary/5">
+                <p className="text-sm text-primary">
                   IVA Generado
                 </p>
-                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                <p className="text-2xl font-bold text-foreground">
                   ${totalIVA.toFixed(2)}
                 </p>
               </div>
@@ -266,22 +287,55 @@ export function StepVentas({
         </Card>
       )}
 
+      {/* Warnings del parseo */}
+      {parseWarnings.length > 0 && (
+        <Collapsible open={warningsOpen} onOpenChange={setWarningsOpen}>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>
+              {skippedCount > 0
+                ? `${skippedCount} registros omitidos por datos inválidos`
+                : `${parseWarnings.length} advertencias durante el parseo`}
+            </AlertTitle>
+            <AlertDescription>
+              <CollapsibleTrigger className="flex items-center gap-1 text-xs hover:underline cursor-pointer mt-1">
+                Ver detalle
+                <ChevronDown className={cn("h-3 w-3 transition-transform", warningsOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto text-xs">
+                  {parseWarnings.map((w, i) => (
+                    <li key={i}>• {w}</li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </AlertDescription>
+          </Alert>
+        </Collapsible>
+      )}
+
       {/* Navegación */}
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Atrás
         </Button>
-        <Button
-          onClick={onNext}
-          disabled={!hasVentas}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-        >
-          Continuar a Compras
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          {!hasVentas && (
+            <Button variant="ghost" onClick={onNext} className="text-muted-foreground">
+              <SkipForward className="mr-2 h-4 w-4" />
+              Omitir
+            </Button>
+          )}
+          <Button
+            onClick={onNext}
+            disabled={!hasVentas}
+          >
+            Continuar a Compras
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-

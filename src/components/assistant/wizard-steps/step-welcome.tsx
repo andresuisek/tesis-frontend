@@ -51,17 +51,17 @@ export function StepWelcome({
       />
 
       {/* Selector de período */}
-      <Card className="border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+      <Card className="border-2 border-dashed border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-foreground">
                 Período Tributario
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Selecciona el mes y año de la información a importar
               </p>
             </div>
@@ -69,7 +69,7 @@ export function StepWelcome({
 
           <div className="grid grid-cols-2 gap-4 max-w-md">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Mes
               </label>
               <Select
@@ -92,7 +92,7 @@ export function StepWelcome({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Año
               </label>
               <Select
@@ -118,31 +118,31 @@ export function StepWelcome({
       </Card>
 
       {/* Información del proceso */}
-      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-100 dark:border-indigo-800/50">
+      <Card className="bg-muted/50">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
-            <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="font-semibold text-foreground mb-2">
                 ¿Qué vamos a hacer?
               </h3>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Cargar tu archivo de <strong>Ventas</strong> del SRI (formato TXT)
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Cargar tu archivo de <strong>Compras</strong> del SRI (formato TXT)
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Cargar los XML de <strong>Retenciones</strong> recibidas
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Generar un <strong>resumen ejecutivo</strong> con alertas inteligentes
                 </li>
               </ul>
@@ -153,11 +153,7 @@ export function StepWelcome({
 
       {/* Botón de continuar */}
       <div className="flex justify-end">
-        <Button
-          size="lg"
-          onClick={onNext}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25"
-        >
+        <Button size="lg" onClick={onNext}>
           Comenzar con {mesActual} {periodo.anio}
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
@@ -165,6 +161,3 @@ export function StepWelcome({
     </div>
   );
 }
-
-
-

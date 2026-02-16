@@ -13,6 +13,7 @@ import { parsearArchivoVentas, VentaParsed, TasaIVA } from "@/lib/ventas-parser"
 import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor } from "@/lib/compras-parser";
 import { parsearXMLRetencion, RetencionParsed } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
+import { toast } from "sonner";
 
 // Definición de los pasos del wizard
 const WIZARD_STEPS: WizardStep[] = [
@@ -155,6 +156,17 @@ export function ImportWizard() {
 
   // Función para avanzar al siguiente paso
   const goToNextStep = () => {
+    // Validar que al menos 1 tipo de dato esté cargado antes de procesar
+    if (currentStep === 3) {
+      const hasAnyData =
+        wizardState.ventas.parsed.length > 0 ||
+        wizardState.compras.parsed.length > 0 ||
+        wizardState.retenciones.parsed.length > 0;
+      if (!hasAnyData) {
+        toast.error("Debes cargar al menos un tipo de dato (ventas, compras o retenciones) para procesar.");
+        return;
+      }
+    }
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
     setCurrentStep((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
   };
@@ -180,37 +192,47 @@ export function ImportWizard() {
     }));
   };
 
+  // Límites de tamaño de archivo
+  const MAX_TXT_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_XML_SIZE = 1 * 1024 * 1024;  // 1MB
+
   // Procesar archivo de ventas
   const processVentasFile = async (file: File, tasaIVA: TasaIVA) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
     const text = await file.text();
-    const parsed = parsearArchivoVentas(text, tasaIVA);
+    const result = parsearArchivoVentas(text, tasaIVA, wizardState.periodo.mes, wizardState.periodo.anio);
     setWizardState((prev) => ({
       ...prev,
       ventas: {
         archivo: file,
-        parsed,
+        parsed: result.data,
         tasaIVA,
         guardadas: false,
       },
     }));
-    return parsed;
+    return result;
   };
 
   // Procesar archivo de compras
   const processComprasFile = async (file: File) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
     const text = await file.text();
-    const compras = parsearArchivoCompras(text);
-    const proveedores = agruparPorProveedor(compras);
+    const result = parsearArchivoCompras(text, wizardState.periodo.mes, wizardState.periodo.anio);
+    const proveedores = agruparPorProveedor(result.data);
     setWizardState((prev) => ({
       ...prev,
       compras: {
         archivo: file,
-        parsed: compras,
+        parsed: result.data,
         proveedores,
         guardadas: false,
       },
     }));
-    return { compras, proveedores };
+    return { compras: result.data, proveedores, warnings: result.warnings, skippedCount: result.skippedCount };
   };
 
   // Actualizar rubros de proveedores
@@ -232,8 +254,12 @@ export function ImportWizard() {
   // Procesar archivos de retenciones
   const processRetencionFiles = async (files: File[]) => {
     const allParsed: RetencionParsed[] = [];
-    
+
     for (const file of files) {
+      if (file.size > MAX_XML_SIZE) {
+        console.warn(`Archivo ${file.name} excede 1MB, omitido`);
+        continue;
+      }
       const text = await file.text();
       const result = parsearXMLRetencion(text, file.name);
       if (result.success && result.retencion) {
@@ -305,10 +331,10 @@ export function ImportWizard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       {/* Título */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Asistente de Importación
         </h1>
         <p className="text-muted-foreground mt-2">

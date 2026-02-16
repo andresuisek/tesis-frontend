@@ -37,8 +37,8 @@ export function WizardNavigation({
                     className={cn(
                       "absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2",
                       isCompleted || isCurrent
-                        ? "bg-gradient-to-r from-emerald-500 to-blue-500"
-                        : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-primary"
+                        : "bg-border"
                     )}
                     style={{ zIndex: 0 }}
                   />
@@ -49,11 +49,11 @@ export function WizardNavigation({
                   className={cn(
                     "relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
                     isCompleted &&
-                      "bg-emerald-500 border-emerald-500 text-white",
+                      "bg-primary border-primary text-primary-foreground",
                     isCurrent &&
-                      "bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/30 scale-110",
+                      "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110",
                     isPending &&
-                      "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-400"
+                      "bg-background border-border text-muted-foreground"
                   )}
                 >
                   {isCompleted ? (
@@ -70,9 +70,8 @@ export function WizardNavigation({
                   <p
                     className={cn(
                       "text-xs font-medium transition-colors",
-                      isCurrent && "text-blue-600 dark:text-blue-400",
-                      isCompleted && "text-emerald-600 dark:text-emerald-400",
-                      isPending && "text-gray-400 dark:text-gray-500"
+                      (isCurrent || isCompleted) && "text-primary",
+                      isPending && "text-muted-foreground"
                     )}
                   >
                     {step.title}
@@ -102,21 +101,21 @@ export function ProcessingIndicator({
     <div className="flex items-center gap-3 py-2">
       <div className="flex-shrink-0">
         {isComplete ? (
-          <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
-            <Check className="h-4 w-4 text-white" />
+          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+            <Check className="h-4 w-4 text-primary-foreground" />
           </div>
         ) : isActive ? (
-          <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+          <Loader2 className="h-6 w-6 text-primary animate-spin" />
         ) : (
-          <Circle className="h-6 w-6 text-gray-300 dark:text-gray-600" />
+          <Circle className="h-6 w-6 text-muted-foreground/40" />
         )}
       </div>
       <span
         className={cn(
           "text-sm",
-          isComplete && "text-emerald-600 dark:text-emerald-400",
-          isActive && "text-blue-600 dark:text-blue-400 font-medium",
-          !isComplete && !isActive && "text-gray-400"
+          isComplete && "text-primary",
+          isActive && "text-primary font-medium",
+          !isComplete && !isActive && "text-muted-foreground"
         )}
       >
         {label}
@@ -124,6 +123,3 @@ export function ProcessingIndicator({
     </div>
   );
 }
-
-
-
