@@ -77,7 +77,7 @@ function convertirFecha(fechaOriginal: string): string {
     throw new Error("Fecha inválida");
   } catch {
     console.warn("Error convirtiendo fecha:", fechaOriginal);
-    return dayjs().format("YYYY-MM-DD"); // Fecha actual como fallback
+    return ""; // Retorna vacío para que el caller maneje el fallback con fecha del periodo
   }
 }
 
@@ -101,18 +101,36 @@ function mapearTipoComprobante(tipoOriginal: string): string {
 }
 
 /**
+ * Resultado del parseo con warnings para el usuario
+ */
+export interface VentasParseResult {
+  data: VentaParsed[];
+  warnings: string[];
+  skippedCount: number;
+}
+
+/**
  * Parsea un archivo TXT de ventas del SRI
  * Formato esperado del archivo:
  * FECHA_EMISION	COMPROBANTE	NUMERO_COMPROBANTE	IDENTIFICACION_RECEPTOR	RAZON_SOCIAL	CLAVE_ACCESO	VALOR_TOTAL
- * 
+ *
  * @param contenido Contenido del archivo como string
  * @param tasaIVA Tasa de IVA para calcular subtotales
- * @returns Array de ventas parseadas
+ * @param periodoMes Mes del periodo (para fallback de fechas)
+ * @param periodoAnio Año del periodo (para fallback de fechas)
+ * @returns Resultado con data, warnings y skippedCount
  */
 export function parsearArchivoVentas(
   contenido: string,
-  tasaIVA: TasaIVA
-): VentaParsed[] {
+  tasaIVA: TasaIVA,
+  periodoMes?: number,
+  periodoAnio?: number,
+): VentasParseResult {
+  const fallbackDate = periodoMes && periodoAnio
+    ? dayjs(`${periodoAnio}-${String(periodoMes).padStart(2, "0")}-01`).format("YYYY-MM-DD")
+    : dayjs().startOf("month").format("YYYY-MM-DD");
+  const warnings: string[] = [];
+  let skippedCount = 0;
   const lineas = contenido.split("\n").filter((linea) => linea.trim() !== "");
 
   if (lineas.length < 2) {
@@ -172,16 +190,29 @@ export function parsearArchivoVentas(
       const total = parseFloat(totalStr.replace(/[^\d.,]/g, "").replace(",", "."));
 
       if (isNaN(total) || total <= 0) {
-        console.warn(`Línea ${i + 1}: Valor total inválido - ${totalStr}`);
+        warnings.push(`Fila ${i + 1}: valor total inválido '${totalStr}', registro omitido`);
+        skippedCount++;
+        continue;
+      }
+
+      // Validar numero de comprobante
+      const numeroComprobante = columnas[indices.numero_comprobante]?.trim() || "";
+      if (!numeroComprobante) {
+        warnings.push(`Fila ${i + 1}: número de comprobante vacío, registro omitido`);
+        skippedCount++;
         continue;
       }
 
       // Calcular subtotal e IVA basado en la tasa seleccionada
       const { subtotal, iva } = calcularSubtotalEIVA(total, tasaIVA);
 
-      // Convertir fecha
+      // Convertir fecha con fallback al periodo
       const fechaEmisionOriginal = columnas[indices.fecha_emision]?.trim() || "";
-      const fechaEmision = convertirFecha(fechaEmisionOriginal);
+      let fechaEmision = convertirFecha(fechaEmisionOriginal);
+      if (!fechaEmision) {
+        fechaEmision = fallbackDate;
+        warnings.push(`Fila ${i + 1}: fecha inválida '${fechaEmisionOriginal}', se usó fecha del periodo`);
+      }
 
       // Mapear tipo de comprobante
       const tipoComprobanteOriginal = columnas[indices.comprobante]?.trim() || "Factura";
@@ -190,7 +221,7 @@ export function parsearArchivoVentas(
       const venta: VentaParsed = {
         fecha_emision: fechaEmision,
         tipo_comprobante: tipoComprobante,
-        numero_comprobante: columnas[indices.numero_comprobante]?.trim() || "",
+        numero_comprobante: numeroComprobante,
         ruc_cliente: columnas[indices.identificacion_receptor]?.trim() || "",
         razon_social_cliente: columnas[indices.razon_social]?.trim() || "",
         clave_acceso: columnas[indices.clave_acceso]?.trim() || "",
@@ -201,12 +232,13 @@ export function parsearArchivoVentas(
 
       ventas.push(venta);
     } catch (error: unknown) {
+      warnings.push(`Fila ${i + 1}: error inesperado, registro omitido`);
+      skippedCount++;
       console.warn(`Error procesando línea ${i + 1}:`, error);
-      // Continuar con la siguiente línea
     }
   }
 
-  return ventas;
+  return { data: ventas, warnings, skippedCount };
 }
 
 /**

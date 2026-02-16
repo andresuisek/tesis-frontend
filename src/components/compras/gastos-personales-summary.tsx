@@ -120,7 +120,7 @@ export function GastosPersonalesSummary({ compras, cargasFamiliares }: GastosPer
   }
 
   // Rubros que siempre deben mostrarse (incluso en $0.00)
-  const rubrosObligatorios: RubroCompra[] = ["turismo", "educacion", "vestimenta"];
+  const rubrosObligatorios: RubroCompra[] = ["vivienda", "salud", "educacion", "vestimenta", "turismo"];
 
   return (
     <Card>

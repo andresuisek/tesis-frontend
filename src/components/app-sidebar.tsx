@@ -136,14 +136,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="p-4 bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:p-2">
+      <SidebarHeader className="p-3 group-data-[collapsible=icon]:p-2">
         <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <FileText className="h-4 w-4" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-bold">Sistema Tributario</span>
-            <span className="text-xs opacity-80">v1.0.0 - Profesional</span>
+            <span className="text-sm font-semibold">Sistema Tributario</span>
+            <span className="text-xs text-muted-foreground">v1.0.0 · Profesional</span>
           </div>
         </div>
       </SidebarHeader>

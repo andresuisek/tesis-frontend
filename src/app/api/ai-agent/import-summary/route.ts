@@ -19,6 +19,8 @@ interface ImportSummaryRequest {
   ivaVentas: number;
   ivaCompras: number;
   retencionesTotal: number;
+  retencionIVA: number;
+  retencionRenta: number;
   facturasSinRetencion: number;
   proveedoresSinRubro: number;
 }
@@ -79,11 +81,13 @@ export async function POST(request: NextRequest) {
       ivaVentas,
       ivaCompras,
       retencionesTotal,
+      retencionIVA = 0,
+      retencionRenta = 0,
       facturasSinRetencion,
       proveedoresSinRubro,
     } = body;
 
-    const ivaAPagar = Math.max(0, ivaVentas - ivaCompras);
+    const ivaAPagar = Math.max(0, ivaVentas - ivaCompras - retencionIVA);
     const mesNombre = MESES[periodo.mes - 1];
 
     // Construir prompt para OpenAI
@@ -95,7 +99,7 @@ DATOS DEL PERÍODO:
 - IVA en ventas: $${ivaVentas.toFixed(2)}
 - Crédito tributario (IVA compras): $${ivaCompras.toFixed(2)}
 - IVA a pagar estimado: $${ivaAPagar.toFixed(2)}
-- Retenciones recibidas: $${retencionesTotal.toFixed(2)}
+- Retenciones recibidas: $${retencionesTotal.toFixed(2)} (IVA: $${retencionIVA.toFixed(2)}, Renta: $${retencionRenta.toFixed(2)})
 - Facturas sin retención asociada: ${facturasSinRetencion}
 - Proveedores sin rubro asignado: ${proveedoresSinRubro}
 

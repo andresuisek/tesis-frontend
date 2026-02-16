@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -41,7 +41,7 @@ export function BreadcrumbNav() {
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             <Link href="/dashboard">
-              <Home className="h-4 w-4" />
+              <LayoutDashboard className="h-4 w-4" />
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>

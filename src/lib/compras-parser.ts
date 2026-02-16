@@ -40,11 +40,31 @@ export interface ProveedorResumen {
 }
 
 /**
+ * Resultado del parseo con warnings para el usuario
+ */
+export interface ComprasParseResult {
+  data: CompraParsed[];
+  warnings: string[];
+  skippedCount: number;
+}
+
+/**
  * Parsea un archivo TXT de compras del SRI
  * @param contenido Contenido del archivo como string
- * @returns Array de compras parseadas
+ * @param periodoMes Mes del periodo (para fallback de fechas)
+ * @param periodoAnio Año del periodo (para fallback de fechas)
+ * @returns Resultado con data, warnings y skippedCount
  */
-export function parsearArchivoCompras(contenido: string): CompraParsed[] {
+export function parsearArchivoCompras(
+  contenido: string,
+  periodoMes?: number,
+  periodoAnio?: number,
+): ComprasParseResult {
+  const fallbackDate = periodoMes && periodoAnio
+    ? dayjs(`${periodoAnio}-${String(periodoMes).padStart(2, "0")}-01`).format("YYYY-MM-DD")
+    : dayjs().startOf("month").format("YYYY-MM-DD");
+  const warnings: string[] = [];
+  let skippedCount = 0;
   const lineas = contenido.split("\n").filter((linea) => linea.trim() !== "");
 
   if (lineas.length < 2) {
@@ -95,32 +115,58 @@ export function parsearArchivoCompras(contenido: string): CompraParsed[] {
     if (columnas.length < 5) continue;
 
     try {
+      // Validar RUC proveedor
+      const rucProveedor = (columnas[indices.ruc_emisor] || "").trim();
+      if (!rucProveedor || rucProveedor.length < 10) {
+        warnings.push(`Fila ${i + 1}: RUC proveedor inválido '${rucProveedor}', registro omitido`);
+        skippedCount++;
+        continue;
+      }
+
+      // Validar número de comprobante
+      const numeroComprobante = (columnas[indices.serie_comprobante] || "").trim();
+      if (!numeroComprobante) {
+        warnings.push(`Fila ${i + 1}: número de comprobante vacío, registro omitido`);
+        skippedCount++;
+        continue;
+      }
+
       const valorSinImpuestos = parseFloat(
         columnas[indices.valor_sin_impuestos] || "0"
       );
       const iva = parseFloat(columnas[indices.iva] || "0");
       const total = parseFloat(columnas[indices.importe_total] || "0");
 
+      if (isNaN(total) || total <= 0) {
+        warnings.push(`Fila ${i + 1}: importe total inválido, registro omitido`);
+        skippedCount++;
+        continue;
+      }
+
       // Calcular subtotales basados en el IVA
       const { subtotal_0, subtotal_8, subtotal_15 } =
         calcularSubtotales(valorSinImpuestos, iva);
 
-      // Convertir fecha de DD/MM/YYYY a YYYY-MM-DD
+      // Convertir fecha con fallback al periodo
       const fechaEmisionOriginal = columnas[indices.fecha_emision] || "";
-      const fechaEmision = convertirFecha(fechaEmisionOriginal);
+      let fechaEmision = convertirFecha(fechaEmisionOriginal);
+      if (!fechaEmision) {
+        fechaEmision = fallbackDate;
+        warnings.push(`Fila ${i + 1}: fecha inválida '${fechaEmisionOriginal}', se usó fecha del periodo`);
+      }
 
       // Mapear tipo de comprobante
       const tipoComprobanteOriginal = columnas[indices.tipo_comprobante] || "";
       const tipoComprobante = mapearTipoComprobante(tipoComprobanteOriginal);
 
       const compra: CompraParsed = {
-        ruc_proveedor: columnas[indices.ruc_emisor] || "",
-        razon_social_proveedor: columnas[indices.razon_social_emisor] || "",
+        ruc_proveedor: rucProveedor,
+        razon_social_proveedor: (columnas[indices.razon_social_emisor] || "").trim(),
         tipo_comprobante: tipoComprobante,
-        numero_comprobante: columnas[indices.serie_comprobante] || "",
-        clave_acceso: columnas[indices.clave_acceso] || "",
+        numero_comprobante: numeroComprobante,
+        clave_acceso: (columnas[indices.clave_acceso] || "").trim(),
         fecha_emision: fechaEmision,
-        identificacion_receptor: columnas[indices.identificacion_receptor] || "",
+        identificacion_receptor: (columnas[indices.identificacion_receptor] || "").trim(),
         valor_sin_impuesto: valorSinImpuestos,
         iva: iva,
         total: total,
@@ -131,12 +177,13 @@ export function parsearArchivoCompras(contenido: string): CompraParsed[] {
 
       compras.push(compra);
     } catch (error: unknown) {
+      warnings.push(`Fila ${i + 1}: error inesperado, registro omitido`);
+      skippedCount++;
       console.warn(`Error procesando línea ${i + 1}:`, error);
-      // Continuar con la siguiente línea
     }
   }
 
-  return compras;
+  return { data: compras, warnings, skippedCount };
 }
 
 /**
@@ -173,6 +220,13 @@ function calcularSubtotales(
       subtotal_8: valorSinImpuestos,
       subtotal_15: 0,
     };
+  } else if (tarifaIva >= 0.11 && tarifaIva <= 0.13) {
+    // ~12% (periodos anteriores a abril 2024)
+    return {
+      subtotal_0: 0,
+      subtotal_8: 0,
+      subtotal_15: valorSinImpuestos, // Se acumula en subtotal_15 para efectos de crédito tributario
+    };
   } else if (tarifaIva >= 0.14 && tarifaIva <= 0.16) {
     // ~15%
     return {
@@ -182,7 +236,7 @@ function calcularSubtotales(
     };
   }
 
-  // Por defecto, asumir 15% si no coincide con ninguna tarifa
+  // Por defecto, asumir tarifa vigente si no coincide con ninguna tarifa conocida
   return {
     subtotal_0: 0,
     subtotal_8: 0,
@@ -208,7 +262,7 @@ function convertirFecha(fechaOriginal: string): string {
     return fecha.format("YYYY-MM-DD");
   } catch {
     console.warn("Error convirtiendo fecha:", fechaOriginal);
-    return dayjs().format("YYYY-MM-DD"); // Fecha actual como fallback
+    return ""; // Retorna vacío para que el caller maneje el fallback con fecha del periodo
   }
 }
 

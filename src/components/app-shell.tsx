@@ -4,7 +4,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AgentPanel } from "@/components/ai-agent/agent-panel";
 import { AgentLauncher } from "@/components/ai-agent/agent-launcher";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { AiAgentProvider } from "@/contexts/ai-agent-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -26,7 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex h-screen flex-col">
             <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4">
               <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
+              <div className="mx-1 h-4 w-px shrink-0 bg-border" />
               <BreadcrumbNav />
             </header>
             <div className="flex-1 overflow-auto p-6">{children}</div>

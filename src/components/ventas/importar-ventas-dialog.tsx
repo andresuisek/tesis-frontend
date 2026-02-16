@@ -94,18 +94,22 @@ export function ImportarVentasDialog({
       setFileContent(contenido);
       
       // Parsear con la tasa de IVA seleccionada
-      const ventas = parsearArchivoVentas(contenido, tasaIVA);
+      const result = parsearArchivoVentas(contenido, tasaIVA);
 
-      if (ventas.length === 0) {
+      if (result.data.length === 0) {
         toast.error("No se encontraron ventas en el archivo");
         return;
       }
 
-      setVentasParsed(ventas);
-      setResumen(calcularResumenVentas(ventas, tasaIVA));
+      setVentasParsed(result.data);
+      setResumen(calcularResumenVentas(result.data, tasaIVA));
       setStep("preview");
-      
-      toast.success(`${ventas.length} ventas encontradas en el archivo`);
+
+      if (result.skippedCount > 0) {
+        toast.warning(`${result.data.length} ventas encontradas. ${result.skippedCount} registros omitidos por datos inválidos.`);
+      } else {
+        toast.success(`${result.data.length} ventas encontradas en el archivo`);
+      }
     } catch (error: unknown) {
       console.error("Error al parsear archivo:", error);
       const message = error instanceof Error ? error.message : "Error desconocido";

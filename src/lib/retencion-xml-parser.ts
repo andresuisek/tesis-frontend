@@ -82,7 +82,7 @@ function convertirFecha(fechaOriginal: string): string {
     return fecha.format("YYYY-MM-DD");
   } catch {
     console.warn("Error convirtiendo fecha:", fechaOriginal);
-    return dayjs().format("YYYY-MM-DD");
+    return ""; // Retorna vacío para que el caller maneje el fallback con fecha del periodo
   }
 }
 

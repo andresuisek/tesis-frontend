@@ -103,11 +103,11 @@
   --chart-5: oklch(0.534 0.198 275.634); /* Púrpura-azul */
 
   /* Sidebar */
-  --sidebar: oklch(1 0 0);
+  --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.623 0.214 259.815);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.961 0.003 285.823);
+  --sidebar-accent: oklch(0.94 0.002 285.823);
   --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
   --sidebar-border: oklch(0.898 0.005 285.823);
   --sidebar-ring: oklch(0.623 0.214 259.815);

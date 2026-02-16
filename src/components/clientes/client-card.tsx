@@ -97,7 +97,10 @@ export function ClientCard({ client, onSelect, onUnlink }: ClientCardProps) {
 
         {/* Badges row */}
         <div className="flex gap-1.5 flex-wrap">
-          <Badge variant={client.estado === "activo" ? "default" : "secondary"}>
+          <Badge
+            variant={client.estado === "activo" ? "outline" : "secondary"}
+            className={client.estado === "activo" ? "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-400" : ""}
+          >
             {client.estado === "activo" ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
             {client.estado}
           </Badge>

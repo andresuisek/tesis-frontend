@@ -156,16 +156,20 @@ export function ImportarComprasDialog({
 
     try {
       const contenido = await file.text();
-      const compras = parsearArchivoCompras(contenido);
+      const result = parsearArchivoCompras(contenido);
 
-      if (compras.length === 0) {
+      if (result.data.length === 0) {
         toast.error("No se encontraron compras en el archivo");
         return;
       }
 
-      setComprasParsed(compras);
-      toast.success(`${compras.length} compras parseadas. Iniciando importación...`);
-      await insertarComprasTemporales(compras);
+      setComprasParsed(result.data);
+      if (result.skippedCount > 0) {
+        toast.warning(`${result.data.length} compras parseadas. ${result.skippedCount} registros omitidos.`);
+      } else {
+        toast.success(`${result.data.length} compras parseadas. Iniciando importación...`);
+      }
+      await insertarComprasTemporales(result.data);
     } catch (error: unknown) {
       console.error("Error al parsear archivo:", error);
       const message = error instanceof Error ? error.message : "Error desconocido";
