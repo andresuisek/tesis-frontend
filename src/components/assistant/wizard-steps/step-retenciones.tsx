@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, FileText, X, Play, SkipForward } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, FileText, X, Play, SkipForward, Trash2 } from "lucide-react";
 import { RetencionParsed } from "@/lib/retencion-xml-parser";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ interface StepRetencionesProps {
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
   onFilesProcess: (files: File[]) => Promise<RetencionParsed[]>;
+  onClear: () => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -38,6 +39,7 @@ export function StepRetenciones({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contribuyenteRuc,
   onFilesProcess,
+  onClear,
   onNext,
   onBack,
 }: StepRetencionesProps) {
@@ -185,6 +187,21 @@ export function StepRetenciones({
                     Click para agregar más archivos
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClear();
+                    setPendingFiles([]);
+                    setError(null);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar retenciones
+                </Button>
               </>
             ) : (
               <>

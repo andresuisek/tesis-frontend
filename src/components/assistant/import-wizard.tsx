@@ -10,8 +10,8 @@ import { StepCompras } from "./wizard-steps/step-compras";
 import { StepProcessing } from "./wizard-steps/step-processing";
 import { StepSummary } from "./wizard-steps/step-summary";
 import { useAuth } from "@/contexts/auth-context";
-import { parsearArchivoVentas, VentaParsed, TasaIVA } from "@/lib/ventas-parser";
-import { parsearArchivoNotasCredito, NotaCreditoParsed } from "@/lib/notas-credito-parser";
+import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/lib/ventas-parser";
+import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
 import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
 import { parsearXMLRetencion, RetencionParsed, validarRucRetencion } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
@@ -241,6 +241,13 @@ export function ImportWizard() {
     }
     const text = await file.text();
     const result = parsearArchivoVentas(text, tasaIVA, wizardState.periodo.mes, wizardState.periodo.anio);
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucVentas(result.data, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
     setWizardState((prev) => ({
       ...prev,
       ventas: {
@@ -260,6 +267,13 @@ export function ImportWizard() {
     }
     const text = await file.text();
     const result = parsearArchivoNotasCredito(text, wizardState.periodo.mes, wizardState.periodo.anio);
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucNotasCredito(result.data, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
     setWizardState((prev) => ({
       ...prev,
       notasCredito: {
@@ -282,7 +296,7 @@ export function ImportWizard() {
     // Validar RUC del archivo vs contribuyente
     const rucError = validarRucCompras(result.data, contribuyente!.ruc);
     if (rucError) {
-      toast.warning(rucError);
+      throw new Error(rucError);
     }
 
     const proveedores = agruparPorProveedor(result.data);
@@ -346,7 +360,8 @@ export function ImportWizard() {
         // Validar RUC del archivo vs contribuyente
         const rucError = validarRucRetencion(result.retencion, contribuyente!.ruc);
         if (rucError) {
-          toast.warning(`${file.name}: ${rucError}`);
+          toast.error(`${file.name}: ${rucError}`);
+          continue; // Omitir retenciones con RUC incorrecto
         }
         allParsed.push(result.retencion);
       }
@@ -405,6 +420,35 @@ export function ImportWizard() {
     }));
   };
 
+  // Limpiar datos de un paso específico
+  const clearVentas = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      ventas: { archivo: null, parsed: [], tasaIVA: prev.ventas.tasaIVA, guardadas: false },
+    }));
+  };
+
+  const clearNotasCredito = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      notasCredito: { archivo: null, parsed: [], guardadas: false },
+    }));
+  };
+
+  const clearCompras = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      compras: { archivo: null, parsed: [], proveedores: [], guardadas: false },
+    }));
+  };
+
+  const clearRetenciones = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      retenciones: { archivos: [], parsed: [], guardadas: false, vinculadas: 0 },
+    }));
+  };
+
   // Reiniciar wizard
   const resetWizard = () => {
     setCurrentStep(0);
@@ -457,6 +501,7 @@ export function ImportWizard() {
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
             onFileProcess={processVentasFile}
+            onClear={clearVentas}
             onNext={goToNextStep}
             onBack={goToPreviousStep}
           />
@@ -467,6 +512,7 @@ export function ImportWizard() {
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
             onFileProcess={processNotasCreditoFile}
+            onClear={clearNotasCredito}
             onNext={goToNextStep}
             onBack={goToPreviousStep}
           />
@@ -477,6 +523,7 @@ export function ImportWizard() {
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
             onFilesProcess={processRetencionFiles}
+            onClear={clearRetenciones}
             onNext={goToNextStep}
             onBack={goToPreviousStep}
           />
@@ -489,6 +536,7 @@ export function ImportWizard() {
             onFileProcess={processComprasFile}
             onRubroChange={updateProveedorRubro}
             onBulkRubroChange={updateBulkProveedorRubro}
+            onClear={clearCompras}
             onNext={goToNextStep}
             onBack={goToPreviousStep}
           />

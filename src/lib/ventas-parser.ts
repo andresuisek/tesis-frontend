@@ -253,6 +253,39 @@ export interface VentasResumen {
 }
 
 /**
+ * Valida que el RUC del archivo de ventas coincida con el del contribuyente.
+ * Extrae el RUC del emisor desde la clave de acceso (posiciones 11-23).
+ * Retorna un mensaje de error si no coincide, o null si está OK.
+ */
+export function validarRucVentas(
+  data: VentaParsed[],
+  contribuyenteRuc: string
+): string | null {
+  if (data.length === 0) return null;
+
+  // Buscar un registro con clave de acceso válida (49 dígitos)
+  const registroConClave = data.find(
+    (v) => v.clave_acceso && v.clave_acceso.replace(/\D/g, "").length >= 49
+  );
+
+  if (!registroConClave) return null;
+
+  // Extraer RUC del emisor desde la clave de acceso (posiciones 11-23, 0-indexed: 10..22)
+  const claveNumerica = registroConClave.clave_acceso.replace(/\D/g, "");
+  const rucArchivo = claveNumerica.substring(10, 23);
+  const rucUsuario = contribuyenteRuc.trim();
+
+  // Normalizar a 13 dígitos
+  const normalizar = (ruc: string) => ruc.padStart(13, "0");
+
+  if (normalizar(rucArchivo) !== normalizar(rucUsuario)) {
+    return `El archivo de ventas pertenece al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo el archivo correcto.`;
+  }
+
+  return null;
+}
+
+/**
  * Calcula el resumen de las ventas parseadas
  */
 export function calcularResumenVentas(

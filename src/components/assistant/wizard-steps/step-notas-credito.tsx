@@ -10,7 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown, Trash2 } from "lucide-react";
 import { NotaCreditoParsed, NotasCreditoParseResult } from "@/lib/notas-credito-parser";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ interface StepNotasCreditoProps {
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
   onFileProcess: (file: File) => Promise<NotasCreditoParseResult>;
+  onClear: () => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -34,6 +35,7 @@ export function StepNotasCredito({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contribuyenteRuc,
   onFileProcess,
+  onClear,
   onNext,
   onBack,
 }: StepNotasCreditoProps) {
@@ -152,6 +154,21 @@ export function StepNotasCredito({
                     {notasCredito.parsed.length} notas de crédito procesadas • Click para cambiar archivo
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClear();
+                    setError(null);
+                    setParseWarnings([]);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar archivo
+                </Button>
               </>
             ) : (
               <>

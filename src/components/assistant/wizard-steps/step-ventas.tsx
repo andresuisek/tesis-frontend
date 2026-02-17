@@ -17,7 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown, Trash2 } from "lucide-react";
 import { VentaParsed, VentasParseResult, TasaIVA } from "@/lib/ventas-parser";
 
 const TASAS_IVA: TasaIVA[] = [0, 8, 12, 15];
@@ -33,6 +33,7 @@ interface StepVentasProps {
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
   onFileProcess: (file: File, tasaIVA: TasaIVA) => Promise<VentasParseResult>;
+  onClear: () => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -44,6 +45,7 @@ export function StepVentas({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contribuyenteRuc,
   onFileProcess,
+  onClear,
   onNext,
   onBack,
 }: StepVentasProps) {
@@ -199,6 +201,21 @@ export function StepVentas({
                     {ventas.parsed.length} ventas procesadas • Click para cambiar archivo
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClear();
+                    setError(null);
+                    setParseWarnings([]);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar archivo
+                </Button>
               </>
             ) : (
               <>

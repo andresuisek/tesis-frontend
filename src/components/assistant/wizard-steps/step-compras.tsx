@@ -56,6 +56,7 @@ import {
   Palmtree,
   Briefcase,
   HelpCircle,
+  Trash2,
 } from "lucide-react";
 import { CompraParsed, ProveedorResumen } from "@/lib/compras-parser";
 import { RubroCompra } from "@/lib/supabase";
@@ -74,6 +75,7 @@ interface StepComprasProps {
   onFileProcess: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[]; warnings?: string[]; skippedCount?: number }>;
   onRubroChange: (ruc: string, rubro: string) => void;
   onBulkRubroChange: (rucs: string[], rubro: string) => void;
+  onClear: () => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -108,6 +110,7 @@ export function StepCompras({
   onFileProcess,
   onRubroChange,
   onBulkRubroChange,
+  onClear,
   onNext,
   onBack,
 }: StepComprasProps) {
@@ -122,6 +125,7 @@ export function StepCompras({
   const [selectedProveedores, setSelectedProveedores] = useState<Set<string>>(new Set());
   const [rubroMasivo, setRubroMasivo] = useState<RubroCompra | "">("");
   const [searchFilter, setSearchFilter] = useState("");
+  const [showOnlySinRubro, setShowOnlySinRubro] = useState(false);
   const [rubroSummaryOpen, setRubroSummaryOpen] = useState(false);
 
   // Auto-suggest rubros from previous imports
@@ -175,16 +179,25 @@ export function StepCompras({
     }
   };
 
-  // Filtrar proveedores por búsqueda
+  // Filtrar proveedores por búsqueda y/o filtro de sin rubro
   const proveedoresFiltrados = useMemo(() => {
-    if (!searchFilter.trim()) return compras.proveedores;
-    const search = searchFilter.toLowerCase();
-    return compras.proveedores.filter(
-      (p) =>
-        p.razon_social_proveedor.toLowerCase().includes(search) ||
-        p.ruc_proveedor.includes(search)
-    );
-  }, [compras.proveedores, searchFilter]);
+    let filtered = compras.proveedores;
+
+    if (showOnlySinRubro) {
+      filtered = filtered.filter((p) => !p.rubro || p.rubro === "no_definido");
+    }
+
+    if (searchFilter.trim()) {
+      const search = searchFilter.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.razon_social_proveedor.toLowerCase().includes(search) ||
+          p.ruc_proveedor.includes(search)
+      );
+    }
+
+    return filtered;
+  }, [compras.proveedores, searchFilter, showOnlySinRubro]);
 
   // Selection stats
   const selectionStats = useMemo(() => {
@@ -306,13 +319,17 @@ export function StepCompras({
     setRubroMasivo("");
   };
 
-  const handleSelectSinRubro = () => {
-    const sinRubro = proveedoresFiltrados.filter((p) => !p.rubro || p.rubro === "no_definido");
-    setSelectedProveedores(new Set(sinRubro.map((p) => p.ruc_proveedor)));
-    if (sinRubro.length === 0) {
-      toast.info("Todos los proveedores ya tienen rubro asignado");
-    } else {
-      toast.info(`${sinRubro.length} proveedores sin rubro seleccionados`);
+  const handleToggleSinRubro = () => {
+    const newValue = !showOnlySinRubro;
+    setShowOnlySinRubro(newValue);
+    setSelectedProveedores(new Set());
+
+    if (newValue) {
+      const sinRubroCount = compras.proveedores.filter((p) => !p.rubro || p.rubro === "no_definido").length;
+      if (sinRubroCount === 0) {
+        toast.info("Todos los proveedores ya tienen rubro asignado");
+        setShowOnlySinRubro(false);
+      }
     }
   };
 
@@ -375,6 +392,23 @@ export function StepCompras({
                     {compras.parsed.length} compras • {compras.proveedores.length} proveedores • Click para cambiar
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClear();
+                    setError(null);
+                    setParseWarnings([]);
+                    setSelectedProveedores(new Set());
+                    setSuggestionsLoaded(false);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar archivo
+                </Button>
               </>
             ) : (
               <>
@@ -526,9 +560,13 @@ export function StepCompras({
               />
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleSelectSinRubro}>
+            <Button
+              variant={showOnlySinRubro ? "default" : "outline"}
+              size="sm"
+              onClick={handleToggleSinRubro}
+            >
               <AlertCircle className="h-4 w-4 mr-1" />
-              Seleccionar sin rubro ({proveedoresSinRubro})
+              {showOnlySinRubro ? "Mostrar todos" : `Rubros faltantes (${proveedoresSinRubro})`}
             </Button>
 
             <div className="text-sm text-muted-foreground ml-auto">
