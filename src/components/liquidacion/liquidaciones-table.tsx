@@ -53,9 +53,9 @@ export function LiquidacionesTable({
           <TableRow>
             <TableHead>Periodo</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead className="text-right">IVA causado</TableHead>
-            <TableHead className="text-right">Crédito compras</TableHead>
-            <TableHead className="text-right">Retenciones IVA</TableHead>
+            <TableHead className="text-right">IVA Ventas</TableHead>
+            <TableHead className="text-right">IVA Compras</TableHead>
+            <TableHead className="text-right">Impuesto causado</TableHead>
             <TableHead className="text-right">Total a pagar</TableHead>
             <TableHead className="text-center">Estado</TableHead>
             <TableHead>Registrado</TableHead>
@@ -66,7 +66,7 @@ export function LiquidacionesTable({
           {liquidaciones.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={8}
+                colSpan={9}
                 className="h-24 text-center text-muted-foreground"
               >
                 Aún no registras cierres de IVA.
@@ -97,13 +97,19 @@ export function LiquidacionesTable({
                   {resumen.tipoPeriodo}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(resumen.calculo.ivaCausado)}
+                  {formatCurrency(resumen.calculo.ivaVentasPeriodo)}
                 </TableCell>
                 <TableCell className="text-right text-sky-600">
-                  {formatCurrency(resumen.calculo.creditoTributarioCompras)}
+                  {formatCurrency(resumen.calculo.ivaComprasTotal)}
                 </TableCell>
-                <TableCell className="text-right text-emerald-600">
-                  {formatCurrency(resumen.calculo.retencionesIVA)}
+                <TableCell className="text-right">
+                  {resumen.calculo.impuestoCausado > 0
+                    ? formatCurrency(resumen.calculo.impuestoCausado)
+                    : (
+                      <span className="text-emerald-600">
+                        {formatCurrency(resumen.calculo.creditoAdquisicionMes)}
+                      </span>
+                    )}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
                   {formatCurrency(resumen.calculo.totalAPagar)}
@@ -134,4 +140,3 @@ export function LiquidacionesTable({
     </div>
   );
 }
-

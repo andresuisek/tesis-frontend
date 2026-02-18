@@ -18,21 +18,26 @@ export function LiquidacionKPIs({
   resumen,
   periodoLabel,
 }: LiquidacionKPIsProps) {
+  const impuestoCausado = resumen?.calculo.impuestoCausado || 0;
+  const creditoMes = resumen?.calculo.creditoAdquisicionMes || 0;
+
   const cards = [
     {
-      title: "IVA causado",
-      value: formatCurrency(resumen?.calculo.ivaCausado || 0),
-      description: "Ventas gravadas del periodo",
+      title: "IVA Ventas",
+      value: formatCurrency(resumen?.calculo.ivaVentasPeriodo || 0),
+      description: "IVA auto-calculado del periodo",
     },
     {
-      title: "Crédito compras",
-      value: formatCurrency(resumen?.calculo.creditoTributarioCompras || 0),
+      title: "IVA Compras",
+      value: formatCurrency(resumen?.calculo.ivaComprasTotal || 0),
       description: "IVA soportado en compras",
     },
     {
-      title: "Retenciones IVA",
-      value: formatCurrency(resumen?.calculo.retencionesIVA || 0),
-      description: "Aplicadas en el periodo",
+      title: impuestoCausado > 0 ? "Impuesto causado" : "Crédito adquisición",
+      value: formatCurrency(impuestoCausado > 0 ? impuestoCausado : creditoMes),
+      description: impuestoCausado > 0
+        ? "Ventas - Compras del periodo"
+        : "Compras exceden ventas",
     },
     {
       title: "Total a pagar",
@@ -60,4 +65,3 @@ export function LiquidacionKPIs({
     </div>
   );
 }
-

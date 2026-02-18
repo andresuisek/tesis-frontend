@@ -53,10 +53,14 @@ const normalizeValores = (
   valores?: Partial<LiquidacionValoresIVA>
 ): LiquidacionValoresIVA => ({
   base0: Number(valores?.base0) || 0,
+  base5: Number(valores?.base5) || 0,
   base8: Number(valores?.base8) || 0,
   base15: Number(valores?.base15) || 0,
   iva: Number(valores?.iva) || 0,
 });
+
+export const calcularIVA = (v: LiquidacionValoresIVA): number =>
+  v.base5 * 0.05 + v.base8 * 0.08 + v.base15 * 0.15;
 
 export function buildPeriodInfo(selection: PeriodSelection): PeriodInfo {
   if (selection.tipo === "mensual") {
@@ -148,28 +152,39 @@ export function buildPeriodInfoFromRange(
 
 export interface LiquidacionValoresIVA {
   base0: number;
+  base5: number;
   base8: number;
   base15: number;
   iva: number;
 }
 
-export interface RetencionesInfo {
-  iva: number;
-  renta: number;
+export interface CreditoTributarioInfo {
+  ctPorAdquisicion: number;
+  ctPorRetencion: number;
+}
+
+export interface IvaDiferidoInfo {
+  ivaVentasTotal: number;
+  ivaDiferidoMonto: number;
+  mesesDiferimiento: number;
+  ivaVentasPeriodo: number;
+  ivaDiferidoRecibido: number;
 }
 
 export interface LiquidacionAjustes {
   creditoArrastradoAnterior: number;
-  creditoAplicadoAnterior: number;
-  creditoRemanenteAnterior: number;
-  creditoGeneradoPeriodo: number;
   advertencias: string[];
 }
 
 export interface LiquidacionCalculo {
-  ivaCausado: number;
-  creditoTributarioCompras: number;
-  retencionesIVA: number;
+  ivaVentasTotal: number;
+  ivaComprasTotal: number;
+  ivaDiferidoMonto: number;
+  ivaVentasPeriodo: number;
+  ivaDiferidoRecibido: number;
+  impuestoCausado: number;
+  creditoAdquisicionMes: number;
+  creditoArrastradoAnterior: number;
   ivaAPagar: number;
   saldoAFavor: number;
   rentaAPagar: number;
@@ -182,7 +197,9 @@ export interface LiquidacionSummaryData {
   modoManual: boolean;
   ventas: LiquidacionValoresIVA;
   compras: LiquidacionValoresIVA;
-  retenciones: RetencionesInfo;
+  creditoTributario: CreditoTributarioInfo;
+  retencionesRenta: number;
+  ivaDiferido: IvaDiferidoInfo;
   ajustes: LiquidacionAjustes;
   calculo: LiquidacionCalculo;
   notas?: string;
@@ -193,10 +210,14 @@ export interface LiquidacionCalcInput {
   tipoPeriodo: PeriodType;
   ventas?: Partial<LiquidacionValoresIVA>;
   compras?: Partial<LiquidacionValoresIVA>;
-  retencionesIVA?: number;
+  ctPorAdquisicion?: number;
+  ctPorRetencion?: number;
   retencionesRenta?: number;
   creditoArrastradoAnterior?: number;
   rentaAPagar?: number;
+  ivaDiferidoMonto?: number;
+  mesesDiferimiento?: number;
+  ivaDiferidoRecibido?: number;
   advertencias?: string[];
   modoManual?: boolean;
   notas?: string;
@@ -207,55 +228,62 @@ export function calculateLiquidacionResumen({
   tipoPeriodo,
   ventas,
   compras,
-  retencionesIVA,
+  ctPorAdquisicion,
+  ctPorRetencion,
   retencionesRenta,
   creditoArrastradoAnterior,
   rentaAPagar,
+  ivaDiferidoMonto,
+  mesesDiferimiento,
+  ivaDiferidoRecibido,
   advertencias,
   modoManual,
   notas,
 }: LiquidacionCalcInput): LiquidacionSummaryData {
   const ventasValores = normalizeValores(ventas);
   const comprasValores = normalizeValores(compras);
-  const retIva = toPositiveNumber(retencionesIVA);
   const retRenta = toPositiveNumber(retencionesRenta);
   const creditoAnterior = toPositiveNumber(creditoArrastradoAnterior);
   const rentaPagar = toPositiveNumber(rentaAPagar);
+  const diferidoRecibido = toPositiveNumber(ivaDiferidoRecibido);
 
   const registerAdvertencias = [...(advertencias ?? [])];
 
-  const ivaBase = ventasValores.iva - comprasValores.iva;
-  let ivaPendiente = ivaBase;
-  let creditoAplicadoAnterior = 0;
-  let creditoRemanenteAnterior = creditoAnterior;
-  let creditoGeneradoPeriodo = 0;
+  // 1. Auto-calculate IVA from bases
+  const ivaVentasTotal = calcularIVA(ventasValores);
+  const ivaComprasTotal = calcularIVA(comprasValores);
 
-  if (ivaPendiente <= 0) {
-    creditoGeneradoPeriodo += Math.abs(ivaPendiente);
-    ivaPendiente = 0;
-  } else if (creditoAnterior > 0) {
-    creditoAplicadoAnterior = Math.min(ivaPendiente, creditoAnterior);
-    ivaPendiente -= creditoAplicadoAnterior;
-    creditoRemanenteAnterior = creditoAnterior - creditoAplicadoAnterior;
-    if (ivaPendiente <= 0) {
-      creditoGeneradoPeriodo += Math.abs(ivaPendiente);
-      ivaPendiente = 0;
-    }
+  // Update iva field on valores for display consistency
+  ventasValores.iva = ivaVentasTotal;
+  comprasValores.iva = ivaComprasTotal;
+
+  // 2. IVA diferido
+  const diferidoMonto = Math.min(
+    toPositiveNumber(ivaDiferidoMonto),
+    ivaVentasTotal
+  );
+  const mesesDif = diferidoMonto > 0 ? Math.max(0, Math.min(3, Number(mesesDiferimiento) || 0)) : 0;
+  const ivaVentasPeriodo = ivaVentasTotal - diferidoMonto;
+
+  // 3. Resultado intermedio: IVA Ventas vs IVA Compras
+  const resultado = (ivaVentasPeriodo + diferidoRecibido) - ivaComprasTotal;
+  const impuestoCausado = resultado > 0 ? resultado : 0;
+  const creditoAdquisicionMes = resultado <= 0 ? Math.abs(resultado) : 0;
+
+  // 4. Aplicar crédito arrastrado (solo si hay impuesto causado)
+  let pendiente = impuestoCausado;
+  if (pendiente > 0 && creditoAnterior > 0) {
+    pendiente -= creditoAnterior;
   }
 
-  if (ivaPendiente > 0) {
-    ivaPendiente -= retIva;
-    if (ivaPendiente < 0) {
-      creditoGeneradoPeriodo += Math.abs(ivaPendiente);
-      ivaPendiente = 0;
-    }
-  } else if (retIva > 0) {
-    creditoGeneradoPeriodo += retIva;
-  }
-
-  const ivaAPagar = Math.max(0, ivaPendiente);
-  const saldoAFavor = creditoRemanenteAnterior + creditoGeneradoPeriodo;
+  // 5. Resultado final
+  const ivaAPagar = Math.max(0, pendiente);
+  const saldoAFavor = creditoAdquisicionMes + Math.max(0, -pendiente);
   const totalAPagar = ivaAPagar + rentaPagar;
+
+  // CT por adquisición y CT por retención: campos informativos (no participan en cálculo)
+  const ctAdquisicion = toPositiveNumber(ctPorAdquisicion);
+  const ctRetencion = toPositiveNumber(ctPorRetencion);
 
   return {
     periodo,
@@ -263,21 +291,31 @@ export function calculateLiquidacionResumen({
     modoManual: Boolean(modoManual),
     ventas: ventasValores,
     compras: comprasValores,
-    retenciones: {
-      iva: retIva,
-      renta: retRenta,
+    creditoTributario: {
+      ctPorAdquisicion: ctAdquisicion,
+      ctPorRetencion: ctRetencion,
+    },
+    retencionesRenta: retRenta,
+    ivaDiferido: {
+      ivaVentasTotal,
+      ivaDiferidoMonto: diferidoMonto,
+      mesesDiferimiento: mesesDif,
+      ivaVentasPeriodo,
+      ivaDiferidoRecibido: diferidoRecibido,
     },
     ajustes: {
       creditoArrastradoAnterior: creditoAnterior,
-      creditoAplicadoAnterior,
-      creditoRemanenteAnterior,
-      creditoGeneradoPeriodo,
       advertencias: registerAdvertencias,
     },
     calculo: {
-      ivaCausado: ventasValores.iva,
-      creditoTributarioCompras: comprasValores.iva,
-      retencionesIVA: retIva,
+      ivaVentasTotal,
+      ivaComprasTotal,
+      ivaDiferidoMonto: diferidoMonto,
+      ivaVentasPeriodo,
+      ivaDiferidoRecibido: diferidoRecibido,
+      impuestoCausado,
+      creditoAdquisicionMes,
+      creditoArrastradoAnterior: creditoAnterior,
       ivaAPagar,
       saldoAFavor,
       rentaAPagar: rentaPagar,
@@ -291,6 +329,7 @@ export interface TaxLiquidationInsertPayload {
   contribuyente_ruc: string;
   fecha_inicio_cierre: string;
   fecha_fin_cierre: string;
+  // Legacy columns (backward compatibility)
   total_compras_iva_0: number;
   total_compras_iva_mayor_0: number;
   total_ventas_iva_0: number;
@@ -301,6 +340,22 @@ export interface TaxLiquidationInsertPayload {
   credito_favor_retencion: number;
   impuesto_pagar_sri: number;
   impuesto_causado: number;
+  // New columns
+  total_ventas_base_5: number;
+  total_ventas_base_8: number;
+  total_ventas_base_15: number;
+  total_compras_base_5: number;
+  total_compras_base_8: number;
+  total_compras_base_15: number;
+  iva_ventas: number;
+  iva_compras: number;
+  ct_por_adquisicion: number;
+  ct_por_retencion: number;
+  iva_diferido_monto: number;
+  iva_diferido_meses: number;
+  iva_diferido_recibido: number;
+  credito_arrastrado_anterior: number;
+  saldo_a_favor: number;
 }
 
 export function buildInsertPayloadFromSummary(
@@ -308,50 +363,143 @@ export function buildInsertPayloadFromSummary(
   summary: LiquidacionSummaryData,
   options?: { totalNcIVAMayor0?: number }
 ): TaxLiquidationInsertPayload {
-  const totalVentasGravadas = summary.ventas.base8 + summary.ventas.base15;
-  const totalComprasGravadas = summary.compras.base8 + summary.compras.base15;
+  const totalVentasGravadas =
+    summary.ventas.base5 + summary.ventas.base8 + summary.ventas.base15;
+  const totalComprasGravadas =
+    summary.compras.base5 + summary.compras.base8 + summary.compras.base15;
+
   return {
     contribuyente_ruc,
     fecha_inicio_cierre: summary.periodo.startDate,
     fecha_fin_cierre: summary.periodo.endDate,
+    // Legacy columns
     total_compras_iva_0: summary.compras.base0,
     total_compras_iva_mayor_0: totalComprasGravadas,
     total_ventas_iva_0: summary.ventas.base0,
     total_ventas_iva_mayor_0: totalVentasGravadas,
     total_nc_iva_mayor_0: options?.totalNcIVAMayor0 ?? 0,
-    total_retenciones_iva_mayor_0: summary.retenciones.iva,
-    credito_favor_adquisicion: summary.compras.iva,
-    credito_favor_retencion: summary.retenciones.renta,
+    total_retenciones_iva_mayor_0: 0,
+    credito_favor_adquisicion: summary.calculo.ivaComprasTotal,
+    credito_favor_retencion: summary.retencionesRenta,
     impuesto_pagar_sri: summary.calculo.totalAPagar,
-    impuesto_causado: summary.calculo.ivaCausado,
+    impuesto_causado: summary.calculo.impuestoCausado,
+    // New columns
+    total_ventas_base_5: summary.ventas.base5,
+    total_ventas_base_8: summary.ventas.base8,
+    total_ventas_base_15: summary.ventas.base15,
+    total_compras_base_5: summary.compras.base5,
+    total_compras_base_8: summary.compras.base8,
+    total_compras_base_15: summary.compras.base15,
+    iva_ventas: summary.calculo.ivaVentasTotal,
+    iva_compras: summary.calculo.ivaComprasTotal,
+    ct_por_adquisicion: summary.creditoTributario.ctPorAdquisicion,
+    ct_por_retencion: summary.creditoTributario.ctPorRetencion,
+    iva_diferido_monto: summary.ivaDiferido.ivaDiferidoMonto,
+    iva_diferido_meses: summary.ivaDiferido.mesesDiferimiento,
+    iva_diferido_recibido: summary.ivaDiferido.ivaDiferidoRecibido,
+    credito_arrastrado_anterior: summary.ajustes.creditoArrastradoAnterior,
+    saldo_a_favor: summary.calculo.saldoAFavor,
   };
 }
 
 export function mapTaxLiquidationToSummary(
   row: TaxLiquidation
 ): LiquidacionSummaryData {
-  if (typeof window !== "undefined") {
-    console.log("[Liquidacion] Valores crudos tax_liquidations", {
-      id: row.id,
-      total_compras_iva_0: row.total_compras_iva_0,
-      total_compras_iva_mayor_0: row.total_compras_iva_mayor_0,
-      credito_favor_adquisicion: row.credito_favor_adquisicion,
-    });
-  }
-
   const { info, tipoPeriodo } = buildPeriodInfoFromRange(
     row.fecha_inicio_cierre,
     row.fecha_fin_cierre
   );
 
+  // Check if new columns are populated (non-zero iva_ventas means new format)
+  const hasNewColumns = (Number(row.iva_ventas) || 0) > 0 ||
+    (Number(row.iva_compras) || 0) > 0 ||
+    (Number(row.total_ventas_base_5) || 0) > 0 ||
+    (Number(row.total_ventas_base_8) || 0) > 0 ||
+    (Number(row.total_ventas_base_15) || 0) > 0;
+
+  if (hasNewColumns) {
+    // New format: read from new columns
+    const ventasBase5 = Number(row.total_ventas_base_5) || 0;
+    const ventasBase8 = Number(row.total_ventas_base_8) || 0;
+    const ventasBase15 = Number(row.total_ventas_base_15) || 0;
+    const comprasBase5 = Number(row.total_compras_base_5) || 0;
+    const comprasBase8 = Number(row.total_compras_base_8) || 0;
+    const comprasBase15 = Number(row.total_compras_base_15) || 0;
+    const ivaVentas = Number(row.iva_ventas) || 0;
+    const ivaCompras = Number(row.iva_compras) || 0;
+    const diferidoMonto = Number(row.iva_diferido_monto) || 0;
+    const diferidoMeses = Number(row.iva_diferido_meses) || 0;
+    const diferidoRecibido = Number(row.iva_diferido_recibido) || 0;
+    const creditoAnterior = Number(row.credito_arrastrado_anterior) || 0;
+    const saldoAFavor = Number(row.saldo_a_favor) || 0;
+    const impuestoPagar = Number(row.impuesto_pagar_sri) || 0;
+    const impuestoCausado = Number(row.impuesto_causado) || 0;
+
+    const ivaVentasPeriodo = ivaVentas - diferidoMonto;
+    const creditoAdquisicionMes = impuestoCausado === 0
+      ? Math.max(0, ivaCompras - (ivaVentasPeriodo + diferidoRecibido))
+      : 0;
+
+    return {
+      periodo: info,
+      tipoPeriodo,
+      modoManual: false,
+      ventas: {
+        base0: Number(row.total_ventas_iva_0) || 0,
+        base5: ventasBase5,
+        base8: ventasBase8,
+        base15: ventasBase15,
+        iva: ivaVentas,
+      },
+      compras: {
+        base0: Number(row.total_compras_iva_0) || 0,
+        base5: comprasBase5,
+        base8: comprasBase8,
+        base15: comprasBase15,
+        iva: ivaCompras,
+      },
+      creditoTributario: {
+        ctPorAdquisicion: Number(row.ct_por_adquisicion) || 0,
+        ctPorRetencion: Number(row.ct_por_retencion) || 0,
+      },
+      retencionesRenta: Number(row.credito_favor_retencion) || 0,
+      ivaDiferido: {
+        ivaVentasTotal: ivaVentas,
+        ivaDiferidoMonto: diferidoMonto,
+        mesesDiferimiento: diferidoMeses,
+        ivaVentasPeriodo,
+        ivaDiferidoRecibido: diferidoRecibido,
+      },
+      ajustes: {
+        creditoArrastradoAnterior: creditoAnterior,
+        advertencias: [],
+      },
+      calculo: {
+        ivaVentasTotal: ivaVentas,
+        ivaComprasTotal: ivaCompras,
+        ivaDiferidoMonto: diferidoMonto,
+        ivaVentasPeriodo,
+        ivaDiferidoRecibido: diferidoRecibido,
+        impuestoCausado,
+        creditoAdquisicionMes,
+        creditoArrastradoAnterior: creditoAnterior,
+        ivaAPagar: Math.max(0, impuestoPagar),
+        saldoAFavor,
+        rentaAPagar: 0,
+        totalAPagar: Math.max(0, impuestoPagar),
+      },
+      notas: undefined,
+    };
+  }
+
+  // Legacy format: fallback to old columns
   const totalVentasGravadas = Number(row.total_ventas_iva_mayor_0) || 0;
   const totalComprasGravadas = Number(row.total_compras_iva_mayor_0) || 0;
   const ivaCausado = Number(row.impuesto_causado) || 0;
   const creditoCompras = Number(row.credito_favor_adquisicion) || 0;
-  const retencionesIva = Number(row.total_retenciones_iva_mayor_0) || 0;
   const retencionesRenta = Number(row.credito_favor_retencion) || 0;
   const impuestoPagar = Number(row.impuesto_pagar_sri) || 0;
-  const saldoAFavor = Math.max(0, creditoCompras + retencionesIva - ivaCausado);
+  const saldoAFavor = Math.max(0, creditoCompras - ivaCausado);
 
   return {
     periodo: info,
@@ -359,31 +507,43 @@ export function mapTaxLiquidationToSummary(
     modoManual: false,
     ventas: {
       base0: Number(row.total_ventas_iva_0) || 0,
+      base5: 0,
       base8: totalVentasGravadas,
       base15: 0,
       iva: ivaCausado,
     },
     compras: {
       base0: Number(row.total_compras_iva_0) || 0,
+      base5: 0,
       base8: totalComprasGravadas,
       base15: 0,
       iva: creditoCompras,
     },
-    retenciones: {
-      iva: retencionesIva,
-      renta: retencionesRenta,
+    creditoTributario: {
+      ctPorAdquisicion: 0,
+      ctPorRetencion: 0,
+    },
+    retencionesRenta,
+    ivaDiferido: {
+      ivaVentasTotal: ivaCausado,
+      ivaDiferidoMonto: 0,
+      mesesDiferimiento: 0,
+      ivaVentasPeriodo: ivaCausado,
+      ivaDiferidoRecibido: 0,
     },
     ajustes: {
       creditoArrastradoAnterior: 0,
-      creditoAplicadoAnterior: 0,
-      creditoRemanenteAnterior: saldoAFavor,
-      creditoGeneradoPeriodo: 0,
       advertencias: [],
     },
     calculo: {
-      ivaCausado,
-      creditoTributarioCompras: creditoCompras,
-      retencionesIVA: retencionesIva,
+      ivaVentasTotal: ivaCausado,
+      ivaComprasTotal: creditoCompras,
+      ivaDiferidoMonto: 0,
+      ivaVentasPeriodo: ivaCausado,
+      ivaDiferidoRecibido: 0,
+      impuestoCausado: ivaCausado,
+      creditoAdquisicionMes: 0,
+      creditoArrastradoAnterior: 0,
       ivaAPagar: Math.max(0, impuestoPagar),
       saldoAFavor,
       rentaAPagar: 0,

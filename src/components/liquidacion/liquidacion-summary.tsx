@@ -73,11 +73,11 @@ export function LiquidacionSummary({
   const dueDate = resumen.periodo.dueDate
     ? dayjs(resumen.periodo.dueDate).format("DD/MM/YYYY")
     : "";
-  const ventasBaseGravada = resumen.ventas.base8 + resumen.ventas.base15;
-  const comprasBaseGravada = resumen.compras.base8 + resumen.compras.base15;
-  const showCreditoArrastrado =
-    resumen.ajustes.creditoAplicadoAnterior > 0 ||
-    resumen.ajustes.creditoArrastradoAnterior > 0;
+  const hasDiferido = resumen.ivaDiferido.ivaDiferidoMonto > 0;
+  const hasDiferidoRecibido = resumen.ivaDiferido.ivaDiferidoRecibido > 0;
+  const hasCT =
+    resumen.creditoTributario.ctPorAdquisicion > 0 ||
+    resumen.creditoTributario.ctPorRetencion > 0;
 
   return (
     <div className="space-y-6">
@@ -95,6 +95,7 @@ export function LiquidacionSummary({
         <Badge variant={badge.variant}>{badge.label}</Badge>
       </div>
 
+      {/* Ventas & Compras */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -113,20 +114,48 @@ export function LiquidacionSummary({
                 {formatCurrency(resumen.ventas.base0)}
               </span>
             </div>
+            {resumen.ventas.base5 > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Base 5%:</span>
+                <span className="font-medium">
+                  {formatCurrency(resumen.ventas.base5)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">
-                Base gravada (IVA):
-              </span>
+              <span className="text-muted-foreground">Base 8%:</span>
               <span className="font-medium">
-                {formatCurrency(ventasBaseGravada)}
+                {formatCurrency(resumen.ventas.base8)}
               </span>
             </div>
+            {resumen.ventas.base15 > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Base 15%:</span>
+                <span className="font-medium">
+                  {formatCurrency(resumen.ventas.base15)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
-              <span>IVA causado:</span>
+              <span>IVA Ventas:</span>
               <span className="text-green-600">
-                {formatCurrency(resumen.ventas.iva)}
+                {formatCurrency(resumen.calculo.ivaVentasTotal)}
               </span>
             </div>
+            {hasDiferido && (
+              <>
+                <div className="flex items-center justify-between text-sm text-amber-600">
+                  <span>IVA a diferir ({resumen.ivaDiferido.mesesDiferimiento} {resumen.ivaDiferido.mesesDiferimiento === 1 ? "mes" : "meses"}):</span>
+                  <span>-{formatCurrency(resumen.ivaDiferido.ivaDiferidoMonto)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span>IVA Ventas del período:</span>
+                  <span className="text-green-600">
+                    {formatCurrency(resumen.ivaDiferido.ivaVentasPeriodo)}
+                  </span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -147,29 +176,44 @@ export function LiquidacionSummary({
                 {formatCurrency(resumen.compras.base0)}
               </span>
             </div>
+            {resumen.compras.base5 > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Base 5%:</span>
+                <span className="font-medium">
+                  {formatCurrency(resumen.compras.base5)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">
-                Base gravada (IVA):
-              </span>
+              <span className="text-muted-foreground">Base 8%:</span>
               <span className="font-medium">
-                {formatCurrency(comprasBaseGravada)}
+                {formatCurrency(resumen.compras.base8)}
               </span>
             </div>
+            {resumen.compras.base15 > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Base 15%:</span>
+                <span className="font-medium">
+                  {formatCurrency(resumen.compras.base15)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
-              <span>Crédito tributario:</span>
+              <span>IVA Compras:</span>
               <span className="text-sky-600">
-                {formatCurrency(resumen.compras.iva)}
+                {formatCurrency(resumen.calculo.ivaComprasTotal)}
               </span>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Liquidación del impuesto */}
       <Card>
         <CardHeader>
-          <CardTitle>Liquidación final</CardTitle>
+          <CardTitle>Liquidación del impuesto</CardTitle>
           <CardDescription>
-            Resultado automático según ventas, compras y retenciones del periodo
+            Resultado según bases imponibles, diferido y créditos del periodo
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -179,41 +223,64 @@ export function LiquidacionSummary({
                 Cálculo IVA
               </h4>
               <div className="flex items-center justify-between">
-                <span>IVA causado (ventas)</span>
-                <span>{formatCurrency(resumen.calculo.ivaCausado)}</span>
+                <span>IVA Ventas del período</span>
+                <span>{formatCurrency(resumen.calculo.ivaVentasPeriodo)}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Crédito tributario (compras)</span>
-                <span className="text-red-500">
-                  -{formatCurrency(resumen.calculo.creditoTributarioCompras)}
-                </span>
-              </div>
-              {showCreditoArrastrado && (
+              {hasDiferidoRecibido && (
                 <div className="flex items-center justify-between">
-                  <span>Crédito arrastrado</span>
-                  <span className="text-red-500">
-                    -{formatCurrency(resumen.ajustes.creditoAplicadoAnterior)}
+                  <span>(+) IVA diferido recibido</span>
+                  <span>
+                    {formatCurrency(resumen.calculo.ivaDiferidoRecibido)}
                   </span>
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span>Retenciones de IVA</span>
+                <span>(-) IVA Compras</span>
                 <span className="text-red-500">
-                  -{formatCurrency(resumen.calculo.retencionesIVA)}
+                  -{formatCurrency(resumen.calculo.ivaComprasTotal)}
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
-                <span>IVA a pagar</span>
-                <span className="text-red-600">
-                  {formatCurrency(resumen.calculo.ivaAPagar)}
-                </span>
+              <div className="border-t pt-3">
+                {resumen.calculo.impuestoCausado > 0 ? (
+                  <div className="flex items-center justify-between font-semibold">
+                    <span>= Impuesto causado</span>
+                    <span>{formatCurrency(resumen.calculo.impuestoCausado)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between font-semibold text-emerald-600">
+                    <span>= Crédito por adquisición del mes</span>
+                    <span>{formatCurrency(resumen.calculo.creditoAdquisicionMes)}</span>
+                  </div>
+                )}
               </div>
-              {resumen.calculo.saldoAFavor > 0 && (
-                <div className="flex items-center justify-between text-sm text-emerald-600">
-                  <span>Crédito a favor</span>
-                  <span>{formatCurrency(resumen.calculo.saldoAFavor)}</span>
+              {resumen.calculo.impuestoCausado > 0 && resumen.calculo.creditoArrastradoAnterior > 0 && (
+                <div className="flex items-center justify-between">
+                  <span>(-) Crédito arrastrado anterior</span>
+                  <span className="text-red-500">
+                    -{formatCurrency(resumen.calculo.creditoArrastradoAnterior)}
+                  </span>
                 </div>
               )}
+              <div className="border-t pt-3">
+                {resumen.calculo.ivaAPagar > 0 ? (
+                  <div className="flex items-center justify-between text-base font-semibold">
+                    <span>IVA a pagar</span>
+                    <span className="text-red-600">
+                      {formatCurrency(resumen.calculo.ivaAPagar)}
+                    </span>
+                  </div>
+                ) : resumen.calculo.saldoAFavor > 0 ? (
+                  <div className="flex items-center justify-between text-base font-semibold text-emerald-600">
+                    <span>Saldo a favor</span>
+                    <span>{formatCurrency(resumen.calculo.saldoAFavor)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-base font-semibold">
+                    <span>IVA a pagar</span>
+                    <span>{formatCurrency(0)}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-3 text-sm">
@@ -223,7 +290,7 @@ export function LiquidacionSummary({
               <div className="flex items-center justify-between">
                 <span>Retenciones recibidas</span>
                 <span className="text-red-500">
-                  -{formatCurrency(resumen.retenciones.renta)}
+                  -{formatCurrency(resumen.retencionesRenta)}
                 </span>
               </div>
               <div className="flex items-center justify-between border-t pt-3 text-base font-semibold">
@@ -236,6 +303,26 @@ export function LiquidacionSummary({
                 Ajusta este valor desde el modal al confirmar el cierre si
                 necesitas ingresar cálculos manuales de impuesto a la renta.
               </div>
+
+              {hasCT && (
+                <>
+                  <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wide pt-2">
+                    Crédito tributario del mes (F104)
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <span>CT por adquisición</span>
+                    <span>
+                      {formatCurrency(resumen.creditoTributario.ctPorAdquisicion)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>CT por retención</span>
+                    <span>
+                      {formatCurrency(resumen.creditoTributario.ctPorRetencion)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -289,4 +376,3 @@ export function LiquidacionSummary({
     </div>
   );
 }
-

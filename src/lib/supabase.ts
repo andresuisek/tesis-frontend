@@ -54,6 +54,7 @@ export interface Venta {
   numero_comprobante: string;
   identificacion_receptor?: string;
   subtotal_0: number;
+  subtotal_5: number;
   subtotal_8: number;
   subtotal_15: number;
   iva: number;
@@ -70,6 +71,7 @@ export interface NotaCredito {
   tipo_comprobante: TipoComprobante;
   numero_comprobante: string;
   subtotal_0: number;
+  subtotal_5: number;
   subtotal_8: number;
   subtotal_15: number;
   iva: number;
@@ -112,6 +114,7 @@ export interface Compra {
   rubro: RubroCompra; // Por defecto será "no_definido" desde la BD
   valor_sin_impuesto: number;
   subtotal_0: number;
+  subtotal_5: number;
   subtotal_8: number;
   subtotal_15: number;
   iva: number;
@@ -125,6 +128,7 @@ export interface TaxLiquidation {
   contribuyente_ruc: string;
   fecha_inicio_cierre: string;
   fecha_fin_cierre: string;
+  // Legacy columns (kept for backward compatibility)
   total_compras_iva_0: number;
   total_compras_iva_mayor_0: number;
   total_ventas_iva_0: number;
@@ -135,6 +139,26 @@ export interface TaxLiquidation {
   credito_favor_retencion: number;
   impuesto_pagar_sri: number;
   impuesto_causado: number;
+  // New rate breakdown columns
+  total_ventas_base_5?: number;
+  total_ventas_base_8?: number;
+  total_ventas_base_15?: number;
+  total_compras_base_5?: number;
+  total_compras_base_8?: number;
+  total_compras_base_15?: number;
+  // Calculated IVA
+  iva_ventas?: number;
+  iva_compras?: number;
+  // Crédito tributario
+  ct_por_adquisicion?: number;
+  ct_por_retencion?: number;
+  // IVA diferido
+  iva_diferido_monto?: number;
+  iva_diferido_meses?: number;
+  iva_diferido_recibido?: number;
+  // Additional
+  credito_arrastrado_anterior?: number;
+  saldo_a_favor?: number;
   created_at: string;
   deleted_at?: string | null;
 }

@@ -31,7 +31,9 @@ import {
   SemesterValue,
   buildInsertPayloadFromSummary,
   buildPeriodInfo,
+  calcularIVA,
   calculateLiquidacionResumen,
+  formatCurrency,
   getPreviousSelection,
   periodHasFinished,
 } from "@/lib/liquidacion";
@@ -53,32 +55,38 @@ interface GenerarLiquidacionDialogProps {
 
 interface ManualValores {
   ventasBase0: string;
+  ventasBase5: string;
   ventasBase8: string;
   ventasBase15: string;
-  ventasIVA: string;
   comprasBase0: string;
+  comprasBase5: string;
   comprasBase8: string;
   comprasBase15: string;
-  comprasIVA: string;
-  retencionesIVA: string;
+  ctPorAdquisicion: string;
+  ctPorRetencion: string;
   retencionesRenta: string;
   creditoAnterior: string;
   rentaAPagar: string;
+  ivaDiferidoMonto: string;
+  mesesDiferimiento: string;
 }
 
 const defaultManualValores: ManualValores = {
   ventasBase0: "0",
+  ventasBase5: "0",
   ventasBase8: "0",
   ventasBase15: "0",
-  ventasIVA: "0",
   comprasBase0: "0",
+  comprasBase5: "0",
   comprasBase8: "0",
   comprasBase15: "0",
-  comprasIVA: "0",
-  retencionesIVA: "0",
+  ctPorAdquisicion: "0",
+  ctPorRetencion: "0",
   retencionesRenta: "0",
   creditoAnterior: "0",
   rentaAPagar: "0",
+  ivaDiferidoMonto: "0",
+  mesesDiferimiento: "0",
 };
 
 const toNumber = (value: string) => {
@@ -110,6 +118,7 @@ export function GenerarLiquidacionDialog({
     useState<LiquidacionSummaryData | null>(null);
   const [calculando, setCalculando] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [diferidoRecibido, setDiferidoRecibido] = useState(0);
   const [alertas, setAlertas] = useState<
     { type: "warning" | "error" | "info"; text: string }[]
   >([]);
@@ -132,6 +141,31 @@ export function GenerarLiquidacionDialog({
     [periodoSeleccionado]
   );
 
+  // Auto-calculate IVA in real-time from manual bases
+  const ivaVentasAutoCalc = useMemo(
+    () =>
+      calcularIVA({
+        base0: 0,
+        base5: toNumber(manualValores.ventasBase5),
+        base8: toNumber(manualValores.ventasBase8),
+        base15: toNumber(manualValores.ventasBase15),
+        iva: 0,
+      }),
+    [manualValores.ventasBase5, manualValores.ventasBase8, manualValores.ventasBase15]
+  );
+
+  const ivaComprasAutoCalc = useMemo(
+    () =>
+      calcularIVA({
+        base0: 0,
+        base5: toNumber(manualValores.comprasBase5),
+        base8: toNumber(manualValores.comprasBase8),
+        base15: toNumber(manualValores.comprasBase15),
+        iva: 0,
+      }),
+    [manualValores.comprasBase5, manualValores.comprasBase8, manualValores.comprasBase15]
+  );
+
   useEffect(() => {
     if (!open) {
       setResumenPreview(null);
@@ -139,8 +173,8 @@ export function GenerarLiquidacionDialog({
       setManualValores(defaultManualValores);
       setNotas("");
       setAlertas([]);
+      setDiferidoRecibido(0);
     } else {
-      // Reiniciar a mes anterior cada vez que se abre
       const prev = dayjs().subtract(1, "month");
       setTipoPeriodo("mensual");
       setYear(prev.year());
@@ -165,64 +199,61 @@ export function GenerarLiquidacionDialog({
     const previousSelection = getPreviousSelection(periodoSeleccionado);
     const previousInfo = buildPeriodInfo(previousSelection);
 
-    const [
-      { data: prevClosing, error: prevClosingError },
-      ventasPrevias,
-      comprasPrevias,
-    ] = await Promise.all([
-      supabase
-        .from("tax_liquidations")
-        .select(
-          "id, impuesto_causado, credito_favor_adquisicion, total_retenciones_iva_mayor_0"
-        )
-        .eq("contribuyente_ruc", contribuyenteRuc)
-        .eq("fecha_inicio_cierre", previousInfo.startDate)
-        .eq("fecha_fin_cierre", previousInfo.endDate)
-        .maybeSingle(),
-      supabase
-        .from("ventas")
-        .select("id", { count: "exact", head: true })
-        .eq("contribuyente_ruc", contribuyenteRuc)
-        .gte("fecha_emision", previousInfo.startDate)
-        .lte("fecha_emision", previousInfo.endDate),
-      supabase
-        .from("compras")
-        .select("id", { count: "exact", head: true })
-        .eq("contribuyente_ruc", contribuyenteRuc)
-        .gte("fecha_emision", previousInfo.startDate)
-        .lte("fecha_emision", previousInfo.endDate),
-    ]);
+    const { data: prevClosing, error: prevClosingError } = await supabase
+      .from("tax_liquidations")
+      .select(
+        "id, impuesto_causado, credito_favor_adquisicion, total_retenciones_iva_mayor_0, saldo_a_favor"
+      )
+      .eq("contribuyente_ruc", contribuyenteRuc)
+      .eq("fecha_inicio_cierre", previousInfo.startDate)
+      .eq("fecha_fin_cierre", previousInfo.endDate)
+      .maybeSingle();
 
     if (prevClosingError) throw prevClosingError;
-    if (ventasPrevias.error) throw ventasPrevias.error;
-    if (comprasPrevias.error) throw comprasPrevias.error;
-
-    const ventasCount = ventasPrevias.count ?? 0;
-    const comprasCount = comprasPrevias.count ?? 0;
-
-    if (ventasCount + comprasCount > 0 && !prevClosing) {
-      throw new Error(
-        "El periodo anterior tiene registros de ventas/compras pero no se encuentra cerrado."
-      );
-    }
 
     const advertencias: string[] = [];
-    if (ventasCount + comprasCount === 0 && !prevClosing) {
-      advertencias.push(
-        "El periodo anterior no registra ventas ni compras. Se continuará bajo advertencia."
-      );
-    }
 
+    // Use saldo_a_favor from new format if available, otherwise compute from legacy
     const creditoAnterior = prevClosing
-      ? Math.max(
-          0,
-          (Number(prevClosing.credito_favor_adquisicion) || 0) +
-            (Number(prevClosing.total_retenciones_iva_mayor_0) || 0) -
-            (Number(prevClosing.impuesto_causado) || 0)
-        )
+      ? (Number(prevClosing.saldo_a_favor) || 0) > 0
+        ? Number(prevClosing.saldo_a_favor)
+        : Math.max(
+            0,
+            (Number(prevClosing.credito_favor_adquisicion) || 0) +
+              (Number(prevClosing.total_retenciones_iva_mayor_0) || 0) -
+              (Number(prevClosing.impuesto_causado) || 0)
+          )
       : 0;
 
     return { advertencias, creditoAnterior };
+  };
+
+  const obtenerDiferidoRecibido = async (): Promise<number> => {
+    // Query past liquidations that have deferred IVA targeting the current period
+    const { data: rows, error } = await supabase
+      .from("tax_liquidations")
+      .select(
+        "fecha_inicio_cierre, iva_diferido_monto, iva_diferido_meses"
+      )
+      .eq("contribuyente_ruc", contribuyenteRuc)
+      .gt("iva_diferido_monto", 0);
+
+    if (error || !rows) return 0;
+
+    const currentStart = dayjs(periodoInfo.startDate);
+    let total = 0;
+    for (const row of rows) {
+      const meses = Number(row.iva_diferido_meses) || 0;
+      if (meses <= 0) continue;
+      const targetDate = dayjs(row.fecha_inicio_cierre).add(meses, "month");
+      if (
+        targetDate.year() === currentStart.year() &&
+        targetDate.month() === currentStart.month()
+      ) {
+        total += Number(row.iva_diferido_monto) || 0;
+      }
+    }
+    return total;
   };
 
   const obtenerDatosPeriodo = async () => {
@@ -233,13 +264,13 @@ export function GenerarLiquidacionDialog({
     ] = await Promise.all([
       supabase
         .from("ventas")
-        .select("subtotal_0, subtotal_8, subtotal_15, iva")
+        .select("subtotal_0, subtotal_5, subtotal_8, subtotal_15, iva")
         .eq("contribuyente_ruc", contribuyenteRuc)
         .gte("fecha_emision", periodoInfo.startDate)
         .lte("fecha_emision", periodoInfo.endDate),
       supabase
         .from("compras")
-        .select("subtotal_0, subtotal_8, subtotal_15, iva, total")
+        .select("subtotal_0, subtotal_5, subtotal_8, subtotal_15, iva, total")
         .eq("contribuyente_ruc", contribuyenteRuc)
         .gte("fecha_emision", periodoInfo.startDate)
         .lte("fecha_emision", periodoInfo.endDate),
@@ -258,51 +289,34 @@ export function GenerarLiquidacionDialog({
     const ventasTotales = ventas?.reduce(
       (acc, venta) => {
         acc.base0 += Number(venta.subtotal_0) || 0;
+        acc.base5 += Number(venta.subtotal_5) || 0;
         acc.base8 += Number(venta.subtotal_8) || 0;
         acc.base15 += Number(venta.subtotal_15) || 0;
         acc.iva += Number(venta.iva) || 0;
         return acc;
       },
-      { base0: 0, base8: 0, base15: 0, iva: 0 }
-    ) ?? { base0: 0, base8: 0, base15: 0, iva: 0 };
+      { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 }
+    ) ?? { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 };
 
     const comprasTotales = compras?.reduce(
       (acc, compra) => {
-        const total = Number(compra.total) || 0;
-        const ivaCompra = Number(compra.iva) || 0;
-        if (ivaCompra === 0) {
-          acc.base0 += total;
-        } else {
-          acc.base8 += total;
-        }
-        acc.iva += ivaCompra;
+        acc.base0 += Number(compra.subtotal_0) || 0;
+        acc.base5 += Number(compra.subtotal_5) || 0;
+        acc.base8 += Number(compra.subtotal_8) || 0;
+        acc.base15 += Number(compra.subtotal_15) || 0;
+        acc.iva += Number(compra.iva) || 0;
         return acc;
       },
-      { base0: 0, base8: 0, base15: 0, iva: 0 }
-    ) ?? { base0: 0, base8: 0, base15: 0, iva: 0 };
+      { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 }
+    ) ?? { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 };
 
-    const retencionesIVA =
-      retenciones?.reduce(
-        (sum, ret) => sum + (Number(ret.retencion_valor) || 0),
-        0
-      ) ?? 0;
     const retencionesRenta =
       retenciones?.reduce(
         (sum, ret) => sum + (Number(ret.retencion_renta_valor) || 0),
         0
       ) ?? 0;
 
-    if (typeof window !== "undefined") {
-      console.log("[Liquidacion] Totales calculados periodo", {
-        periodo: periodoInfo.periodoId,
-        ventasTotales,
-        comprasTotales,
-        retencionesIVA,
-        retencionesRenta,
-      });
-    }
-
-    return { ventasTotales, comprasTotales, retencionesIVA, retencionesRenta };
+    return { ventasTotales, comprasTotales, retencionesRenta };
   };
 
   const handleCalcular = async () => {
@@ -330,7 +344,15 @@ export function GenerarLiquidacionDialog({
         return;
       }
 
-      const { advertencias, creditoAnterior } = await validarPeriodoAnterior();
+      const [
+        { advertencias, creditoAnterior },
+        ivaDiferidoRecibidoDB,
+      ] = await Promise.all([
+        validarPeriodoAnterior(),
+        obtenerDiferidoRecibido(),
+      ]);
+
+      setDiferidoRecibido(ivaDiferidoRecibidoDB);
 
       let resumen: LiquidacionSummaryData;
 
@@ -340,20 +362,24 @@ export function GenerarLiquidacionDialog({
           tipoPeriodo,
           ventas: {
             base0: toNumber(manualValores.ventasBase0),
+            base5: toNumber(manualValores.ventasBase5),
             base8: toNumber(manualValores.ventasBase8),
             base15: toNumber(manualValores.ventasBase15),
-            iva: toNumber(manualValores.ventasIVA),
           },
           compras: {
             base0: toNumber(manualValores.comprasBase0),
+            base5: toNumber(manualValores.comprasBase5),
             base8: toNumber(manualValores.comprasBase8),
             base15: toNumber(manualValores.comprasBase15),
-            iva: toNumber(manualValores.comprasIVA),
           },
-          retencionesIVA: toNumber(manualValores.retencionesIVA),
+          ctPorAdquisicion: toNumber(manualValores.ctPorAdquisicion),
+          ctPorRetencion: toNumber(manualValores.ctPorRetencion),
           retencionesRenta: toNumber(manualValores.retencionesRenta),
           creditoArrastradoAnterior: toNumber(manualValores.creditoAnterior),
           rentaAPagar: toNumber(manualValores.rentaAPagar),
+          ivaDiferidoMonto: toNumber(manualValores.ivaDiferidoMonto),
+          mesesDiferimiento: toNumber(manualValores.mesesDiferimiento),
+          ivaDiferidoRecibido: ivaDiferidoRecibidoDB,
           advertencias,
           modoManual: true,
           notas,
@@ -362,15 +388,16 @@ export function GenerarLiquidacionDialog({
         const {
           ventasTotales,
           comprasTotales,
-          retencionesIVA,
           retencionesRenta,
         } = await obtenerDatosPeriodo();
 
         if (
           ventasTotales.base0 +
+            ventasTotales.base5 +
             ventasTotales.base8 +
             ventasTotales.base15 +
             comprasTotales.base0 +
+            comprasTotales.base5 +
             comprasTotales.base8 +
             comprasTotales.base15 ===
           0
@@ -385,10 +412,10 @@ export function GenerarLiquidacionDialog({
           tipoPeriodo,
           ventas: ventasTotales,
           compras: comprasTotales,
-          retencionesIVA,
           retencionesRenta,
           creditoArrastradoAnterior: creditoAnterior,
           rentaAPagar: 0,
+          ivaDiferidoRecibido: ivaDiferidoRecibidoDB,
           advertencias,
           modoManual: false,
           notas,
@@ -397,17 +424,20 @@ export function GenerarLiquidacionDialog({
         // Prellenar formulario manual para posibles ajustes
         setManualValores({
           ventasBase0: ventasTotales.base0.toString(),
+          ventasBase5: ventasTotales.base5.toString(),
           ventasBase8: ventasTotales.base8.toString(),
           ventasBase15: ventasTotales.base15.toString(),
-          ventasIVA: ventasTotales.iva.toString(),
           comprasBase0: comprasTotales.base0.toString(),
+          comprasBase5: comprasTotales.base5.toString(),
           comprasBase8: comprasTotales.base8.toString(),
           comprasBase15: comprasTotales.base15.toString(),
-          comprasIVA: comprasTotales.iva.toString(),
-          retencionesIVA: retencionesIVA.toString(),
+          ctPorAdquisicion: "0",
+          ctPorRetencion: "0",
           retencionesRenta: retencionesRenta.toString(),
           creditoAnterior: creditoAnterior.toString(),
           rentaAPagar: "0",
+          ivaDiferidoMonto: "0",
+          mesesDiferimiento: "0",
         });
       }
 
@@ -473,21 +503,23 @@ export function GenerarLiquidacionDialog({
   const manualToggle = (value: boolean) => {
     setModoManual(value);
     if (value && resumenPreview) {
-      // Prellenar con datos actuales
       setManualValores({
         ventasBase0: resumenPreview.ventas.base0.toString(),
+        ventasBase5: resumenPreview.ventas.base5.toString(),
         ventasBase8: resumenPreview.ventas.base8.toString(),
         ventasBase15: resumenPreview.ventas.base15.toString(),
-        ventasIVA: resumenPreview.ventas.iva.toString(),
         comprasBase0: resumenPreview.compras.base0.toString(),
+        comprasBase5: resumenPreview.compras.base5.toString(),
         comprasBase8: resumenPreview.compras.base8.toString(),
         comprasBase15: resumenPreview.compras.base15.toString(),
-        comprasIVA: resumenPreview.compras.iva.toString(),
-        retencionesIVA: resumenPreview.retenciones.iva.toString(),
-        retencionesRenta: resumenPreview.retenciones.renta.toString(),
+        ctPorAdquisicion: resumenPreview.creditoTributario.ctPorAdquisicion.toString(),
+        ctPorRetencion: resumenPreview.creditoTributario.ctPorRetencion.toString(),
+        retencionesRenta: resumenPreview.retencionesRenta.toString(),
         creditoAnterior:
           resumenPreview.ajustes.creditoArrastradoAnterior.toString(),
         rentaAPagar: resumenPreview.calculo.rentaAPagar.toString(),
+        ivaDiferidoMonto: resumenPreview.ivaDiferido.ivaDiferidoMonto.toString(),
+        mesesDiferimiento: resumenPreview.ivaDiferido.mesesDiferimiento.toString(),
       });
     }
   };
@@ -626,7 +658,7 @@ export function GenerarLiquidacionDialog({
                 </h4>
                 <p className="text-sm text-muted-foreground">
                   {modoManual
-                    ? "Ingresa manualmente los valores a consolidar."
+                    ? "Ingresa manualmente las bases imponibles. El IVA se calcula automáticamente."
                     : "Tomaremos automáticamente las ventas, compras y retenciones registradas."}
                 </p>
               </div>
@@ -653,71 +685,176 @@ export function GenerarLiquidacionDialog({
             </div>
 
             {modoManual && (
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="space-y-3 rounded-md border p-4">
-                  <p className="text-sm font-semibold">Ventas</p>
-                  {[
-                    { label: "Base 0%", field: "ventasBase0" },
-                    { label: "Base gravada (IVA)", field: "ventasBase8" },
-                    { label: "Base 15%", field: "ventasBase15" },
-                    { label: "IVA causado", field: "ventasIVA" },
-                  ].map((item) => (
-                    <div key={item.field} className="space-y-1.5">
-                      <Label>{item.label}</Label>
+              <>
+                {/* Ventas & Compras bases */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-3 rounded-md border p-4">
+                    <p className="text-sm font-semibold">Ventas</p>
+                    {[
+                      { label: "Base 0%", field: "ventasBase0" },
+                      { label: "Base 5%", field: "ventasBase5" },
+                      { label: "Base 8%", field: "ventasBase8" },
+                      { label: "Base 15%", field: "ventasBase15" },
+                    ].map((item) => (
+                      <div key={item.field} className="space-y-1.5">
+                        <Label>{item.label}</Label>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          value={manualValores[item.field as keyof ManualValores]}
+                          onChange={(e) =>
+                            handleManualChange(
+                              item.field as keyof ManualValores,
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    ))}
+                    <div className="space-y-1.5">
+                      <Label>IVA Ventas (auto-calculado)</Label>
+                      <Input
+                        type="text"
+                        value={formatCurrency(ivaVentasAutoCalc)}
+                        readOnly
+                        disabled
+                        className="bg-muted font-semibold text-green-600"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-3 rounded-md border p-4">
+                    <p className="text-sm font-semibold">Compras</p>
+                    {[
+                      { label: "Base 0%", field: "comprasBase0" },
+                      { label: "Base 5%", field: "comprasBase5" },
+                      { label: "Base 8%", field: "comprasBase8" },
+                      { label: "Base 15%", field: "comprasBase15" },
+                    ].map((item) => (
+                      <div key={item.field} className="space-y-1.5">
+                        <Label>{item.label}</Label>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          value={manualValores[item.field as keyof ManualValores]}
+                          onChange={(e) =>
+                            handleManualChange(
+                              item.field as keyof ManualValores,
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    ))}
+                    <div className="space-y-1.5">
+                      <Label>IVA Compras (auto-calculado)</Label>
+                      <Input
+                        type="text"
+                        value={formatCurrency(ivaComprasAutoCalc)}
+                        readOnly
+                        disabled
+                        className="bg-muted font-semibold text-sky-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CT + IVA Diferido */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-3 rounded-md border p-4">
+                    <p className="text-sm font-semibold">Crédito tributario del mes</p>
+                    <p className="text-xs text-muted-foreground">
+                      Campos informativos para el formulario 104 del SRI. No afectan el cálculo del IVA a pagar.
+                    </p>
+                    <div className="space-y-1.5">
+                      <Label>CT por adquisición</Label>
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={manualValores[item.field as keyof ManualValores]}
+                        value={manualValores.ctPorAdquisicion}
                         onChange={(e) =>
-                          handleManualChange(
-                            item.field as keyof ManualValores,
-                            e.target.value
-                          )
+                          handleManualChange("ctPorAdquisicion", e.target.value)
                         }
                       />
                     </div>
-                  ))}
-                </div>
-                <div className="space-y-3 rounded-md border p-4">
-                  <p className="text-sm font-semibold">Compras</p>
-                  {[
-                    { label: "Base 0%", field: "comprasBase0" },
-                    { label: "Base gravada (IVA)", field: "comprasBase8" },
-                    { label: "Base 15%", field: "comprasBase15" },
-                    { label: "IVA crédito", field: "comprasIVA" },
-                  ].map((item) => (
-                    <div key={item.field} className="space-y-1.5">
-                      <Label>{item.label}</Label>
+                    <div className="space-y-1.5">
+                      <Label>CT por retención</Label>
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={manualValores[item.field as keyof ManualValores]}
+                        value={manualValores.ctPorRetencion}
                         onChange={(e) =>
-                          handleManualChange(
-                            item.field as keyof ManualValores,
-                            e.target.value
-                          )
+                          handleManualChange("ctPorRetencion", e.target.value)
                         }
                       />
                     </div>
-                  ))}
+                  </div>
+                  <div className="space-y-3 rounded-md border p-4">
+                    <p className="text-sm font-semibold">IVA diferido</p>
+                    <div className="space-y-1.5">
+                      <Label>IVA Ventas total</Label>
+                      <Input
+                        type="text"
+                        value={formatCurrency(ivaVentasAutoCalc)}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>IVA a diferir</Label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={manualValores.ivaDiferidoMonto}
+                        onChange={(e) => {
+                          const val = toNumber(e.target.value);
+                          if (val > ivaVentasAutoCalc) {
+                            handleManualChange(
+                              "ivaDiferidoMonto",
+                              ivaVentasAutoCalc.toString()
+                            );
+                          } else {
+                            handleManualChange("ivaDiferidoMonto", e.target.value);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Meses de diferimiento</Label>
+                      <Select
+                        value={manualValores.mesesDiferimiento}
+                        onValueChange={(value) =>
+                          handleManualChange("mesesDiferimiento", value)
+                        }
+                        disabled={toNumber(manualValores.ivaDiferidoMonto) === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Sin diferir</SelectItem>
+                          <SelectItem value="1">1 mes</SelectItem>
+                          <SelectItem value="2">2 meses</SelectItem>
+                          <SelectItem value="3">3 meses</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>IVA diferido recibido</Label>
+                      <Input
+                        type="text"
+                        value={formatCurrency(diferidoRecibido)}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label>Retenciones de IVA</Label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  value={manualValores.retencionesIVA}
-                  onChange={(e) =>
-                    handleManualChange("retencionesIVA", e.target.value)
-                  }
-                  disabled={!modoManual}
-                />
-              </div>
               <div className="space-y-1.5">
                 <Label>Retenciones de Renta</Label>
                 <Input
@@ -742,8 +879,6 @@ export function GenerarLiquidacionDialog({
                   disabled={!modoManual}
                 />
               </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Renta a pagar</Label>
                 <Input
@@ -756,15 +891,15 @@ export function GenerarLiquidacionDialog({
                   disabled={!modoManual}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Notas del cierre</Label>
-                <Textarea
-                  placeholder="Observaciones, ajustes o referencias adicionales."
-                  value={notas}
-                  onChange={(e) => setNotas(e.target.value)}
-                  rows={modoManual ? 3 : 2}
-                />
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notas del cierre</Label>
+              <Textarea
+                placeholder="Observaciones, ajustes o referencias adicionales."
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                rows={modoManual ? 3 : 2}
+              />
             </div>
           </section>
 
