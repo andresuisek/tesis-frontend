@@ -41,6 +41,7 @@ export default function ComprasPage() {
   const {
     compras: tableCompras,
     totalCount,
+    totals: tableTotals,
     page,
     setPage,
     filters,
@@ -267,6 +268,7 @@ export default function ComprasPage() {
               compras={tableCompras}
               onEliminar={handleEliminarCompra}
               isFetching={tableFetching}
+              totals={tableTotals}
             />
           )}
         </CardContent>

@@ -4,6 +4,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -25,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Compra, RubroCompra } from "@/lib/supabase";
+import type { ComprasTotals } from "@/hooks/use-compras-table";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -34,6 +36,7 @@ interface ComprasTableProps {
   compras: Compra[];
   onEliminar?: (compra: Compra) => void;
   isFetching?: boolean;
+  totals?: ComprasTotals;
 }
 
 const rubrosLabels: Record<RubroCompra, string> = {
@@ -66,7 +69,7 @@ const rubroClasses: Record<RubroCompra, string> = {
     "bg-muted/60 text-muted-foreground border-border/60 dark:bg-muted/30 dark:text-muted-foreground",
 };
 
-export function ComprasTable({ compras, onEliminar, isFetching }: ComprasTableProps) {
+export function ComprasTable({ compras, onEliminar, isFetching, totals }: ComprasTableProps) {
   dayjs.locale("es");
 
   const formatearMoneda = (valor: number): string => {
@@ -223,6 +226,34 @@ export function ComprasTable({ compras, onEliminar, isFetching }: ComprasTablePr
             ))
           )}
         </TableBody>
+        {totals && compras.length > 0 && (
+          <TableFooter>
+            <TableRow className="bg-muted/50 font-semibold">
+              <TableCell colSpan={4} className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+                Totales
+              </TableCell>
+              <TableCell className="text-right hidden xl:table-cell whitespace-nowrap">
+                {formatearMoneda(totals.subtotal_0)}
+              </TableCell>
+              <TableCell className="text-right hidden xl:table-cell whitespace-nowrap">
+                {formatearMoneda(totals.subtotal_5)}
+              </TableCell>
+              <TableCell className="text-right hidden xl:table-cell whitespace-nowrap">
+                {formatearMoneda(totals.subtotal_8)}
+              </TableCell>
+              <TableCell className="text-right hidden xl:table-cell whitespace-nowrap">
+                {formatearMoneda(totals.subtotal_15)}
+              </TableCell>
+              <TableCell className="text-right hidden lg:table-cell whitespace-nowrap">
+                {formatearMoneda(totals.iva)}
+              </TableCell>
+              <TableCell className="text-right whitespace-nowrap">
+                {formatearMoneda(totals.total)}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+          </TableFooter>
+        )}
       </Table>
     </div>
   );

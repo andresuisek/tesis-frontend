@@ -27,10 +27,59 @@ const initialFilters: ComprasTableFilters = {
   fechaHasta: null,
 };
 
+export interface ComprasTotals {
+  subtotal_0: number;
+  subtotal_5: number;
+  subtotal_8: number;
+  subtotal_15: number;
+  iva: number;
+  total: number;
+}
+
 interface FetchComprasResult {
   compras: Compra[];
   totalCount: number;
+  totals: ComprasTotals;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyFilters<Q extends { eq: any; gte: any; lte: any; or: any }>(
+  query: Q,
+  ruc: string,
+  periodStart: string,
+  periodEnd: string,
+  filters: ComprasTableFilters,
+  debouncedBusqueda: string,
+): Q {
+  let q = query
+    .eq("contribuyente_ruc", ruc)
+    .gte("fecha_emision", periodStart)
+    .lte("fecha_emision", periodEnd) as Q;
+
+  if (filters.rubro) {
+    q = q.eq("rubro", filters.rubro) as Q;
+  }
+  if (filters.tipoComprobante) {
+    q = q.eq("tipo_comprobante", filters.tipoComprobante) as Q;
+  }
+  if (debouncedBusqueda) {
+    const term = `%${debouncedBusqueda}%`;
+    q = q.or(
+      `razon_social_proveedor.ilike.${term},ruc_proveedor.ilike.${term}`
+    ) as Q;
+  }
+  if (filters.fechaDesde) {
+    q = q.gte("fecha_emision", filters.fechaDesde) as Q;
+  }
+  if (filters.fechaHasta) {
+    q = q.lte("fecha_emision", filters.fechaHasta) as Q;
+  }
+  return q;
+}
+
+const ZERO_TOTALS: ComprasTotals = {
+  subtotal_0: 0, subtotal_5: 0, subtotal_8: 0, subtotal_15: 0, iva: 0, total: 0,
+};
 
 async function fetchComprasPage(
   ruc: string,
@@ -40,45 +89,42 @@ async function fetchComprasPage(
   debouncedBusqueda: string,
   page: number,
 ): Promise<FetchComprasResult> {
-  let query = supabase
-    .from("compras")
-    .select("*", { count: "exact" })
-    .eq("contribuyente_ruc", ruc)
-    .gte("fecha_emision", periodStart)
-    .lte("fecha_emision", periodEnd);
-
-  // Table-level filters
-  if (filters.rubro) {
-    query = query.eq("rubro", filters.rubro);
-  }
-  if (filters.tipoComprobante) {
-    query = query.eq("tipo_comprobante", filters.tipoComprobante);
-  }
-  if (debouncedBusqueda) {
-    const term = `%${debouncedBusqueda}%`;
-    query = query.or(
-      `razon_social_proveedor.ilike.${term},ruc_proveedor.ilike.${term}`
-    );
-  }
-  if (filters.fechaDesde) {
-    query = query.gte("fecha_emision", filters.fechaDesde);
-  }
-  if (filters.fechaHasta) {
-    query = query.lte("fecha_emision", filters.fechaHasta);
-  }
-
   const from = (page - 1) * ITEMS_POR_PAGINA;
   const to = from + ITEMS_POR_PAGINA - 1;
 
-  const { data, count, error } = await query
+  // Paginated query for table rows
+  const paginatedQuery = applyFilters(
+    supabase.from("compras").select("*", { count: "exact" }),
+    ruc, periodStart, periodEnd, filters, debouncedBusqueda,
+  )
     .order("fecha_emision", { ascending: false })
     .range(from, to);
 
-  if (error) throw error;
+  // Sums query — only numeric columns, no pagination
+  const sumsQuery = applyFilters(
+    supabase.from("compras").select("subtotal_0, subtotal_5, subtotal_8, subtotal_15, iva, total"),
+    ruc, periodStart, periodEnd, filters, debouncedBusqueda,
+  );
+
+  const [pageResult, sumsResult] = await Promise.all([paginatedQuery, sumsQuery]);
+
+  if (pageResult.error) throw pageResult.error;
+  if (sumsResult.error) throw sumsResult.error;
+
+  const rows = (sumsResult.data ?? []) as Pick<Compra, "subtotal_0" | "subtotal_5" | "subtotal_8" | "subtotal_15" | "iva" | "total">[];
+  const totals = rows.reduce<ComprasTotals>((acc, row) => ({
+    subtotal_0: acc.subtotal_0 + (row.subtotal_0 ?? 0),
+    subtotal_5: acc.subtotal_5 + (row.subtotal_5 ?? 0),
+    subtotal_8: acc.subtotal_8 + (row.subtotal_8 ?? 0),
+    subtotal_15: acc.subtotal_15 + (row.subtotal_15 ?? 0),
+    iva: acc.iva + (row.iva ?? 0),
+    total: acc.total + (row.total ?? 0),
+  }), { ...ZERO_TOTALS });
 
   return {
-    compras: (data as Compra[]) ?? [],
-    totalCount: count ?? 0,
+    compras: (pageResult.data as Compra[]) ?? [],
+    totalCount: pageResult.count ?? 0,
+    totals,
   };
 }
 
@@ -157,6 +203,7 @@ export function useComprasTable() {
   return {
     compras: data?.compras ?? [],
     totalCount: data?.totalCount ?? 0,
+    totals: data?.totals ?? ZERO_TOTALS,
     page,
     setPage,
     filters,
