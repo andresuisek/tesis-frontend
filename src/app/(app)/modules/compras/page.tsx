@@ -194,7 +194,7 @@ export default function ComprasPage() {
               className="gap-2"
             >
               <Upload className="h-4 w-4" />
-              Importar TXT
+              Importar
             </Button>
             <Button
               onClick={() => setShowNuevaCompraDialog(true)}

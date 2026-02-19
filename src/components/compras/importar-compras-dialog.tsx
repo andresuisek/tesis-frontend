@@ -44,12 +44,18 @@ import {
   CompraParsed,
   ProveedorResumen,
 } from "@/lib/compras-parser";
+import {
+  parsearMultiplesXMLCompras,
+  ComprasXMLParseResult,
+} from "@/lib/compras-xml-parser";
 import { toast } from "sonner";
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle2, 
+import {
+  Upload,
+  FileText,
+  FileCode2,
+  CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Home,
   ShoppingBasket,
   Heart,
@@ -93,7 +99,8 @@ const rubrosIconos: Record<RubroCompra, React.ComponentType<{ className?: string
   actividad_profesional: Briefcase,
 };
 
-type Step = "upload" | "importing" | "assign" | "updating" | "complete";
+type ImportFormat = "txt" | "xml";
+type Step = "upload" | "parsing" | "preview" | "importing" | "assign" | "updating" | "complete";
 
 export function ImportarComprasDialog({
   open,
@@ -102,6 +109,7 @@ export function ImportarComprasDialog({
   onComprasImportadas,
 }: ImportarComprasDialogProps) {
   const [step, setStep] = useState<Step>("upload");
+  const [format, setFormat] = useState<ImportFormat>("txt");
   const [comprasParsed, setComprasParsed] = useState<CompraParsed[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResumen[]>([]);
   const [comprasInsertadas, setComprasInsertadas] = useState<string[]>([]);
@@ -109,7 +117,11 @@ export function ImportarComprasDialog({
   const [importedCount, setImportedCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
+  // XML-specific state
+  const [xmlParseResult, setXmlParseResult] = useState<ComprasXMLParseResult | null>(null);
+  const [duplicateClaves, setDuplicateClaves] = useState<Set<string>>(new Set());
+
   // Estados para selección múltiple
   const [selectedProveedores, setSelectedProveedores] = useState<Set<string>>(new Set());
   const [rubroMasivo, setRubroMasivo] = useState<RubroCompra | "">("");
@@ -145,7 +157,13 @@ export function ImportarComprasDialog({
     };
   }, [selectedProveedores, proveedoresFiltrados]);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compras que no son duplicadas (para XML preview)
+  const comprasParaImportar = useMemo(() => {
+    if (duplicateClaves.size === 0) return comprasParsed;
+    return comprasParsed.filter((c) => !duplicateClaves.has(c.clave_acceso));
+  }, [comprasParsed, duplicateClaves]);
+
+  const handleTxtFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -175,6 +193,84 @@ export function ImportarComprasDialog({
       const message = error instanceof Error ? error.message : "Error desconocido";
       toast.error(`Error al procesar archivo: ${message}`);
     }
+  };
+
+  const handleXmlFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const xmlFiles = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".xml"));
+    if (xmlFiles.length === 0) {
+      toast.error("No se encontraron archivos XML válidos");
+      return;
+    }
+
+    setStep("parsing");
+    setProgress(0);
+
+    try {
+      const result = await parsearMultiplesXMLCompras(xmlFiles, (percent) => {
+        setProgress(percent);
+      });
+
+      setXmlParseResult(result);
+
+      if (result.compras.length === 0) {
+        toast.error("No se pudieron parsear compras de los archivos XML");
+        setStep("upload");
+        return;
+      }
+
+      setComprasParsed(result.compras);
+
+      // Check for duplicates
+      const clavesAcceso = result.compras
+        .map((c) => c.clave_acceso)
+        .filter((c) => c && c.length > 0);
+
+      if (clavesAcceso.length > 0) {
+        const duplicadas = new Set<string>();
+        // Query in batches of 50 to avoid too-long queries
+        const batchSize = 50;
+        for (let i = 0; i < clavesAcceso.length; i += batchSize) {
+          const batch = clavesAcceso.slice(i, i + batchSize);
+          const { data } = await supabase
+            .from("compras")
+            .select("clave_acceso")
+            .eq("contribuyente_ruc", contribuyenteRuc)
+            .in("clave_acceso", batch);
+
+          if (data) {
+            data.forEach((row: { clave_acceso: string }) => {
+              duplicadas.add(row.clave_acceso);
+            });
+          }
+        }
+        setDuplicateClaves(duplicadas);
+      }
+
+      setStep("preview");
+    } catch (error) {
+      console.error("Error parseando XMLs:", error);
+      toast.error("Error al procesar archivos XML");
+      setStep("upload");
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (format === "txt") {
+      handleTxtFileSelect(e);
+    } else {
+      handleXmlFilesSelect(e);
+    }
+  };
+
+  const handleConfirmXmlImport = async () => {
+    if (comprasParaImportar.length === 0) {
+      toast.error("No hay compras nuevas para importar");
+      return;
+    }
+    await insertarComprasTemporales(comprasParaImportar);
   };
 
   const insertarComprasTemporales = async (comprasParseadas: CompraParsed[]) => {
@@ -245,7 +341,7 @@ export function ImportarComprasDialog({
       toast.warning(`${imported} compras guardadas, ${errors} fallaron`);
     }
 
-    await cargarProveedoresConRubros(compras, idsInsertados);
+    await cargarProveedoresConRubros(comprasParseadas, idsInsertados);
   };
 
   const cargarProveedoresConRubros = async (comprasParseadas: CompraParsed[], idsInsertados: string[]) => {
@@ -270,7 +366,7 @@ export function ImportarComprasDialog({
             let rubroSugerido: RubroCompra | undefined;
 
             if (data && data.length > 0) {
-              const comprasAnteriores = data.filter((compra: { id: string; rubro: string }) => 
+              const comprasAnteriores = data.filter((compra: { id: string; rubro: string }) =>
                 !idsInsertados.includes(compra.id)
               );
 
@@ -433,7 +529,9 @@ export function ImportarComprasDialog({
   };
 
   const handleClose = () => {
+    const wasComplete = step === "complete";
     setStep("upload");
+    setFormat("txt");
     setComprasParsed([]);
     setProveedores([]);
     setComprasInsertadas([]);
@@ -443,12 +541,14 @@ export function ImportarComprasDialog({
     setSelectedProveedores(new Set());
     setRubroMasivo("");
     setSearchFilter("");
+    setXmlParseResult(null);
+    setDuplicateClaves(new Set());
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
     onOpenChange(false);
 
-    if (step === "complete") {
+    if (wasComplete) {
       onComprasImportadas();
     }
   };
@@ -469,22 +569,53 @@ export function ImportarComprasDialog({
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Importar Compras desde TXT
+            Importar Compras
           </DialogTitle>
           <DialogDescription>
-            Sube un archivo de compras del SRI y asigna rubros a cada proveedor
+            Sube un archivo TXT o facturas XML del SRI y asigna rubros a cada proveedor
           </DialogDescription>
         </DialogHeader>
 
         {/* Step 1: Upload */}
         {step === "upload" && (
           <div className="space-y-4">
+            {/* Format selector */}
+            <div className="flex gap-2">
+              <Button
+                variant={format === "txt" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFormat("txt");
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Archivo TXT
+              </Button>
+              <Button
+                variant={format === "xml" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFormat("xml");
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="gap-2"
+              >
+                <FileCode2 className="h-4 w-4" />
+                Facturas XML
+              </Button>
+            </div>
+
             <Alert>
               <FileText className="h-4 w-4" />
-              <AlertTitle>Formato del archivo</AlertTitle>
+              <AlertTitle>
+                {format === "txt" ? "Formato TXT" : "Facturas XML"}
+              </AlertTitle>
               <AlertDescription>
-                Sube el archivo TXT de compras descargado del portal del SRI.
-                El archivo debe contener las columnas estándar del SRI.
+                {format === "txt"
+                  ? "Sube el archivo TXT de compras descargado del portal del SRI. El archivo debe contener las columnas estándar del SRI."
+                  : "Sube los archivos XML de facturas electrónicas autorizadas del SRI. Puedes seleccionar múltiples archivos a la vez."}
               </AlertDescription>
             </Alert>
 
@@ -492,7 +623,8 @@ export function ImportarComprasDialog({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".txt"
+                accept={format === "txt" ? ".txt" : ".xml"}
+                multiple={format === "xml"}
                 onChange={handleFileSelect}
                 className="hidden"
                 id="file-upload"
@@ -503,13 +635,160 @@ export function ImportarComprasDialog({
               >
                 <Upload className="h-12 w-12 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  Haz clic para seleccionar un archivo
+                  Haz clic para seleccionar {format === "txt" ? "un archivo" : "archivos"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Formato: .TXT (delimitado por tabuladores)
+                  {format === "txt"
+                    ? "Formato: .TXT (delimitado por tabuladores)"
+                    : "Formato: .XML (facturas electrónicas del SRI)"}
                 </span>
               </label>
             </div>
+          </div>
+        )}
+
+        {/* XML Parsing Step */}
+        {step === "parsing" && (
+          <div className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Procesando archivos XML</AlertTitle>
+              <AlertDescription>
+                Por favor espera mientras se leen y parsean las facturas electrónicas...
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Progress value={progress} className="w-full" />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Parseando archivos...</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* XML Preview Step */}
+        {step === "preview" && xmlParseResult && (
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground">Parseadas correctamente</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {xmlParseResult.compras.length}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Errores</p>
+                <p className="text-2xl font-bold text-destructive">
+                  {xmlParseResult.errores.length - xmlParseResult.skipped}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Omitidas (no autorizadas)</p>
+                <p className="text-2xl font-bold text-muted-foreground">
+                  {xmlParseResult.skipped}
+                </p>
+              </div>
+            </div>
+
+            {/* Duplicate warning */}
+            {duplicateClaves.size > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Duplicados detectados</AlertTitle>
+                <AlertDescription>
+                  {duplicateClaves.size} factura{duplicateClaves.size !== 1 ? "s" : ""} ya exist{duplicateClaves.size !== 1 ? "en" : "e"} en
+                  la base de datos y {duplicateClaves.size !== 1 ? "serán excluidas" : "será excluida"} de la importación.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Errors list */}
+            {xmlParseResult.errores.length > 0 && (
+              <div className="border rounded-lg p-3 max-h-[150px] overflow-auto">
+                <p className="text-sm font-medium mb-2">Detalle de errores:</p>
+                <ul className="space-y-1">
+                  {xmlParseResult.errores.map((error, i) => (
+                    <li key={i} className="text-xs text-muted-foreground">
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Preview table */}
+            {comprasParaImportar.length > 0 && (
+              <div className="border rounded-lg max-h-[300px] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[180px]">Proveedor</TableHead>
+                      <TableHead className="min-w-[120px]">N. Comprobante</TableHead>
+                      <TableHead className="min-w-[100px]">Fecha</TableHead>
+                      <TableHead className="text-right min-w-[100px]">Subtotal</TableHead>
+                      <TableHead className="text-right min-w-[80px]">IVA</TableHead>
+                      <TableHead className="text-right min-w-[100px]">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {comprasParaImportar.map((compra, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm truncate max-w-[170px]">
+                              {compra.razon_social_proveedor}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {compra.ruc_proveedor}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {compra.numero_comprobante}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {compra.fecha_emision}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {formatearMoneda(compra.valor_sin_impuesto)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {formatearMoneda(compra.iva)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium">
+                          {formatearMoneda(compra.total)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={3} className="font-bold">
+                        TOTAL ({comprasParaImportar.length} compras)
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          comprasParaImportar.reduce((s, c) => s + c.valor_sin_impuesto, 0)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          comprasParaImportar.reduce((s, c) => s + c.iva, 0)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatearMoneda(
+                          comprasParaImportar.reduce((s, c) => s + c.total, 0)
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            )}
           </div>
         )}
 
@@ -525,7 +804,7 @@ export function ImportarComprasDialog({
                     {selectedProveedores.size} proveedor{selectedProveedores.size !== 1 ? "es" : ""} seleccionado{selectedProveedores.size !== 1 ? "s" : ""}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                   <Select
                     value={rubroMasivo}
@@ -560,7 +839,7 @@ export function ImportarComprasDialog({
                       })}
                     </SelectContent>
                   </Select>
-                  
+
                   <Button
                     size="sm"
                     onClick={handleAplicarRubroMasivo}
@@ -592,7 +871,7 @@ export function ImportarComprasDialog({
                   className="pl-8"
                 />
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -612,8 +891,8 @@ export function ImportarComprasDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Asignar rubros</AlertTitle>
               <AlertDescription>
-                Se guardaron {comprasParsed.length} compras de {proveedores.length} proveedores. 
-                Usa los checkboxes para seleccionar varios y asignar rubros masivamente, 
+                Se guardaron {comprasParaImportar.length} compras de {proveedores.length} proveedores.
+                Usa los checkboxes para seleccionar varios y asignar rubros masivamente,
                 o asigna individualmente con el selector de cada fila.
               </AlertDescription>
             </Alert>
@@ -642,7 +921,7 @@ export function ImportarComprasDialog({
                   </TableHeader>
                   <TableBody>
                     {proveedoresFiltrados.map((proveedor) => (
-                      <TableRow 
+                      <TableRow
                         key={proveedor.ruc_proveedor}
                         className={selectedProveedores.has(proveedor.ruc_proveedor) ? "bg-primary/5" : ""}
                       >
@@ -782,7 +1061,7 @@ export function ImportarComprasDialog({
               <Progress value={progress} className="w-full" />
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>
-                  {importedCount} de {comprasParsed.length} guardadas
+                  {importedCount} de {comprasParaImportar.length} guardadas
                 </span>
                 <span>{Math.round(progress)}%</span>
               </div>
@@ -846,6 +1125,26 @@ export function ImportarComprasDialog({
             <Button variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
+          )}
+
+          {step === "parsing" && (
+            <Button disabled>
+              Procesando archivos...
+            </Button>
+          )}
+
+          {step === "preview" && (
+            <div className="flex items-center gap-2 w-full justify-between">
+              <Button variant="outline" onClick={() => { setStep("upload"); setXmlParseResult(null); setDuplicateClaves(new Set()); }}>
+                Volver
+              </Button>
+              <Button
+                onClick={handleConfirmXmlImport}
+                disabled={comprasParaImportar.length === 0}
+              >
+                Importar {comprasParaImportar.length} compra{comprasParaImportar.length !== 1 ? "s" : ""}
+              </Button>
+            </div>
           )}
 
           {step === "importing" && (
