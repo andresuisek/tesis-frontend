@@ -24,6 +24,7 @@ interface KPIData {
   ventasPromedio: number;
   ivaTotal: number;
   subtotal0: number;
+  subtotal5: number;
   subtotal8: number;
   subtotal15: number;
   tendencia?: {
@@ -41,6 +42,7 @@ export function VentasKPIs({ ventas, mesAnterior }: VentasKPIsProps) {
         ventasPromedio: 0,
         ivaTotal: 0,
         subtotal0: 0,
+        subtotal5: 0,
         subtotal8: 0,
         subtotal15: 0,
       };
@@ -55,6 +57,10 @@ export function VentasKPIs({ ventas, mesAnterior }: VentasKPIsProps) {
     const ivaTotal = ventasList.reduce((sum, venta) => sum + venta.iva, 0);
     const subtotal0 = ventasList.reduce(
       (sum, venta) => sum + venta.subtotal_0,
+      0
+    );
+    const subtotal5 = ventasList.reduce(
+      (sum, venta) => sum + venta.subtotal_5,
       0
     );
     const subtotal8 = ventasList.reduce(
@@ -72,6 +78,7 @@ export function VentasKPIs({ ventas, mesAnterior }: VentasKPIsProps) {
       ventasPromedio,
       ivaTotal,
       subtotal0,
+      subtotal5,
       subtotal8,
       subtotal15,
     };
@@ -225,6 +232,10 @@ export function VentasKPIs({ ventas, mesAnterior }: VentasKPIsProps) {
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">Subtotal 0%</span>
               <span className="font-mono">{formatearMoneda(kpiActual.subtotal0)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-foreground">Subtotal 5%</span>
+              <span className="font-mono">{formatearMoneda(kpiActual.subtotal5)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">Subtotal 8%</span>

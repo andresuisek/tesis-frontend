@@ -22,6 +22,7 @@ interface ImportProcessRequest {
     numero_comprobante: string;
     fecha_emision: string;
     subtotal_0: number;
+    subtotal_5: number;
     subtotal_8: number;
     subtotal_15: number;
     iva: number;
@@ -36,6 +37,7 @@ interface ImportProcessRequest {
     razon_social_proveedor: string;
     valor_sin_impuesto: number;
     subtotal_0: number;
+    subtotal_5: number;
     subtotal_8: number;
     subtotal_15: number;
     iva: number;

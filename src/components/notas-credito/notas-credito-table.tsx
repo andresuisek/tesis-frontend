@@ -142,6 +142,7 @@ export function NotasCreditoTable({
               <TableHead>Fecha Emisión</TableHead>
               <TableHead>Número Comprobante</TableHead>
               <TableHead className="text-right">Subtotal 0%</TableHead>
+              <TableHead className="text-right">Subtotal 5%</TableHead>
               <TableHead className="text-right">Subtotal 8%</TableHead>
               <TableHead className="text-right">Subtotal 15%</TableHead>
               <TableHead className="text-right">IVA</TableHead>
@@ -152,7 +153,7 @@ export function NotasCreditoTable({
           <TableBody>
             {notasCreditoFiltradas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   No se encontraron notas de crédito.
                 </TableCell>
               </TableRow>
@@ -172,6 +173,9 @@ export function NotasCreditoTable({
                   </TableCell>
                   <TableCell className="text-right">
                     {formatearMoneda(nc.subtotal_0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatearMoneda(nc.subtotal_5)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatearMoneda(nc.subtotal_8)}

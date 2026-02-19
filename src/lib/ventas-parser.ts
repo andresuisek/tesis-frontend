@@ -22,7 +22,7 @@ export interface VentaParsed {
 /**
  * Tipo para las tasas de IVA disponibles en Ecuador
  */
-export type TasaIVA = 0 | 8 | 12 | 15;
+export type TasaIVA = 0 | 5 | 8 | 12 | 15;
 
 /**
  * Calcula el subtotal e IVA a partir del valor total y la tasa de IVA

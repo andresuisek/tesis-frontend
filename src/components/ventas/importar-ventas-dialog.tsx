@@ -58,6 +58,7 @@ type Step = "upload" | "preview" | "importing" | "complete";
 
 const TASAS_IVA: { value: TasaIVA; label: string; description: string }[] = [
   { value: 0, label: "0%", description: "Bienes y servicios exentos de IVA" },
+  { value: 5, label: "5%", description: "Tarifa reducida especial" },
   { value: 8, label: "8%", description: "Tarifa reducida (canasta básica)" },
   { value: 12, label: "12%", description: "Tarifa anterior estándar" },
   { value: 15, label: "15%", description: "Tarifa vigente desde abril 2024" },
@@ -160,6 +161,7 @@ export function ImportarVentasDialog({
           numero_comprobante: venta.numero_comprobante,
           // Distribuir el subtotal según la tasa de IVA
           subtotal_0: tasaIVA === 0 ? venta.subtotal : 0,
+          subtotal_5: tasaIVA === 5 ? venta.subtotal : 0,
           subtotal_8: tasaIVA === 8 ? venta.subtotal : 0,
           subtotal_15: tasaIVA === 15 || tasaIVA === 12 ? venta.subtotal : 0,
           iva: venta.iva,

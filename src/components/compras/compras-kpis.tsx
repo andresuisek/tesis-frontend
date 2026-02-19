@@ -25,6 +25,7 @@ interface KPIData {
   comprasPromedio: number;
   ivaTotal: number;
   subtotal0: number;
+  subtotal5: number;
   subtotal8: number;
   subtotal15: number;
 }
@@ -38,6 +39,7 @@ export function ComprasKPIs({ compras, mesAnterior }: ComprasKPIsProps) {
         comprasPromedio: 0,
         ivaTotal: 0,
         subtotal0: 0,
+        subtotal5: 0,
         subtotal8: 0,
         subtotal15: 0,
       };
@@ -52,6 +54,10 @@ export function ComprasKPIs({ compras, mesAnterior }: ComprasKPIsProps) {
     const ivaTotal = comprasList.reduce((sum, compra) => sum + compra.iva, 0);
     const subtotal0 = comprasList.reduce(
       (sum, compra) => sum + compra.subtotal_0,
+      0
+    );
+    const subtotal5 = comprasList.reduce(
+      (sum, compra) => sum + compra.subtotal_5,
       0
     );
     const subtotal8 = comprasList.reduce(
@@ -69,6 +75,7 @@ export function ComprasKPIs({ compras, mesAnterior }: ComprasKPIsProps) {
       comprasPromedio,
       ivaTotal,
       subtotal0,
+      subtotal5,
       subtotal8,
       subtotal15,
     };
@@ -207,6 +214,10 @@ export function ComprasKPIs({ compras, mesAnterior }: ComprasKPIsProps) {
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">Subtotal 0%</span>
               <span className="font-mono">{formatearMoneda(kpiActual.subtotal0)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-foreground">Subtotal 5%</span>
+              <span className="font-mono">{formatearMoneda(kpiActual.subtotal5)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium text-foreground">Subtotal 8%</span>

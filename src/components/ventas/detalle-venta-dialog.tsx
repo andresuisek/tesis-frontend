@@ -227,6 +227,10 @@ export function DetalleVentaDialog({
                 <span>{formatearMoneda(venta.subtotal_0)}</span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal 5%:</span>
+                <span>{formatearMoneda(venta.subtotal_5)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal 8%:</span>
                 <span>{formatearMoneda(venta.subtotal_8)}</span>
               </div>
@@ -313,6 +317,12 @@ export function DetalleVentaDialog({
                         Subtotal 0%:
                       </span>
                       <span>{formatearMoneda(notaCredito.subtotal_0)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Subtotal 5%:
+                      </span>
+                      <span>{formatearMoneda(notaCredito.subtotal_5)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">

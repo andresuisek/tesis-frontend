@@ -47,16 +47,12 @@ export function NuevaVentaDialog({
     useState<TipoComprobante>("factura");
   const [numeroComprobante, setNumeroComprobante] = useState("");
   const [subtotal, setSubtotal] = useState("");
-  const [porcentajeIva, setPorcentajeIva] = useState<"0" | "8" | "15">("15");
+  const [porcentajeIva, setPorcentajeIva] = useState<"0" | "5" | "8" | "15">("15");
 
   // Cálculos automáticos
   const subtotalNum = parseFloat(subtotal) || 0;
-  const ivaCalculado =
-    porcentajeIva === "0"
-      ? 0
-      : porcentajeIva === "8"
-      ? subtotalNum * 0.08
-      : subtotalNum * 0.15;
+  const tasasIva: Record<string, number> = { "0": 0, "5": 0.05, "8": 0.08, "15": 0.15 };
+  const ivaCalculado = subtotalNum * (tasasIva[porcentajeIva] ?? 0);
   const totalCalculado = subtotalNum + ivaCalculado;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,6 +71,7 @@ export function NuevaVentaDialog({
         tipo_comprobante: tipoComprobante,
         numero_comprobante: numeroComprobante,
         subtotal_0: porcentajeIva === "0" ? subtotalNum : 0,
+        subtotal_5: porcentajeIva === "5" ? subtotalNum : 0,
         subtotal_8: porcentajeIva === "8" ? subtotalNum : 0,
         subtotal_15: porcentajeIva === "15" ? subtotalNum : 0,
         iva: ivaCalculado,
@@ -229,54 +226,24 @@ export function NuevaVentaDialog({
                   Porcentaje de IVA <span className="text-destructive">*</span>
                 </Label>
                 <div className="flex gap-6">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-0"
-                      name="iva"
-                      value="0"
-                      checked={porcentajeIva === "0"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-0" className="cursor-pointer">
-                      0%
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-8"
-                      name="iva"
-                      value="8"
-                      checked={porcentajeIva === "8"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-8" className="cursor-pointer">
-                      8%
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-15"
-                      name="iva"
-                      value="15"
-                      checked={porcentajeIva === "15"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-15" className="cursor-pointer">
-                      15%
-                    </Label>
-                  </div>
+                  {(["0", "5", "8", "15"] as const).map((tasa) => (
+                    <div key={tasa} className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id={`iva-${tasa}`}
+                        name="iva"
+                        value={tasa}
+                        checked={porcentajeIva === tasa}
+                        onChange={(e) =>
+                          setPorcentajeIva(e.target.value as "0" | "5" | "8" | "15")
+                        }
+                        className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
+                      />
+                      <Label htmlFor={`iva-${tasa}`} className="cursor-pointer">
+                        {tasa}%
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 

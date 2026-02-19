@@ -182,14 +182,14 @@ async function fetchDashboardData(
     // Datos agregados anuales - ventas
     supabase
       .from("ventas")
-      .select("subtotal_0, subtotal_8, subtotal_15, iva, fecha_emision")
+      .select("subtotal_0, subtotal_5, subtotal_8, subtotal_15, iva, fecha_emision")
       .eq("contribuyente_ruc", ruc)
       .gte("fecha_emision", currentStart)
       .lte("fecha_emision", currentEnd),
     // Datos agregados anuales - compras
     supabase
       .from("compras")
-      .select("subtotal_0, subtotal_8, subtotal_15, iva, total, rubro, fecha_emision")
+      .select("subtotal_0, subtotal_5, subtotal_8, subtotal_15, iva, total, rubro, fecha_emision")
       .eq("contribuyente_ruc", ruc)
       .gte("fecha_emision", currentStart)
       .lte("fecha_emision", currentEnd),
@@ -388,27 +388,30 @@ async function fetchDashboardData(
   const ventasRates = ventasAnuales.data?.reduce(
     (acc, venta) => {
       acc["0"] += Number(venta.subtotal_0) || 0;
+      acc["5"] += Number(venta.subtotal_5) || 0;
       acc["8"] += Number(venta.subtotal_8) || 0;
       acc["15"] += Number(venta.subtotal_15) || 0;
       acc["iva"] += Number(venta.iva) || 0;
       return acc;
     },
-    { "0": 0, "8": 0, "15": 0, iva: 0 },
-  ) ?? { "0": 0, "8": 0, "15": 0, iva: 0 };
+    { "0": 0, "5": 0, "8": 0, "15": 0, iva: 0 },
+  ) ?? { "0": 0, "5": 0, "8": 0, "15": 0, iva: 0 };
 
   const comprasRates = comprasAnuales.data?.reduce(
     (acc, compra) => {
       acc["0"] += Number(compra.subtotal_0) || 0;
+      acc["5"] += Number(compra.subtotal_5) || 0;
       acc["8"] += Number(compra.subtotal_8) || 0;
       acc["15"] += Number(compra.subtotal_15) || 0;
       acc["iva"] += Number(compra.iva) || 0;
       return acc;
     },
-    { "0": 0, "8": 0, "15": 0, iva: 0 },
-  ) ?? { "0": 0, "8": 0, "15": 0, iva: 0 };
+    { "0": 0, "5": 0, "8": 0, "15": 0, iva: 0 },
+  ) ?? { "0": 0, "5": 0, "8": 0, "15": 0, iva: 0 };
 
   const ivaBreakdown: IvaBreakdownItem[] = [
     { rate: "Base 0%", ventas: ventasRates["0"], compras: comprasRates["0"] },
+    { rate: "Base 5%", ventas: ventasRates["5"], compras: comprasRates["5"] },
     { rate: "Base 8%", ventas: ventasRates["8"], compras: comprasRates["8"] },
     { rate: "Base 15%", ventas: ventasRates["15"], compras: comprasRates["15"] },
     { rate: "IVA", ventas: ventasRates["iva"], compras: comprasRates["iva"] },

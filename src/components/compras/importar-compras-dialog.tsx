@@ -202,9 +202,10 @@ export function ImportarComprasDialog({
           numero_comprobante: compra.numero_comprobante,
           clave_acceso: compra.clave_acceso,
           valor_sin_impuesto: compra.valor_sin_impuesto,
-          subtotal_0: 0,
-          subtotal_8: 0,
-          subtotal_15: 0,
+          subtotal_0: compra.subtotal_0,
+          subtotal_5: compra.subtotal_5,
+          subtotal_8: compra.subtotal_8,
+          subtotal_15: compra.subtotal_15,
           iva: compra.iva,
           total: compra.total,
         }));

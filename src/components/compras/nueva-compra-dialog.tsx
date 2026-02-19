@@ -62,22 +62,25 @@ export function NuevaCompraDialog({
   const [rubro, setRubro] = useState<RubroCompra>("alimentacion");
   const [valorSinImpuesto, setValorSinImpuesto] = useState("0");
   const [subtotal0, setSubtotal0] = useState("0");
+  const [subtotal5, setSubtotal5] = useState("0");
   const [subtotal8, setSubtotal8] = useState("0");
   const [subtotal15, setSubtotal15] = useState("0");
-  const [ivaPercentage, setIvaPercentage] = useState<"0" | "8" | "15">("15");
+  const [ivaPercentage, setIvaPercentage] = useState<"0" | "5" | "8" | "15">("15");
 
   // Calcular IVA y total
   const calcularIva = () => {
+    const sub5 = parseFloat(subtotal5) || 0;
     const sub8 = parseFloat(subtotal8) || 0;
     const sub15 = parseFloat(subtotal15) || 0;
-    return sub8 * 0.08 + sub15 * 0.15;
+    return sub5 * 0.05 + sub8 * 0.08 + sub15 * 0.15;
   };
 
   const calcularTotal = () => {
     const sub0 = parseFloat(subtotal0) || 0;
+    const sub5 = parseFloat(subtotal5) || 0;
     const sub8 = parseFloat(subtotal8) || 0;
     const sub15 = parseFloat(subtotal15) || 0;
-    return sub0 + sub8 + sub15 + calcularIva();
+    return sub0 + sub5 + sub8 + sub15 + calcularIva();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,6 +116,7 @@ export function NuevaCompraDialog({
         rubro: rubro,
         valor_sin_impuesto: parseFloat(valorSinImpuesto) || 0,
         subtotal_0: parseFloat(subtotal0) || 0,
+        subtotal_5: parseFloat(subtotal5) || 0,
         subtotal_8: parseFloat(subtotal8) || 0,
         subtotal_15: parseFloat(subtotal15) || 0,
         iva: iva,
@@ -144,16 +148,18 @@ export function NuevaCompraDialog({
     setRubro("alimentacion");
     setValorSinImpuesto("0");
     setSubtotal0("0");
+    setSubtotal5("0");
     setSubtotal8("0");
     setSubtotal15("0");
     setIvaPercentage("15");
   };
 
   // Actualizar subtotales según el porcentaje de IVA seleccionado
-  const handleIvaPercentageChange = (value: "0" | "8" | "15") => {
+  const handleIvaPercentageChange = (value: "0" | "5" | "8" | "15") => {
     setIvaPercentage(value);
     // Resetear subtotales
     setSubtotal0("0");
+    setSubtotal5("0");
     setSubtotal8("0");
     setSubtotal15("0");
   };
@@ -304,50 +310,26 @@ export function NuevaCompraDialog({
           <div className="space-y-2">
             <Label>Porcentaje de IVA</Label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="ivaPercentage"
-                  value="0"
-                  checked={ivaPercentage === "0"}
-                  onChange={(e) =>
-                    handleIvaPercentageChange(e.target.value as "0" | "8" | "15")
-                  }
-                  className="cursor-pointer"
-                />
-                <span>0%</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="ivaPercentage"
-                  value="8"
-                  checked={ivaPercentage === "8"}
-                  onChange={(e) =>
-                    handleIvaPercentageChange(e.target.value as "0" | "8" | "15")
-                  }
-                  className="cursor-pointer"
-                />
-                <span>8%</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="ivaPercentage"
-                  value="15"
-                  checked={ivaPercentage === "15"}
-                  onChange={(e) =>
-                    handleIvaPercentageChange(e.target.value as "0" | "8" | "15")
-                  }
-                  className="cursor-pointer"
-                />
-                <span>15%</span>
-              </label>
+              {(["0", "5", "8", "15"] as const).map((tasa) => (
+                <label key={tasa} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="ivaPercentage"
+                    value={tasa}
+                    checked={ivaPercentage === tasa}
+                    onChange={(e) =>
+                      handleIvaPercentageChange(e.target.value as "0" | "5" | "8" | "15")
+                    }
+                    className="cursor-pointer"
+                  />
+                  <span>{tasa}%</span>
+                </label>
+              ))}
             </div>
           </div>
 
           {/* Subtotales */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="subtotal0">Subtotal 0%</Label>
               <Input
@@ -357,6 +339,18 @@ export function NuevaCompraDialog({
                 value={subtotal0}
                 onChange={(e) => setSubtotal0(e.target.value)}
                 disabled={ivaPercentage !== "0"}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subtotal5">Subtotal 5%</Label>
+              <Input
+                id="subtotal5"
+                type="number"
+                step="0.01"
+                value={subtotal5}
+                onChange={(e) => setSubtotal5(e.target.value)}
+                disabled={ivaPercentage !== "5"}
                 placeholder="0.00"
               />
             </div>

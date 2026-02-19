@@ -20,6 +20,7 @@ export interface CompraParsed {
   total: number;
   // Campos calculados
   subtotal_0: number;
+  subtotal_5: number;
   subtotal_8: number;
   subtotal_15: number;
   // Campo a asignar por el usuario
@@ -144,7 +145,7 @@ export function parsearArchivoCompras(
       }
 
       // Calcular subtotales basados en el IVA
-      const { subtotal_0, subtotal_8, subtotal_15 } =
+      const { subtotal_0, subtotal_5, subtotal_8, subtotal_15 } =
         calcularSubtotales(valorSinImpuestos, iva);
 
       // Convertir fecha con fallback al periodo
@@ -171,6 +172,7 @@ export function parsearArchivoCompras(
         iva: iva,
         total: total,
         subtotal_0: subtotal_0,
+        subtotal_5: subtotal_5,
         subtotal_8: subtotal_8,
         subtotal_15: subtotal_15,
       };
@@ -192,14 +194,12 @@ export function parsearArchivoCompras(
 function calcularSubtotales(
   valorSinImpuestos: number,
   iva: number
-): { subtotal_0: number; subtotal_8: number; subtotal_15: number } {
+): { subtotal_0: number; subtotal_5: number; subtotal_8: number; subtotal_15: number } {
+  const base = { subtotal_0: 0, subtotal_5: 0, subtotal_8: 0, subtotal_15: 0 };
+
   // Si no hay IVA, todo va a subtotal_0
   if (iva === 0) {
-    return {
-      subtotal_0: valorSinImpuestos,
-      subtotal_8: 0,
-      subtotal_15: 0,
-    };
+    return { ...base, subtotal_0: valorSinImpuestos };
   }
 
   // Calcular la tarifa de IVA
@@ -208,40 +208,23 @@ function calcularSubtotales(
   // Determinar qué subtotal usar basado en la tarifa
   if (tarifaIva <= 0.001) {
     // ~0%
-    return {
-      subtotal_0: valorSinImpuestos,
-      subtotal_8: 0,
-      subtotal_15: 0,
-    };
+    return { ...base, subtotal_0: valorSinImpuestos };
+  } else if (tarifaIva >= 0.04 && tarifaIva <= 0.06) {
+    // ~5%
+    return { ...base, subtotal_5: valorSinImpuestos };
   } else if (tarifaIva >= 0.07 && tarifaIva <= 0.09) {
     // ~8%
-    return {
-      subtotal_0: 0,
-      subtotal_8: valorSinImpuestos,
-      subtotal_15: 0,
-    };
+    return { ...base, subtotal_8: valorSinImpuestos };
   } else if (tarifaIva >= 0.11 && tarifaIva <= 0.13) {
     // ~12% (periodos anteriores a abril 2024)
-    return {
-      subtotal_0: 0,
-      subtotal_8: 0,
-      subtotal_15: valorSinImpuestos, // Se acumula en subtotal_15 para efectos de crédito tributario
-    };
+    return { ...base, subtotal_15: valorSinImpuestos }; // Se acumula en subtotal_15 para efectos de crédito tributario
   } else if (tarifaIva >= 0.14 && tarifaIva <= 0.16) {
     // ~15%
-    return {
-      subtotal_0: 0,
-      subtotal_8: 0,
-      subtotal_15: valorSinImpuestos,
-    };
+    return { ...base, subtotal_15: valorSinImpuestos };
   }
 
   // Por defecto, asumir tarifa vigente si no coincide con ninguna tarifa conocida
-  return {
-    subtotal_0: 0,
-    subtotal_8: 0,
-    subtotal_15: valorSinImpuestos,
-  };
+  return { ...base, subtotal_15: valorSinImpuestos };
 }
 
 /**

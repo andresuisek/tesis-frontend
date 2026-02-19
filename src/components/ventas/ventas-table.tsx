@@ -256,12 +256,14 @@ export function VentasTable({
                       <div className="text-sm">
                         {formatearMoneda(
                           venta.subtotal_0 +
+                            venta.subtotal_5 +
                             venta.subtotal_8 +
                             venta.subtotal_15
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        0%: {formatearMoneda(venta.subtotal_0)} | 8%:{" "}
+                        0%: {formatearMoneda(venta.subtotal_0)} | 5%:{" "}
+                        {formatearMoneda(venta.subtotal_5)} | 8%:{" "}
                         {formatearMoneda(venta.subtotal_8)} | 15%:{" "}
                         {formatearMoneda(venta.subtotal_15)}
                       </div>

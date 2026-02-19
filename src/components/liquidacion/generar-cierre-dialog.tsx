@@ -341,7 +341,7 @@ export function GenerarCierreDialog({
         .reduce((sum, c) => sum + c.subtotal_0, 0);
 
       const compras_iva_mayor_0 = (compras || []).reduce(
-        (sum, c) => sum + c.subtotal_8 + c.subtotal_15,
+        (sum, c) => sum + c.subtotal_5 + c.subtotal_8 + c.subtotal_15,
         0
       );
 
@@ -353,7 +353,7 @@ export function GenerarCierreDialog({
         .reduce((sum, v) => sum + v.subtotal_0, 0);
 
       const ventas_iva_mayor_0 = (ventas || []).reduce(
-        (sum, v) => sum + v.subtotal_8 + v.subtotal_15,
+        (sum, v) => sum + v.subtotal_5 + v.subtotal_8 + v.subtotal_15,
         0
       );
 

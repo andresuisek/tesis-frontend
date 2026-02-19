@@ -40,19 +40,15 @@ export function NuevaNotaCreditoDialog({
   );
   const [numeroComprobante, setNumeroComprobante] = useState("");
   const [subtotal, setSubtotal] = useState("");
-  const [porcentajeIva, setPorcentajeIva] = useState<"0" | "8" | "15">(
+  const [porcentajeIva, setPorcentajeIva] = useState<"0" | "5" | "8" | "15">(
     // Detectar el porcentaje de IVA de la venta original
-    venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : "0"
+    venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : venta.subtotal_5 > 0 ? "5" : "0"
   );
 
   // Cálculos automáticos
   const subtotalNum = parseFloat(subtotal) || 0;
-  const ivaCalculado =
-    porcentajeIva === "0"
-      ? 0
-      : porcentajeIva === "8"
-      ? subtotalNum * 0.08
-      : subtotalNum * 0.15;
+  const tasasIva: Record<string, number> = { "0": 0, "5": 0.05, "8": 0.08, "15": 0.15 };
+  const ivaCalculado = subtotalNum * (tasasIva[porcentajeIva] ?? 0);
   const totalCalculado = subtotalNum + ivaCalculado;
 
   // Validar que no exceda el total de la venta
@@ -61,7 +57,7 @@ export function NuevaNotaCreditoDialog({
 
   // Detectar el IVA inicial basado en la venta
   const getIvaInicial = () => {
-    return venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : "0";
+    return venta.subtotal_15 > 0 ? "15" : venta.subtotal_8 > 0 ? "8" : venta.subtotal_5 > 0 ? "5" : "0";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,6 +82,7 @@ export function NuevaNotaCreditoDialog({
         tipo_comprobante: "nota_credito" as const,
         numero_comprobante: numeroComprobante,
         subtotal_0: porcentajeIva === "0" ? subtotalNum : 0,
+        subtotal_5: porcentajeIva === "5" ? subtotalNum : 0,
         subtotal_8: porcentajeIva === "8" ? subtotalNum : 0,
         subtotal_15: porcentajeIva === "15" ? subtotalNum : 0,
         iva: ivaCalculado,
@@ -237,54 +234,24 @@ export function NuevaNotaCreditoDialog({
                   Porcentaje de IVA <span className="text-destructive">*</span>
                 </Label>
                 <div className="flex gap-6">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-0-nc"
-                      name="iva-nc"
-                      value="0"
-                      checked={porcentajeIva === "0"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-0-nc" className="cursor-pointer">
-                      0%
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-8-nc"
-                      name="iva-nc"
-                      value="8"
-                      checked={porcentajeIva === "8"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-8-nc" className="cursor-pointer">
-                      8%
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="iva-15-nc"
-                      name="iva-nc"
-                      value="15"
-                      checked={porcentajeIva === "15"}
-                      onChange={(e) =>
-                        setPorcentajeIva(e.target.value as "0" | "8" | "15")
-                      }
-                      className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
-                    />
-                    <Label htmlFor="iva-15-nc" className="cursor-pointer">
-                      15%
-                    </Label>
-                  </div>
+                  {(["0", "5", "8", "15"] as const).map((tasa) => (
+                    <div key={tasa} className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id={`iva-${tasa}-nc`}
+                        name="iva-nc"
+                        value={tasa}
+                        checked={porcentajeIva === tasa}
+                        onChange={(e) =>
+                          setPorcentajeIva(e.target.value as "0" | "5" | "8" | "15")
+                        }
+                        className="w-4 h-4 text-primary focus:ring-2 focus:ring-primary"
+                      />
+                      <Label htmlFor={`iva-${tasa}-nc`} className="cursor-pointer">
+                        {tasa}%
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 

@@ -15,6 +15,7 @@ export interface NotaCreditoParsed {
   razon_social_cliente: string;
   identificacion_receptor: string;
   subtotal_0: number;
+  subtotal_5: number;
   subtotal_8: number;
   subtotal_15: number;
   iva: number;
@@ -60,24 +61,28 @@ function convertirFecha(fechaOriginal: string): string {
 function calcularSubtotales(
   valorSinImpuestos: number,
   iva: number
-): { subtotal_0: number; subtotal_8: number; subtotal_15: number } {
+): { subtotal_0: number; subtotal_5: number; subtotal_8: number; subtotal_15: number } {
+  const base = { subtotal_0: 0, subtotal_5: 0, subtotal_8: 0, subtotal_15: 0 };
+
   if (iva === 0) {
-    return { subtotal_0: valorSinImpuestos, subtotal_8: 0, subtotal_15: 0 };
+    return { ...base, subtotal_0: valorSinImpuestos };
   }
 
   const tarifaIva = iva / valorSinImpuestos;
 
   if (tarifaIva <= 0.001) {
-    return { subtotal_0: valorSinImpuestos, subtotal_8: 0, subtotal_15: 0 };
+    return { ...base, subtotal_0: valorSinImpuestos };
+  } else if (tarifaIva >= 0.04 && tarifaIva <= 0.06) {
+    return { ...base, subtotal_5: valorSinImpuestos };
   } else if (tarifaIva >= 0.07 && tarifaIva <= 0.09) {
-    return { subtotal_0: 0, subtotal_8: valorSinImpuestos, subtotal_15: 0 };
+    return { ...base, subtotal_8: valorSinImpuestos };
   } else if (tarifaIva >= 0.11 && tarifaIva <= 0.13) {
-    return { subtotal_0: 0, subtotal_8: 0, subtotal_15: valorSinImpuestos };
+    return { ...base, subtotal_15: valorSinImpuestos };
   } else if (tarifaIva >= 0.14 && tarifaIva <= 0.16) {
-    return { subtotal_0: 0, subtotal_8: 0, subtotal_15: valorSinImpuestos };
+    return { ...base, subtotal_15: valorSinImpuestos };
   }
 
-  return { subtotal_0: 0, subtotal_8: 0, subtotal_15: valorSinImpuestos };
+  return { ...base, subtotal_15: valorSinImpuestos };
 }
 
 /**
@@ -203,7 +208,7 @@ export function parsearArchivoNotasCredito(
         warnings.push(`Fila ${i + 1}: fecha inválida '${fechaEmisionOriginal}', se usó fecha del periodo`);
       }
 
-      const { subtotal_0, subtotal_8, subtotal_15 } = calcularSubtotales(valorSinImpuestos, iva);
+      const { subtotal_0, subtotal_5, subtotal_8, subtotal_15 } = calcularSubtotales(valorSinImpuestos, iva);
 
       const notaCredito: NotaCreditoParsed = {
         fecha_emision: fechaEmision,
@@ -214,6 +219,7 @@ export function parsearArchivoNotasCredito(
         razon_social_cliente: columnas[indices.razon_social]?.trim() || "",
         identificacion_receptor: columnas[indices.identificacion_receptor]?.trim() || "",
         subtotal_0,
+        subtotal_5,
         subtotal_8,
         subtotal_15,
         iva,
