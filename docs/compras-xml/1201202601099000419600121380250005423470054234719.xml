@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<autorizacion>
+<estado>AUTORIZADO</estado>
+<numeroAutorizacion>1201202601099000419600121380250005423470054234719</numeroAutorizacion>
+<fechaAutorizacion>2026-01-12T14:31:16-05:00</fechaAutorizacion>
+<ambiente>PRODUCCIÓN</ambiente>
+<comprobante><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<factura id="comprobante" version="1.1.0">
+  <infoTributaria>
+    <ambiente>2</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>CORPORACION EL ROSADO S.A.</razonSocial>
+    <nombreComercial>MI COMISARIATO</nombreComercial>
+    <ruc>0990004196001</ruc>
+    <claveAcceso>1201202601099000419600121380250005423470054234719</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>138</estab>
+    <ptoEmi>025</ptoEmi>
+    <secuencial>000542347</secuencial>
+    <dirMatriz>AV. 9 DE OCTUBRE Y BOYACA 729 GUAYAQUIL</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>12/01/2026</fechaEmision>
+    <dirEstablecimiento>VIA A LA AURORA KM 10.5</dirEstablecimiento>
+    <contribuyenteEspecial>6925</contribuyenteEspecial>
+    <obligadoContabilidad>SI</obligadoContabilidad>
+    <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+    <razonSocialComprador>ONTIVEROS TERAN ANDRES ALEJANDRO</razonSocialComprador>
+    <identificacionComprador>0962428348</identificacionComprador>
+    <totalSinImpuestos>5.60</totalSinImpuestos>
+    <totalDescuento>0.00</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>4</codigoPorcentaje>
+        <baseImponible>5.60</baseImponible>
+        <tarifa>15</tarifa>
+        <valor>0.84</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0.00</propina>
+    <importeTotal>6.44</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>16</formaPago>
+        <total>6.44</total>
+        <plazo>0</plazo>
+        <unidadTiempo>dias</unidadTiempo>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>40276721</codigoPrincipal>
+      <descripcion>RASTRERA 90CM DOBLE</descripcion>
+      <cantidad>1.000</cantidad>
+      <precioUnitario>2.56</precioUnitario>
+      <descuento>0.00</descuento>
+      <precioTotalSinImpuesto>2.56</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>4</codigoPorcentaje>
+          <tarifa>15</tarifa>
+          <baseImponible>2.56</baseImponible>
+          <valor>0.38</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+    <detalle>
+      <codigoPrincipal>40279554</codigoPrincipal>
+      <descripcion>GARRUCHA 2 2PACK</descripcion>
+      <cantidad>1.000</cantidad>
+      <precioUnitario>3.04</precioUnitario>
+      <descuento>0.00</descuento>
+      <precioTotalSinImpuesto>3.04</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>4</codigoPorcentaje>
+          <tarifa>15</tarifa>
+          <baseImponible>3.04</baseImponible>
+          <valor>0.46</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="formaPago">DEBITO BANCARIO,6.44</campoAdicional>
+    <campoAdicional nombre="logo">SUPERMERCADO</campoAdicional>
+    <campoAdicional nombre="RESOLUCION">GRAN CONTRIBUYENTE RES. NAC-GCFOIOC21-00000876-E</campoAdicional>
+  </infoAdicional><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="Signature-700591178">
+	<ds:SignedInfo>
+		<ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+		<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+		<ds:Reference URI="#comprobante">
+			<ds:Transforms>
+				<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+			</ds:Transforms>
+			<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+			<ds:DigestValue>X/zCUI661Nw78t6wtsArj1+zPUE=</ds:DigestValue>
+		</ds:Reference>
+		<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#SignedProperties-126921699">
+			<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+			<ds:DigestValue>+/fBi8GubGaYA1gtpNfCT/+YbUQ=</ds:DigestValue>
+		</ds:Reference>
+	</ds:SignedInfo>
+	<ds:SignatureValue>
+MCEknLZi45JqT0N8ARfEIDa6sE+L2OnA5W4qQdGZjj1ogkRrIwHDAE0vhfmW0qMY
+RUI/oJAHvVevuvY/2j65hbRI1zwfkq7HjgZp8Ii7ghU4xxArqQWmkbjnTkmNYWIv
+RRNHV5/Kdqu8mOykoUaEq5LvCojcmBFY9pVMQUnLXNIqvYLnCDBVIuytPppvPIYA
+YkRlQiv7QPio57amFpe6Pmq2yYGo9UyLl3xmSgDhiAs9crZgkVFgK1aY0CxrCrnz
+PEWOAmfzJYfAqx3ERoHoKxd4g4Dp1A/vez0ReZsv42OBxBx6F04lad9DYNVCXboc
++602TRu/oaNgBUdIQI9RdA==
+	</ds:SignatureValue>
+	<ds:KeyInfo>
+		<ds:KeyValue>
+			<ds:RSAKeyValue>
+				<ds:Modulus>
+sdrcvgtq8R+Ocq24O/K5XmD1Fp9QdcYVgcBCV1YaPZkJelSlzp+ZWwk+KCIuHVu2
+AZ7gMmDcogLOBNOxoyjc2NscdH8u+xWSCP2HrFF1Kzr8tiDiWAvEYMl6GQmppmnl
+tCfvrbEzuaLmdj21vTJ5l3dF/dW5RmJl4dQT2MRpTnwoXSFwRaQykCrEgBLL8xrG
+Oct59XN2SSwi1bLIV2sWfRarfOUxR3sDpo3zTas5+eyxziz/4TvbEncoFcErXCbK
+K5gbkZo6M6NRW0X71S/fvjBZH+53YqwM8GEeNsDTFITC7dYs805n89xiSGZ2RmlY
+CcSvyPu0si+Nae6ozst0Xw==
+				</ds:Modulus>
+				<ds:Exponent>AQAB</ds:Exponent>
+			</ds:RSAKeyValue>
+		</ds:KeyValue>
+		<ds:X509Data>
+			<ds:X509IssuerSerial>
+				<ds:X509IssuerName>CN=AUTORIDAD DE CERTIFICACION SUBCA-2 SECURITY DATA, OU=ENTIDAD DE CERTIFICACION DE INFORMACION, O=SECURITY DATA S.A. 2, C=EC</ds:X509IssuerName>
+				<ds:X509SerialNumber>6658620424559012833</ds:X509SerialNumber>
+			</ds:X509IssuerSerial>
+			<ds:X509SubjectName>C=EC, O=SECURITY DATA S.A. 2, OU=ENTIDAD DE CERTIFICACION DE INFORMACION, 2.5.4.5=0918805805-240625120408, CN=LUZ MARIA MANCERO ALMEIDA</ds:X509SubjectName>
+			<ds:X509Certificate>
+MIIKzzCCCLegAwIBAgIIXGgr/0wAK+EwDQYJKoZIhvcNAQELBQAwgZkxCzAJBgNV
+BAYTAkVDMR0wGwYDVQQKDBRTRUNVUklUWSBEQVRBIFMuQS4gMjEwMC4GA1UECwwn
+RU5USURBRCBERSBDRVJUSUZJQ0FDSU9OIERFIElORk9STUFDSU9OMTkwNwYDVQQD
+DDBBVVRPUklEQUQgREUgQ0VSVElGSUNBQ0lPTiBTVUJDQS0yIFNFQ1VSSVRZIERB
+VEEwHhcNMjUwNjI0MTY1NDE3WhcNMzAwNjI0MTY1NDE3WjCBpDEiMCAGA1UEAwwZ
+TFVaIE1BUklBIE1BTkNFUk8gQUxNRUlEQTEgMB4GA1UEBRMXMDkxODgwNTgwNS0y
+NDA2MjUxMjA0MDgxMDAuBgNVBAsMJ0VOVElEQUQgREUgQ0VSVElGSUNBQ0lPTiBE
+RSBJTkZPUk1BQ0lPTjEdMBsGA1UECgwUU0VDVVJJVFkgREFUQSBTLkEuIDIxCzAJ
+BgNVBAYTAkVDMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsdrcvgtq
+8R+Ocq24O/K5XmD1Fp9QdcYVgcBCV1YaPZkJelSlzp+ZWwk+KCIuHVu2AZ7gMmDc
+ogLOBNOxoyjc2NscdH8u+xWSCP2HrFF1Kzr8tiDiWAvEYMl6GQmppmnltCfvrbEz
+uaLmdj21vTJ5l3dF/dW5RmJl4dQT2MRpTnwoXSFwRaQykCrEgBLL8xrGOct59XN2
+SSwi1bLIV2sWfRarfOUxR3sDpo3zTas5+eyxziz/4TvbEncoFcErXCbKK5gbkZo6
+M6NRW0X71S/fvjBZH+53YqwM8GEeNsDTFITC7dYs805n89xiSGZ2RmlYCcSvyPu0
+si+Nae6ozst0XwIDAQABo4IGDDCCBggwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAW
+gBSMusoRV3glgB1rCktVv42uYt29jzBZBggrBgEFBQcBAQRNMEswSQYIKwYBBQUH
+MAGGPWh0dHA6Ly9vY3NwZ3cuc2VjdXJpdHlkYXRhLm5ldC5lYy9lamJjYS9wdWJs
+aWN3ZWIvc3RhdHVzL29jc3AwIAYDVR0RBBkwF4EVbG1hbmNlcm9AZWxyb3NhZG8u
+Y29tMIIBEgYDVR0gBIIBCTCCAQUwYAYKKwYBBAGCpnICCjBSMFAGCCsGAQUFBwIC
+MEQeQgBDAGUAcgB0AGkAZgBpAGMAYQBkAG8AIABkAGUAIABNAGkAZQBtAGIAcgBv
+ACAAZABlACAARQBtAHAAcgBlAHMAYTCBoAYKKwYBBAGCpnICBDCBkTCBjgYIKwYB
+BQUHAgEWgYFodHRwczovL3d3dy5zZWN1cml0eWRhdGEubmV0LmVjL3dwLWNvbnRl
+bnQvZG93bmxvYWRzL05vcm1hdGl2YXMvUF9kZV9DZXJ0aWZpY2Fkb3MvUG9saXRp
+Y2FzIGRlIENlcnRpZmljYWRvIE1pZW1icm8gZGUgRW1wcmVzYS5wZGYwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMIICDwYDVR0fBIICBjCCAgIwgd6gOqA4
+hjZodHRwOi8vY3JsMS5zZWN1cml0eWRhdGEubmV0LmVjL3N1YmNhMmNybDEvY3Js
+ZmlsZS5jcmyigZ+kgZwwgZkxOTA3BgNVBAMMMEFVVE9SSURBRCBERSBDRVJUSUZJ
+Q0FDSU9OIFNVQkNBLTIgU0VDVVJJVFkgREFUQTEwMC4GA1UECwwnRU5USURBRCBE
+RSBDRVJUSUZJQ0FDSU9OIERFIElORk9STUFDSU9OMR0wGwYDVQQKDBRTRUNVUklU
+WSBEQVRBIFMuQS4gMjELMAkGA1UEBhMCRUMwPKA6oDiGNmh0dHA6Ly9jcmwyLnNl
+Y3VyaXR5ZGF0YS5uZXQuZWMvc3ViY2EyY3JsMi9jcmxmaWxlLmNybDCB4KCB3aCB
+2oaB12h0dHBzOi8vcG9ydGFsLW9wZXJhZG9yMi5zZWN1cml0eWRhdGEubmV0LmVj
+L2VqYmNhL3B1YmxpY3dlYi93ZWJkaXN0L2NlcnRkaXN0P2NtZD1jcmwmaXNzdWVy
+PUNOPUFVVE9SSURBRCBERSBDRVJUSUZJQ0FDSU9OIFNVQkNBLTIgU0VDVVJJVFkg
+REFUQSxPVT1FTlRJREFEIERFIENFUlRJRklDQUNJT04gREUgSU5GT1JNQUNJT04s
+Tz1TRUNVUklUWSBEQVRBIFMuQS4gMixDPUVDMB0GA1UdDgQWBBTrkzTNcpBbyaBy
+6ZIUtMELPY6jUzArBgNVHRAEJDAigA8yMDI1MDYyNDE2NTQxN1qBDzIwMzAwNjI0
+MTY1NDE3WjALBgNVHQ8EBAMCBeAwHQYKKwYBBAGCpnIDBQQPDA1BRE1JTklTVFJB
+RE9SMBoGCisGAQQBgqZyAwEEDAwKMDkxODgwNTgwNTAaBgorBgEEAYKmcgMJBAwM
+ClJPQ0FGVUVSVEUwEQYKKwYBBAGCpnIDIgQDDAEuMDoGCisGAQQBgqZyAwcELAwq
+QVYgOSBERSBPQ1RVQlJFIDcyOSBZIEJPWUFDQSBHQVJDSUEgQVZJTEVTMBkGCisG
+AQQBgqZyAwIECwwJTFVaIE1BUklBMB8GCisGAQQBgqZyAyAEEQwPMDAxMDAyMDAx
+MDEwNDc0MBMGCisGAQQBgqZyAyEEBQwDUEZYMBcGCisGAQQBgqZyAwwECQwHRUNV
+QURPUjAXBgorBgEEAYKmcgMDBAkMB01BTkNFUk8wKQYKKwYBBAGCpnIDCgQbDBlD
+T1JQT1JBQ0lPTiBFTCBST1NBRE8gUyBBMB0GCisGAQQBgqZyAwsEDwwNMDk5MDAw
+NDE5NjAwMTARBgorBgEEAYKmcgMdBAMMAS4wFwYKKwYBBAGCpnIDBAQJDAdBTE1F
+SURBMBoGCisGAQQBgqZyAwgEDAwKMDk5MTc2MDQzOTANBgkqhkiG9w0BAQsFAAOC
+AgEAv4aCGbubPf767LalfnNSHi7BlS0rzt5tNeLguPlrWTzfnyH6Hju+neCaelN7
+KmeXczoYxRjOfj1+6Cr2joKnRDVkLiUBk3UZ19WO0FWJWr7SZ6fyL+3Ogn/Mm8PG
+/MgSvQal6ReWcKpCiqzEAe4nYEVIHDDou0I4p61y6mB8zkw7DZIPigksgwT0qEB5
+N18s1vcJgic7IBFQjlSPG+6WGemp3fvzUDHvggTRVPI2L3A8L2rcpZ84NNhwdabW
+8ZedYj7GFKlRj5jKQxHIfl9dfrv5w7G/MdljqnVPTw4t3POvcpTJp5XLjN8EgVyu
+Ms0KCNNC+JAgKKOwYNXjyXjuyYDRj3tkn3dqW8913Yn2OA4pSafNUSph8SarpaoW
+L0EjeM2UxEya8Php9Y4JC8iMGjfv0Cq8hW0q0tzZ4kbvo6kyr/NLVDA5lEXk7sqU
+z9qSAexycnPs4wFiIeEy8D2c+Bq5sypfJs+tzYeMeGlFWWTfMAXbcAd5Qd0E5Tis
+I0mrVDgOIovIGiH4nzgNutB5QS/lzrSAs++MR3yOGmtwWj9syJ4JbtxEM78M4ItT
+bcCsAvv10RwpQ7ePBnF3P6ir7TmoIasSQM8SIJme9SfBfTSXw/Y368KKqUotHjSV
+J7blH+aIF2sRQ09ELCSFQXzw2X5miVhfA0keQyMj77i8KiM=
+			</ds:X509Certificate>
+		</ds:X509Data>
+	</ds:KeyInfo>
+	<ds:Object>
+		<etsi:QualifyingProperties xmlns:etsi="http://uri.etsi.org/01903/v1.3.2#" Target="#Signature-700591178">
+			<etsi:SignedProperties Id="SignedProperties-126921699">
+				<etsi:SignedSignatureProperties>
+					<etsi:SigningTime>2026-01-12T14:16:34.405Z</etsi:SigningTime>
+					<etsi:SigningCertificate>
+						<etsi:Cert>
+							<etsi:CertDigest>
+								<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+								<ds:DigestValue>s5jTshod7P01Mbf338ZUDTCCDvw=</ds:DigestValue>
+							</etsi:CertDigest>
+							<etsi:IssuerSerial>
+								<ds:X509IssuerName>CN=AUTORIDAD DE CERTIFICACION SUBCA-2 SECURITY DATA, OU=ENTIDAD DE CERTIFICACION DE INFORMACION, O=SECURITY DATA S.A. 2, C=EC</ds:X509IssuerName>
+								<ds:X509SerialNumber>6658620424559012833</ds:X509SerialNumber>
+							</etsi:IssuerSerial>
+						</etsi:Cert>
+					</etsi:SigningCertificate>
+				</etsi:SignedSignatureProperties>
+			</etsi:SignedProperties>
+		</etsi:QualifyingProperties>
+	</ds:Object>
+</ds:Signature>
+</factura>]]></comprobante>
+<mensajes/>
+</autorizacion>
+
