@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { supabase, Compra } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -8,52 +8,63 @@ import { ComprasKPIs } from "@/components/compras/compras-kpis";
 import { ComprasTable } from "@/components/compras/compras-table";
 import { GastosPersonalesSummary } from "@/components/compras/gastos-personales-summary";
 import { ComprasPagination } from "@/components/compras/compras-pagination";
+import { ComprasTableFilters } from "@/components/compras/compras-table-filters";
 import { NuevaCompraDialog } from "@/components/compras/nueva-compra-dialog";
 import { ImportarComprasDialog } from "@/components/compras/importar-compras-dialog";
 import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import { useComprasTable } from "@/hooks/use-compras-table";
 import posthog from "posthog-js";
 
 export default function ComprasPage() {
-  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const [comprasFiltradas, setComprasFiltradas] = useState<Compra[]>([]);
-  const [todasLasComprasFiltradas, setTodasLasComprasFiltradas] = useState<Compra[]>([]); // Para KPIs
-  const [loading, setLoading] = useState(true);
-  const [showNuevaCompraDialog, setShowNuevaCompraDialog] = useState(false);
-  const [showImportarDialog, setShowImportarDialog] = useState(false);
-
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears, refresh: refreshAvailableYears } =
     useAvailableYears("compras");
 
-  // Paginación
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [totalCompras, setTotalCompras] = useState(0);
-  const ITEMS_POR_PAGINA = 15;
+  // ── Flow A: Summary data for KPIs + GastosPersonales ──
+  const [todasLasCompras, setTodasLasCompras] = useState<Compra[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
+  const [showNuevaCompraDialog, setShowNuevaCompraDialog] = useState(false);
+  const [showImportarDialog, setShowImportarDialog] = useState(false);
+
+  // ── Flow B: Table with server-side filtering + pagination ──
+  const {
+    compras: tableCompras,
+    totalCount,
+    page,
+    setPage,
+    filters,
+    updateFilter,
+    resetFilters,
+    activeFilterCount,
+    isLoading: tableLoading,
+    isFetching: tableFetching,
+    invalidate: invalidateTable,
+    itemsPerPage,
+  } = useComprasTable();
 
   dayjs.locale("es");
 
-  const cargarCompras = async () => {
+  const cargarResumen = useCallback(async () => {
     if (!contribuyente) return;
 
-    setLoading(true);
+    setSummaryLoading(true);
     try {
-      // Construir query base con filtros
-      let queryBase = supabase
+      let query = supabase
         .from("compras")
         .select("*")
         .eq("contribuyente_ruc", contribuyente.ruc);
 
-      // Aplicar filtros globales
       if (selectedMonth !== null) {
         const start = dayjs()
           .year(selectedYear)
@@ -65,7 +76,7 @@ export default function ComprasPage() {
           .month(selectedMonth - 1)
           .endOf("month")
           .format("YYYY-MM-DD");
-        queryBase = queryBase.gte("fecha_emision", start).lte("fecha_emision", end);
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
       } else {
         const start = dayjs()
           .year(selectedYear)
@@ -75,52 +86,36 @@ export default function ComprasPage() {
           .year(selectedYear)
           .endOf("year")
           .format("YYYY-MM-DD");
-        queryBase = queryBase.gte("fecha_emision", start).lte("fecha_emision", end);
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
       }
 
-      // Cargar TODAS las compras filtradas para KPIs (sin paginación)
-      const { data: todasCompras, error: errorTodas } = await queryBase
-        .order("fecha_emision", { ascending: false });
+      const { data, error } = await query.order("fecha_emision", {
+        ascending: false,
+      });
 
-      if (errorTodas) throw errorTodas;
-
-      setTodasLasComprasFiltradas(todasCompras || []);
-      setTotalCompras(todasCompras?.length || 0);
-
-      // Aplicar paginación manualmente para la tabla
-      const from = (paginaActual - 1) * ITEMS_POR_PAGINA;
-      const to = from + ITEMS_POR_PAGINA;
-      const comprasPaginadas = (todasCompras || []).slice(from, to);
-
-      setComprasFiltradas(comprasPaginadas);
+      if (error) throw error;
+      setTodasLasCompras(data || []);
     } catch (error: unknown) {
-      console.error("Error al cargar compras:", error);
+      console.error("Error al cargar resumen de compras:", error);
       toast.error("Error al cargar las compras");
     } finally {
-      setLoading(false);
+      setSummaryLoading(false);
     }
-  };
+  }, [contribuyente, selectedYear, selectedMonth]);
 
   useEffect(() => {
     if (contribuyente) {
-      cargarCompras();
+      cargarResumen();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contribuyente]);
+  }, [contribuyente, cargarResumen]);
 
-  // Resetear página cuando cambien los filtros
+  // Reset table page when period changes
   useEffect(() => {
-    setPaginaActual(1);
-  }, [selectedYear, selectedMonth]);
-
-  useEffect(() => {
-    cargarCompras();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedYear, selectedMonth, paginaActual]);
-
+    setPage(1);
+  }, [selectedYear, selectedMonth, setPage]);
 
   const handleEliminarCompra = async (compra: Compra) => {
-    if (!confirm("¿Estás seguro de eliminar esta compra?")) {
+    if (!confirm("¿Estas seguro de eliminar esta compra?")) {
       return;
     }
 
@@ -132,25 +127,47 @@ export default function ComprasPage() {
 
       if (error) throw error;
 
-      // Track purchase deletion
       posthog.capture("compra_deleted", {
         contribuyente_ruc: contribuyente?.ruc,
         compra_id: compra.id,
       });
 
       toast.success("Compra eliminada exitosamente");
-      cargarCompras();
+      cargarResumen();
+      invalidateTable();
     } catch (error: unknown) {
       console.error("Error al eliminar compra:", error);
       toast.error("Error al eliminar la compra");
     }
   };
 
+  const handleCompraCreada = () => {
+    posthog.capture("compra_created", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
+    cargarResumen();
+    invalidateTable();
+    refreshAvailableYears();
+  };
+
+  const handleComprasImportadas = () => {
+    posthog.capture("compras_imported", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
+    cargarResumen();
+    invalidateTable();
+    refreshAvailableYears();
+  };
+
   if (!contribuyente) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <p className="text-muted-foreground">
-          Cargando información del contribuyente...
+          Cargando informacion del contribuyente...
         </p>
       </div>
     );
@@ -162,17 +179,26 @@ export default function ComprasPage() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gestión de Compras</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Gestion de Compras
+            </h1>
             <p className="text-muted-foreground">
               Administra todas tus compras, gastos y proveedores
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowImportarDialog(true)} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowImportarDialog(true)}
+              className="gap-2"
+            >
               <Upload className="h-4 w-4" />
               Importar TXT
             </Button>
-            <Button onClick={() => setShowNuevaCompraDialog(true)} className="gap-2">
+            <Button
+              onClick={() => setShowNuevaCompraDialog(true)}
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               Nueva compra
             </Button>
@@ -180,22 +206,22 @@ export default function ComprasPage() {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros de periodo */}
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
-      {loading ? (
+      {summaryLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonStatCard key={i} />
           ))}
         </div>
       ) : (
-        <ComprasKPIs compras={todasLasComprasFiltradas} />
+        <ComprasKPIs compras={todasLasCompras} />
       )}
 
       {/* Gastos Personales */}
-      {loading ? (
+      {summaryLoading ? (
         <Card>
           <CardContent className="p-6">
             <Skeleton className="h-32 w-full" />
@@ -203,48 +229,67 @@ export default function ComprasPage() {
         </Card>
       ) : (
         <GastosPersonalesSummary
-          compras={todasLasComprasFiltradas}
+          compras={todasLasCompras}
           cargasFamiliares={contribuyente.cargas_familiares}
         />
       )}
 
-      {/* Tabla */}
-      {loading ? (
-        <SkeletonTableRows rows={8} columns={7} />
-      ) : (
-        <ComprasTable
-          compras={comprasFiltradas}
-          onEliminar={handleEliminarCompra}
-        />
-      )}
+      {/* Tabla de compras */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Registro de compras
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {totalCount} compra{totalCount !== 1 ? "s" : ""} encontrada
+                  {totalCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
 
-      {/* Paginación */}
-      {loading ? (
-        <Skeleton className="h-9 w-64" />
-      ) : (
-        <ComprasPagination
-          paginaActual={paginaActual}
-          totalItems={totalCompras}
-          itemsPorPagina={ITEMS_POR_PAGINA}
-          onPaginaChange={setPaginaActual}
-        />
-      )}
+            <ComprasTableFilters
+              filters={filters}
+              onFilterChange={updateFilter}
+              onReset={resetFilters}
+              activeFilterCount={activeFilterCount}
+              isFetching={tableFetching}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {tableLoading ? (
+            <SkeletonTableRows rows={8} columns={7} />
+          ) : (
+            <ComprasTable
+              compras={tableCompras}
+              onEliminar={handleEliminarCompra}
+              isFetching={tableFetching}
+            />
+          )}
+        </CardContent>
+
+        {/* Pagination inside card */}
+        {!tableLoading && totalCount > 0 && (
+          <div className="border-t px-6">
+            <ComprasPagination
+              paginaActual={page}
+              totalItems={totalCount}
+              itemsPorPagina={itemsPerPage}
+              onPaginaChange={setPage}
+            />
+          </div>
+        )}
+      </Card>
 
       {/* Dialog Nueva Compra */}
       <NuevaCompraDialog
         open={showNuevaCompraDialog}
         onOpenChange={setShowNuevaCompraDialog}
         contribuyenteRuc={contribuyente.ruc}
-        onCompraCreada={() => {
-          // Track purchase creation
-          posthog.capture("compra_created", {
-            contribuyente_ruc: contribuyente.ruc,
-            selected_year: selectedYear,
-            selected_month: selectedMonth,
-          });
-          cargarCompras();
-          refreshAvailableYears();
-        }}
+        onCompraCreada={handleCompraCreada}
       />
 
       {/* Dialog Importar Compras */}
@@ -252,16 +297,7 @@ export default function ComprasPage() {
         open={showImportarDialog}
         onOpenChange={setShowImportarDialog}
         contribuyenteRuc={contribuyente.ruc}
-        onComprasImportadas={() => {
-          // Track purchases import
-          posthog.capture("compras_imported", {
-            contribuyente_ruc: contribuyente.ruc,
-            selected_year: selectedYear,
-            selected_month: selectedMonth,
-          });
-          cargarCompras();
-          refreshAvailableYears();
-        }}
+        onComprasImportadas={handleComprasImportadas}
       />
     </div>
   );
