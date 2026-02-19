@@ -23,7 +23,15 @@
       "mcp__plugin_playwright_playwright__browser_tabs",
       "mcp__plugin_playwright_playwright__browser_hover",
       "mcp__plugin_playwright_playwright__browser_resize",
-      "mcp__supabase__list_migrations"
+      "mcp__supabase__list_migrations",
+      "Bash(npx shadcn@latest add popover calendar -y)",
+      "Bash(npm install:*)",
+      "mcp__shadcn__view_items_in_registries",
+      "Bash(npx tsc:*)",
+      "Bash(npx next build)",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "mcp__plugin_playwright_playwright__browser_close"
     ]
   },
   "enableAllProjectMcpServers": true,
