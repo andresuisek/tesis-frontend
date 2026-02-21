@@ -11,7 +11,6 @@ import {
   ArrowRight,
   Calculator,
   CheckCircle2,
-  FileText,
   Info,
   Lightbulb,
   PlusCircle,
