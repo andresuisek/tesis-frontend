@@ -12,15 +12,40 @@ import {
 } from "@/lib/auth-helpers";
 import { classifyIntent } from "@/lib/ai-agent/intent-router";
 import { searchTavily } from "@/lib/ai-agent/tavily-search";
+import {
+  buildAppHelpPrompt,
+  appHelpResponseFormat,
+} from "@/lib/ai-agent/app-help-prompt";
 
 type AgentRequestPayload = {
   question?: string;
   contribuyenteRuc?: string;
   sessionHints?: string[];
+  currentPath?: string;
+  userType?: "contribuyente" | "contador";
 };
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+
+// --- Rate limiting ---
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(ruc: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ruc);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ruc, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
 
 // --- SSE helpers ---
 
@@ -293,6 +318,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Rate limiting
+  if (!checkRateLimit(contribuyenteRuc)) {
+    return new Response(
+      JSON.stringify({ error: "Demasiadas consultas. Espera un momento e intenta de nuevo." }),
+      { status: 429, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const posthog = getPostHogClient();
   posthog.capture({
     distinctId: contribuyenteRuc,
@@ -318,6 +351,54 @@ export async function POST(req: Request) {
           event: "ai_query_intent",
           properties: { intent: intentResult.intent, contribuyente_ruc: contribuyenteRuc },
         });
+
+        // --- App help path (no SQL, no web search) ---
+        if (intentResult.intent === "app_help") {
+          send("phase", { phase: "thinking" });
+
+          const userType = payload.userType ?? "contribuyente";
+          const helpPrompt = buildAppHelpPrompt({
+            userType,
+            currentPath: payload.currentPath,
+            hasActiveContribuyente: !!contribuyenteRuc,
+          });
+
+          const helpResponse = await callOpenAiJson({
+            responseFormat: appHelpResponseFormat,
+            temperature: 0.3,
+            messages: [
+              { role: "system", content: helpPrompt },
+              { role: "user", content: question },
+            ],
+          });
+
+          // Stream the narrative in chunks for consistent UX
+          const narrative: string = helpResponse.narrative ?? "";
+          const chunkSize = 12;
+          for (let i = 0; i < narrative.length; i += chunkSize) {
+            send("delta", { text: narrative.slice(i, i + chunkSize) });
+          }
+
+          send("metadata", {
+            navigationActions: helpResponse.navigation_actions ?? [],
+            followUps: helpResponse.follow_ups ?? [],
+            followUp: helpResponse.follow_ups?.[0] ?? "",
+          });
+
+          posthog.capture({
+            distinctId: contribuyenteRuc,
+            event: "ai_query_streamed",
+            properties: {
+              contribuyente_ruc: contribuyenteRuc,
+              intent: "app_help",
+              has_nav_actions: (helpResponse.navigation_actions?.length ?? 0) > 0,
+            },
+          });
+
+          send("done", {});
+          controller.close();
+          return;
+        }
 
         // Start web search in parallel if needed
         let searchResultsPromise: Promise<

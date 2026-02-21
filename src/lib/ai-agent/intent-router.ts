@@ -2,7 +2,7 @@ const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const ROUTER_MODEL = "gpt-4o-mini";
 
 export type IntentResult = {
-  intent: "database" | "web_search" | "both";
+  intent: "database" | "web_search" | "both" | "app_help";
   searchQuery: string | null;
 };
 
@@ -16,9 +16,10 @@ Clasifica la pregunta del usuario en una de estas categorías:
 - "database": La pregunta requiere consultar datos fiscales del contribuyente (facturas, compras, ventas, retenciones, IVA, montos, listados).
 - "web_search": La pregunta es sobre normativa, regulaciones, tasas, porcentajes legales, plazos del SRI, o conceptos tributarios generales que NO dependen de datos del contribuyente.
 - "both": La pregunta necesita datos del contribuyente Y contexto normativo/legal.
+- "app_help": La pregunta es sobre cómo usar el software, sus funcionalidades, módulos, navegación, o instrucciones paso a paso. Ejemplos: "cómo subo mis ventas", "dónde veo la liquidación", "qué puedo hacer aquí", "cómo agrego un cliente", "para qué sirve este módulo".
 
-Responde SOLO con JSON: {"intent": "database"|"web_search"|"both", "search_query": "string o null"}
-- search_query: si intent incluye búsqueda web, genera una consulta de búsqueda optimizada en español. Incluye el año actual (${year}) para obtener información vigente. Si es solo "database", usa null.`;
+Responde SOLO con JSON: {"intent": "database"|"web_search"|"both"|"app_help", "search_query": "string o null"}
+- search_query: si intent incluye búsqueda web, genera una consulta de búsqueda optimizada en español. Incluye el año actual (${year}) para obtener información vigente. Si es "database" o "app_help", usa null.`;
 }
 
 export async function classifyIntent(
@@ -69,7 +70,7 @@ export async function classifyIntent(
 
     const parsed = JSON.parse(jsonMatch[0]);
 
-    const validIntents = ["database", "web_search", "both"];
+    const validIntents = ["database", "web_search", "both", "app_help"];
     const intent = validIntents.includes(parsed.intent)
       ? (parsed.intent as IntentResult["intent"])
       : "database";

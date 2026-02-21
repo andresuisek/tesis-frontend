@@ -16,18 +16,23 @@ export type AgentChartConfig = {
   data: Record<string, unknown>[];
 };
 
+export type NavigationAction = { label: string; route: string };
+
 export type AgentMessage = {
   id: string;
   role: AgentRole;
   content: string;
   highlights?: string[];
   followUp?: string;
+  followUps?: string[];
+  navigationActions?: NavigationAction[];
   rowCount?: number;
   previewRows?: Record<string, unknown>[];
   isError?: boolean;
   chartConfig?: AgentChartConfig;
   isStreaming?: boolean;
   searchSources?: string[];
+  feedback?: "positive" | "negative";
   createdAt: string;
 };
 
@@ -36,6 +41,7 @@ export type StreamPhase =
   | "generating_sql"
   | "executing_query"
   | "formatting"
+  | "thinking"
   | null;
 
 type AiAgentContextValue = {
@@ -52,7 +58,13 @@ type AiAgentContextValue = {
   ) => void;
   updateMessage: (id: string, patch: Partial<AgentMessage>) => void;
   askAgent: (question: string, contribuyenteRuc: string) => Promise<void>;
-  askAgentStream: (question: string, contribuyenteRuc: string) => Promise<void>;
+  askAgentStream: (
+    question: string,
+    contribuyenteRuc: string,
+    currentPath?: string,
+    userType?: string
+  ) => Promise<void>;
+  setFeedback: (messageId: string, feedback: "positive" | "negative") => void;
   resetConversation: () => void;
 };
 
@@ -78,7 +90,7 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
       id: "welcome-message",
       role: "assistant",
       content:
-        "Hola, soy tu agente inteligente. Puedo ayudarte a entender tus datos tributarios.",
+        "Hola, soy tu asistente tributario. Puedo ayudarte a consultar tus datos fiscales, resolver dudas sobre normativa del SRI, y guiarte en el uso de la aplicación. \u00bfEn qué puedo ayudarte?",
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -97,6 +109,8 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
           content: message.content,
           highlights: message.highlights,
           followUp: message.followUp,
+          followUps: message.followUps,
+          navigationActions: message.navigationActions,
           rowCount: message.rowCount,
           previewRows: message.previewRows,
           isError: message.isError,
@@ -137,9 +151,9 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
       setIsProcessing(true);
 
       const sessionHints = messages
-        .filter((message) => message.role === "user")
-        .slice(-3)
-        .map((message) => message.content);
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10)
+        .map((m) => `${m.role === "user" ? "Q" : "A"}: ${m.content.slice(0, 150)}`);
 
       try {
         const response = await fetch("/api/ai-agent/query", {
@@ -190,8 +204,24 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
     [messages, pushMessage]
   );
 
+  const setFeedback = useCallback(
+    (messageId: string, feedback: "positive" | "negative") => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, feedback } : msg
+        )
+      );
+    },
+    []
+  );
+
   const askAgentStream = useCallback(
-    async (question: string, contribuyenteRuc: string) => {
+    async (
+      question: string,
+      contribuyenteRuc: string,
+      currentPath?: string,
+      userType?: string
+    ) => {
       const trimmedQuestion = question.trim();
       if (!trimmedQuestion) return;
 
@@ -257,6 +287,8 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
             question: trimmedQuestion,
             contribuyenteRuc,
             sessionHints,
+            currentPath,
+            userType,
           }),
         });
 
@@ -329,6 +361,8 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
                           ...msg,
                           highlights: meta.highlights,
                           followUp: meta.followUp,
+                          followUps: meta.followUps,
+                          navigationActions: meta.navigationActions,
                           rowCount: meta.rowCount,
                           previewRows: meta.previewRows,
                           chartConfig: meta.chartConfig ?? undefined,
@@ -417,6 +451,7 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
       updateMessage,
       askAgent,
       askAgentStream,
+      setFeedback,
       resetConversation,
     }),
     [
@@ -431,6 +466,7 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
       updateMessage,
       askAgent,
       askAgentStream,
+      setFeedback,
       resetConversation,
     ]
   );

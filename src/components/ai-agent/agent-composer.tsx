@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,13 +13,14 @@ import { useAuth } from "@/contexts/auth-context";
 const defaultSuggestions = [
   "¿Cuál es mi IVA a pagar este mes?",
   "Listar compras mayores a 500 USD en 2024.",
-  "Resumen de retenciones emitidas este trimestre.",
+  "¿Cómo cargo mis datos tributarios?",
 ];
 
 export function AgentComposer() {
   const [question, setQuestion] = useState("");
-  const { contribuyenteEfectivo: contribuyente } = useAuth();
+  const { contribuyenteEfectivo: contribuyente, userType } = useAuth();
   const { askAgentStream, isProcessing } = useAiAgent();
+  const pathname = usePathname();
 
   const submitQuestion = async () => {
     if (!question.trim()) {
@@ -32,7 +34,7 @@ export function AgentComposer() {
 
     const q = question;
     setQuestion("");
-    await askAgentStream(q, contribuyente.ruc);
+    await askAgentStream(q, contribuyente.ruc, pathname, userType ?? undefined);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -56,7 +58,12 @@ export function AgentComposer() {
     }
 
     setQuestion("");
-    await askAgentStream(suggestion, contribuyente.ruc);
+    await askAgentStream(
+      suggestion,
+      contribuyente.ruc,
+      pathname,
+      userType ?? undefined
+    );
   };
 
   return (

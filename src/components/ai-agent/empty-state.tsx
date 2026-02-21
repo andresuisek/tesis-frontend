@@ -5,7 +5,8 @@ import {
   Calculator,
   ShoppingCart,
   Receipt,
-  AlertCircle,
+  HelpCircle,
+  BookOpen,
 } from "lucide-react";
 
 const suggestions = [
@@ -20,13 +21,18 @@ const suggestions = [
     color: "text-emerald-500",
   },
   {
+    icon: HelpCircle,
+    label: "Cómo cargo mis datos tributarios?",
+    color: "text-violet-500",
+  },
+  {
     icon: Receipt,
     label: "Resumen de retenciones del trimestre",
     color: "text-amber-500",
   },
   {
-    icon: AlertCircle,
-    label: "Tengo facturas sin retencion?",
+    icon: BookOpen,
+    label: "Qué puedo hacer en esta app?",
     color: "text-rose-500",
   },
 ];
@@ -50,7 +56,7 @@ export function EmptyState({ onSuggestionClick }: EmptyStateProps) {
           Como puedo ayudarte?
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Preguntame sobre tus datos tributarios
+          Preguntame sobre tus datos tributarios o cómo usar la app
         </p>
       </div>
 

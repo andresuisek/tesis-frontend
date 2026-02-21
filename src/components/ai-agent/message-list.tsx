@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Loader2,
   UserRound,
@@ -13,15 +14,28 @@ import {
   Search,
   Code2,
   FileText,
+  HelpCircle,
+  ArrowRight,
+  Copy,
+  Check,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
+import posthog from "posthog-js";
 
 import { cn } from "@/lib/utils";
 import { useAiAgent } from "@/hooks/use-ai-agent";
 import { useAuth } from "@/contexts/auth-context";
 import { AgentChart } from "@/components/ai-agent/agent-chart";
 import { EmptyState } from "@/components/ai-agent/empty-state";
-import type { StreamPhase } from "@/contexts/ai-agent-context";
+import type {
+  StreamPhase,
+  AgentMessage,
+  NavigationAction,
+} from "@/contexts/ai-agent-context";
 
 const phaseConfig: Record<
   Exclude<StreamPhase, null>,
@@ -42,6 +56,10 @@ const phaseConfig: Record<
   formatting: {
     label: "Redactando respuesta...",
     icon: <FileText className="h-3.5 w-3.5 animate-pulse" />,
+  },
+  thinking: {
+    label: "Preparando guía...",
+    icon: <HelpCircle className="h-3.5 w-3.5 animate-pulse" />,
   },
 };
 
@@ -73,7 +91,14 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
     return null;
   }
 
-  const hiddenColumns = new Set(["id", "contribuyente_ruc", "user_id", "created_at", "updated_at", "deleted_at"]);
+  const hiddenColumns = new Set([
+    "id",
+    "contribuyente_ruc",
+    "user_id",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+  ]);
   const columns = Object.keys(rows[0])
     .filter((col) => !hiddenColumns.has(col))
     .slice(0, 5);
@@ -85,7 +110,10 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
 
   // Hide table if all cell values are null/undefined/empty
   const hasAnyValue = limitedRows.some((row) =>
-    columns.some((col) => row[col] !== null && row[col] !== undefined && row[col] !== "")
+    columns.some(
+      (col) =>
+        row[col] !== null && row[col] !== undefined && row[col] !== ""
+    )
   );
   if (!hasAnyValue) {
     return null;
@@ -118,7 +146,10 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
                 className="border-b border-border/40 last:border-none"
               >
                 {columns.map((column) => (
-                  <td key={column} className="px-2 py-1 text-muted-foreground">
+                  <td
+                    key={column}
+                    className="px-2 py-1 text-muted-foreground"
+                  >
                     {formatCellValue(row[column])}
                   </td>
                 ))}
@@ -158,10 +189,156 @@ function SearchSources({ sources }: { sources: string[] }) {
   );
 }
 
+function NavigationActions({
+  actions,
+  onNavigate,
+}: {
+  actions: NavigationAction[];
+  onNavigate: (route: string) => void;
+}) {
+  if (!actions.length) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {actions.map((action) => (
+        <button
+          key={action.route}
+          type="button"
+          onClick={() => onNavigate(action.route)}
+          className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/50"
+        >
+          <ArrowRight className="h-3 w-3" />
+          {action.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FollowUpSuggestions({
+  followUp,
+  followUps,
+  onFollowUp,
+  disabled,
+}: {
+  followUp?: string;
+  followUps?: string[];
+  onFollowUp: (question: string) => void;
+  disabled: boolean;
+}) {
+  // Merge followUp (singular) and followUps (array) for backward compat
+  const allSuggestions = [
+    ...(followUps ?? []),
+    ...(followUp && !followUps?.includes(followUp) ? [followUp] : []),
+  ].filter(Boolean);
+
+  if (!allSuggestions.length) return null;
+
+  return (
+    <div className="space-y-1.5">
+      {allSuggestions.map((suggestion) => (
+        <button
+          key={suggestion}
+          type="button"
+          onClick={() => onFollowUp(suggestion)}
+          disabled={disabled}
+          className="flex w-full items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 dark:hover:bg-amber-500/20"
+        >
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+          {suggestion}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Respuesta copiada");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("No se pudo copiar");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+      title="Copiar respuesta"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-emerald-500" />
+      ) : (
+        <Copy className="h-3 w-3 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
+function FeedbackButtons({
+  messageId,
+  currentFeedback,
+  onFeedback,
+}: {
+  messageId: string;
+  currentFeedback?: "positive" | "negative";
+  onFeedback: (messageId: string, feedback: "positive" | "negative") => void;
+}) {
+  const handleFeedback = (feedback: "positive" | "negative") => {
+    onFeedback(messageId, feedback);
+    posthog.capture("ai_query_feedback", {
+      rating: feedback,
+      messageId,
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button
+        type="button"
+        onClick={() => handleFeedback("positive")}
+        className={cn(
+          "p-0.5 rounded hover:bg-muted transition-colors",
+          currentFeedback === "positive" && "text-emerald-500 opacity-100"
+        )}
+        title="Buena respuesta"
+      >
+        <ThumbsUp className="h-3 w-3" />
+      </button>
+      <button
+        type="button"
+        onClick={() => handleFeedback("negative")}
+        className={cn(
+          "p-0.5 rounded hover:bg-muted transition-colors",
+          currentFeedback === "negative" && "text-destructive opacity-100"
+        )}
+        title="Mala respuesta"
+      >
+        <ThumbsDown className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
 export function MessageList() {
-  const { messages, isProcessing, streamPhase, askAgentStream } = useAiAgent();
+  const {
+    messages,
+    isProcessing,
+    streamPhase,
+    askAgentStream,
+    closePanel,
+    setFeedback,
+  } = useAiAgent();
   const { contribuyenteEfectivo: contribuyente } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const node = containerRef.current;
@@ -182,6 +359,23 @@ export function MessageList() {
   const handleSuggestionClick = async (question: string) => {
     if (!contribuyente?.ruc || isProcessing) return;
     await askAgentStream(question, contribuyente.ruc);
+  };
+
+  const handleNavigate = (route: string) => {
+    router.push(route);
+    closePanel();
+  };
+
+  const handleRetry = async (message: AgentMessage) => {
+    if (!contribuyente?.ruc || isProcessing) return;
+    // Find the user message right before this error
+    const idx = messages.findIndex((m) => m.id === message.id);
+    for (let i = idx - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        await askAgentStream(messages[i].content, contribuyente.ruc);
+        return;
+      }
+    }
   };
 
   // Show empty state when only the welcome message exists
@@ -212,7 +406,7 @@ export function MessageList() {
             >
               <div
                 className={cn(
-                  "relative flex max-w-[85%] flex-col gap-2 rounded-2xl border px-4 py-3 text-sm shadow-sm",
+                  "group relative flex max-w-[85%] flex-col gap-2 rounded-2xl border px-4 py-3 text-sm shadow-sm",
                   isUser &&
                     "border-primary/20 bg-primary text-primary-foreground",
                   !isUser &&
@@ -224,7 +418,10 @@ export function MessageList() {
               >
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   {isUser ? (
-                    <UserRound className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                    <UserRound
+                      className="h-3.5 w-3.5 opacity-70"
+                      aria-hidden
+                    />
                   ) : (
                     <Bot className="h-3.5 w-3.5 opacity-70" aria-hidden />
                   )}
@@ -232,12 +429,25 @@ export function MessageList() {
                     {isUser
                       ? "Tú"
                       : message.isError
-                      ? "Agente (error)"
-                      : "Agente"}
+                        ? "Agente (error)"
+                        : "Agente"}
                   </span>
                   {!isUser && message.isStreaming && (
                     <span className="ml-auto inline-block h-2 w-2 animate-pulse rounded-full bg-primary" />
                   )}
+                  {!isUser &&
+                    !message.isStreaming &&
+                    message.content &&
+                    !message.isError && (
+                      <div className="ml-auto flex items-center gap-1">
+                        <CopyButton content={message.content} />
+                        <FeedbackButtons
+                          messageId={message.id}
+                          currentFeedback={message.feedback}
+                          onFeedback={setFeedback}
+                        />
+                      </div>
+                    )}
                 </div>
 
                 {isUser ? (
@@ -297,15 +507,33 @@ export function MessageList() {
                   <SearchSources sources={message.searchSources} />
                 ) : null}
 
-                {!isUser && message.followUp && !message.isStreaming ? (
+                {!isUser &&
+                message.navigationActions?.length &&
+                !message.isStreaming ? (
+                  <NavigationActions
+                    actions={message.navigationActions}
+                    onNavigate={handleNavigate}
+                  />
+                ) : null}
+
+                {!isUser && !message.isStreaming && !message.isError ? (
+                  <FollowUpSuggestions
+                    followUp={message.followUp}
+                    followUps={message.followUps}
+                    onFollowUp={handleFollowUp}
+                    disabled={isProcessing}
+                  />
+                ) : null}
+
+                {!isUser && message.isError && !message.isStreaming ? (
                   <button
                     type="button"
-                    onClick={() => handleFollowUp(message.followUp!)}
+                    onClick={() => handleRetry(message)}
                     disabled={isProcessing}
-                    className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 dark:hover:bg-amber-500/20"
+                    className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
                   >
-                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                    Siguiente paso sugerido: {message.followUp}
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Reintentar
                   </button>
                 ) : null}
               </div>
