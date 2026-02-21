@@ -76,7 +76,7 @@ export function parsearXMLCompra(
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
-      parseTagValue: true,
+      parseTagValue: false,
       trimValues: true,
     });
 
@@ -161,7 +161,7 @@ export function parsearXMLCompra(
     const numeroComprobante = `${estab}-${ptoEmi}-${secuencial}`;
 
     // Mapear tipo de comprobante
-    const codDoc = String(infoTributaria.codDoc || "01");
+    const codDoc = String(infoTributaria.codDoc || "01").padStart(2, "0");
     const tipoComprobante = COD_DOC_MAP[codDoc] || "otros";
 
     // Fecha de emisión
