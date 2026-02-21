@@ -94,7 +94,7 @@ export function parsearXMLRetencion(xmlContent: string, fileName?: string): Pars
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
-      parseTagValue: true,
+      parseTagValue: false,
       trimValues: true,
     });
 
