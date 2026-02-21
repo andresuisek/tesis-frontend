@@ -10,6 +10,8 @@ export interface DashboardKPIs {
   ventasMes: number;
   comprasMes: number;
   ivaPagar: number;
+  ivaVentas: number;
+  ivaCompras: number;
   retencionesMes: number;
   ventasMesAnterior: number;
   comprasMesAnterior: number;
@@ -25,17 +27,30 @@ export interface MonthlyData {
   notasCredito: number;
 }
 
-export interface TaxDistribution {
-  name: string;
-  value: number;
+export interface DailyData {
+  date: string;
+  ventas: number;
+  compras: number;
 }
 
 export interface RecentActivity {
   type: string;
   amount: number;
   timestamp: string;
-  status: string;
   id: string;
+  counterpartyName: string;
+  counterpartyRuc: string;
+  comprobante: string;
+}
+
+export interface TaxStatus {
+  hasCurrentLiquidation: boolean;
+  hasTransactions: boolean;
+  documentCounts: {
+    ventas: number;
+    compras: number;
+    retenciones: number;
+  };
 }
 
 export interface RubroDistribution {
@@ -52,10 +67,11 @@ export interface IvaBreakdownItem {
 export interface DashboardData {
   kpis: DashboardKPIs;
   monthlyData: MonthlyData[];
-  taxDistribution: TaxDistribution[];
+  dailyData: DailyData[];
   rubroDistribution: RubroDistribution[];
   ivaBreakdown: IvaBreakdownItem[];
   recentActivity: RecentActivity[];
+  taxStatus: TaxStatus;
   loading: boolean;
   error: string | null;
 }
@@ -64,10 +80,11 @@ export interface DashboardData {
 interface DashboardPayload {
   kpis: DashboardKPIs;
   monthlyData: MonthlyData[];
-  taxDistribution: TaxDistribution[];
+  dailyData: DailyData[];
   rubroDistribution: RubroDistribution[];
   ivaBreakdown: IvaBreakdownItem[];
   recentActivity: RecentActivity[];
+  taxStatus: TaxStatus;
 }
 
 async function fetchDashboardData(
@@ -136,6 +153,7 @@ async function fetchDashboardData(
     notasCreditoMensualesResult,
     recentVentasResult,
     recentComprasResult,
+    taxLiquidationsResult,
   ] = await Promise.all([
     // Ventas del periodo actual
     supabase
@@ -224,7 +242,7 @@ async function fetchDashboardData(
     // Actividad reciente - ventas
     supabase
       .from("ventas")
-      .select("id, total, fecha_emision, created_at")
+      .select("id, total, fecha_emision, created_at, razon_social_cliente, ruc_cliente, numero_comprobante")
       .eq("contribuyente_ruc", ruc)
       .gte("fecha_emision", currentStart)
       .lte("fecha_emision", currentEnd)
@@ -233,12 +251,20 @@ async function fetchDashboardData(
     // Actividad reciente - compras
     supabase
       .from("compras")
-      .select("id, total, fecha_emision, created_at")
+      .select("id, total, fecha_emision, created_at, razon_social_proveedor, ruc_proveedor, numero_comprobante")
       .eq("contribuyente_ruc", ruc)
       .gte("fecha_emision", currentStart)
       .lte("fecha_emision", currentEnd)
       .order("created_at", { ascending: false })
       .limit(5),
+    // Tax liquidations for current period
+    supabase
+      .from("tax_liquidations")
+      .select("id")
+      .eq("contribuyente_ruc", ruc)
+      .gte("fecha_inicio_cierre", currentStart)
+      .lte("fecha_inicio_cierre", currentEnd)
+      .limit(1),
   ]);
 
   // Verificar errores de las queries críticas
@@ -261,6 +287,7 @@ async function fetchDashboardData(
   const notasCreditoMensuales = notasCreditoMensualesResult.data;
   const recentVentas = recentVentasResult.data;
   const recentCompras = recentComprasResult.data;
+  const taxLiquidations = taxLiquidationsResult.data;
 
   // Calcular totales
   const totalVentasMes =
@@ -342,6 +369,28 @@ async function fetchDashboardData(
     utilidad: d.ventas - d.compras,
   }));
 
+  // Agregar datos diarios para el hero chart
+  const dailyDataMap = new Map<string, DailyData>();
+
+  // Usar datos del periodo actual (ventas y compras ya fetcheadas)
+  ventasMes?.forEach((v) => {
+    const dayKey = dayjs(v.fecha_emision).format("YYYY-MM-DD");
+    const entry = dailyDataMap.get(dayKey) ?? { date: dayKey, ventas: 0, compras: 0 };
+    entry.ventas += Number(v.total) || 0;
+    dailyDataMap.set(dayKey, entry);
+  });
+
+  comprasMes?.forEach((c) => {
+    const dayKey = dayjs(c.fecha_emision).format("YYYY-MM-DD");
+    const entry = dailyDataMap.get(dayKey) ?? { date: dayKey, ventas: 0, compras: 0 };
+    entry.compras += Number(c.total) || 0;
+    dailyDataMap.set(dayKey, entry);
+  });
+
+  const dailyData = Array.from(dailyDataMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+
   // Actividad reciente
   const recentActivity: RecentActivity[] = [];
 
@@ -350,8 +399,10 @@ async function fetchDashboardData(
       type: "Venta",
       amount: Number(v.total) || 0,
       timestamp: v.created_at,
-      status: "Completado",
       id: v.id,
+      counterpartyName: v.razon_social_cliente ?? "Cliente no especificado",
+      counterpartyRuc: v.ruc_cliente ?? "",
+      comprobante: v.numero_comprobante ?? "",
     });
   });
 
@@ -360,8 +411,10 @@ async function fetchDashboardData(
       type: "Compra",
       amount: Number(c.total) || 0,
       timestamp: c.created_at,
-      status: "Completado",
       id: c.id,
+      counterpartyName: c.razon_social_proveedor ?? "Proveedor no especificado",
+      counterpartyRuc: c.ruc_proveedor ?? "",
+      comprobante: c.numero_comprobante ?? "",
     });
   });
 
@@ -417,29 +470,36 @@ async function fetchDashboardData(
     { rate: "IVA", ventas: ventasRates["iva"], compras: comprasRates["iva"] },
   ];
 
-  // Distribución de impuestos
-  const taxDistribution: TaxDistribution[] = [
-    { name: "IVA Cobrado", value: totalIvaVentas },
-    { name: "IVA Pagado", value: totalIvaCompras },
-    { name: "Retenciones", value: totalRetencionesMes },
-    { name: "IVA a Pagar", value: Math.max(0, ivaPagar) },
-  ];
+  // Estado tributario
+  const hasTransactions = (ventasMes?.length ?? 0) > 0 || (comprasMes?.length ?? 0) > 0;
+  const taxStatus: TaxStatus = {
+    hasCurrentLiquidation: (taxLiquidations?.length ?? 0) > 0,
+    hasTransactions,
+    documentCounts: {
+      ventas: ventasMes?.length ?? 0,
+      compras: comprasMes?.length ?? 0,
+      retenciones: retencionesMes?.length ?? 0,
+    },
+  };
 
   return {
     kpis: {
       ventasMes: totalVentasMes,
       comprasMes: totalComprasMes,
       ivaPagar: Math.max(0, ivaPagar),
+      ivaVentas: totalIvaVentas,
+      ivaCompras: totalIvaCompras,
       retencionesMes: totalRetencionesMes,
       ventasMesAnterior: totalVentasMesAnt,
       comprasMesAnterior: totalComprasMesAnt,
       retencionesMesAnterior: totalRetencionesMesAnt,
     },
     monthlyData,
-    taxDistribution: taxDistribution.filter((t) => t.value > 0),
+    dailyData,
     rubroDistribution,
     ivaBreakdown,
     recentActivity: recentActivity.slice(0, 6),
+    taxStatus,
   };
 }
 
@@ -447,6 +507,8 @@ const emptyKpis: DashboardKPIs = {
   ventasMes: 0,
   comprasMes: 0,
   ivaPagar: 0,
+  ivaVentas: 0,
+  ivaCompras: 0,
   retencionesMes: 0,
   ventasMesAnterior: 0,
   comprasMesAnterior: 0,
@@ -469,10 +531,11 @@ export function useDashboardData(): DashboardData {
   return {
     kpis: data?.kpis ?? emptyKpis,
     monthlyData: data?.monthlyData ?? [],
-    taxDistribution: data?.taxDistribution ?? [],
+    dailyData: data?.dailyData ?? [],
     rubroDistribution: data?.rubroDistribution ?? [],
     ivaBreakdown: data?.ivaBreakdown ?? [],
     recentActivity: data?.recentActivity ?? [],
+    taxStatus: data?.taxStatus ?? { hasCurrentLiquidation: false, hasTransactions: false, documentCounts: { ventas: 0, compras: 0, retenciones: 0 } },
     loading: isLoading,
     error: error ? "Error al cargar los datos del dashboard" : null,
   };

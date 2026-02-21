@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,11 +23,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Pie,
-  PieChart,
   XAxis,
   YAxis,
-  Cell,
 } from "recharts";
 import {
   DollarSign,
@@ -37,7 +35,9 @@ import {
   BarChart3,
   Layers,
   TrendingUp,
-  PieChart as PieChartIcon,
+  CalendarClock,
+  FileText,
+  ArrowRight,
 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -47,13 +47,24 @@ import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useAvailableYears } from "@/hooks/use-available-years";
 import { useDateFilter } from "@/contexts/date-filter-context";
+import { useAuth } from "@/contexts/auth-context";
 import { SkeletonStatCard, SkeletonChartCard } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getNextDeadline,
+  getDeadlineStatus,
+  type UrgencyLevel,
+} from "@/lib/tax-deadlines";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 const monthlyFlowConfig = {
+  ventas: { label: "Ventas", color: "var(--chart-1)" },
+  compras: { label: "Compras", color: "var(--chart-2)" },
+};
+
+const heroChartConfig = {
   ventas: { label: "Ventas", color: "var(--chart-1)" },
   compras: { label: "Compras", color: "var(--chart-2)" },
 };
@@ -71,13 +82,6 @@ const ajustesChartConfig = {
 const rubroChartConfig = {
   total: { label: "Total", color: "var(--chart-1)" },
 };
-
-const taxColors = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-];
 
 const rubroLabels: Record<string, string> = {
   vivienda: "Vivienda",
@@ -101,6 +105,20 @@ const formatNumber = (value: number) =>
   new Intl.NumberFormat("es-EC", { maximumFractionDigits: 0 }).format(
     value || 0
   );
+
+const urgencyColors: Record<UrgencyLevel, string> = {
+  critical: "bg-destructive text-destructive-foreground",
+  warning: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
+  ok: "bg-primary/10 text-primary",
+  done: "bg-green-500/15 text-green-700 dark:text-green-400",
+};
+
+const urgencyLabels: Record<UrgencyLevel, string> = {
+  critical: "Vencido",
+  warning: "Por vencer",
+  ok: "Al día",
+  done: "Cumplido",
+};
 
 type MetricChange = {
   value: number;
@@ -149,15 +167,19 @@ export default function DashboardPage() {
   const {
     kpis,
     monthlyData,
-    taxDistribution,
+    dailyData,
     rubroDistribution,
     ivaBreakdown,
     recentActivity,
+    taxStatus,
     loading,
     error,
   } = useDashboardData();
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears } = useAvailableYears("ventas");
+  const { contribuyenteEfectivo: contribuyente } = useAuth();
+  const [activeHeroSeries, setActiveHeroSeries] = useState<"ventas" | "compras">("ventas");
+
   const periodBadgeLabel =
     selectedMonth !== null
       ? dayjs()
@@ -182,6 +204,34 @@ export default function DashboardPage() {
           kpis.retencionesMesAnterior) * 100
       : 0;
 
+  // Compute real tax deadline using the RUC
+  const ruc = contribuyente?.ruc ?? "";
+  const deadlineInfo = useMemo(() => {
+    if (!ruc) return null;
+    return getNextDeadline(ruc, "mensual");
+  }, [ruc]);
+
+  const deadlineStatus = useMemo(() => {
+    if (!deadlineInfo) return null;
+    return getDeadlineStatus(
+      deadlineInfo.daysUntilDeadline,
+      taxStatus.hasCurrentLiquidation,
+      taxStatus.hasTransactions,
+    );
+  }, [deadlineInfo, taxStatus.hasCurrentLiquidation, taxStatus.hasTransactions]);
+
+  const ivaDeadlineHelper = useMemo(() => {
+    if (!deadlineInfo) return "";
+    return `Vence: ${deadlineInfo.nextDeadlineDate.format("DD MMM")} (${deadlineInfo.daysUntilDeadline}d)`;
+  }, [deadlineInfo]);
+
+  // Hero chart totals
+  const heroTotals = useMemo(() => {
+    const ventas = dailyData.reduce((s, d) => s + d.ventas, 0);
+    const compras = dailyData.reduce((s, d) => s + d.compras, 0);
+    return { ventas, compras };
+  }, [dailyData]);
+
   if (loading) {
     return (
       <div className="space-y-8 p-6">
@@ -201,6 +251,8 @@ export default function DashboardPage() {
             <SkeletonStatCard key={i} />
           ))}
         </div>
+        {/* Hero chart skeleton */}
+        <SkeletonChartCard />
         <div className="grid gap-4 lg:grid-cols-7">
           <div className="lg:col-span-4"><SkeletonChartCard /></div>
           <div className="lg:col-span-3"><SkeletonChartCard /></div>
@@ -271,7 +323,7 @@ export default function DashboardPage() {
           title="IVA a pagar"
           value={formatCurrency(Math.max(0, kpis.ivaPagar))}
           icon={Calculator}
-          helper={`Próximo vencimiento: ${dayjs().add(10, "days").format("DD MMM")}`}
+          helper={ivaDeadlineHelper}
         />
         <MetricCard
           title="Retenciones registradas"
@@ -281,6 +333,77 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* ─── Hero Chart: Ventas vs Compras diario ─── */}
+      <Card>
+        <CardHeader className="flex flex-col items-stretch border-b sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-4 sm:py-0">
+            <CardTitle className="text-base font-semibold">
+              Ventas vs Compras
+            </CardTitle>
+            <CardDescription>
+              Actividad diaria &middot; {periodBadgeLabel}
+            </CardDescription>
+          </div>
+          <div className="flex">
+            {(["ventas", "compras"] as const).map((key) => (
+              <button
+                key={key}
+                data-active={activeHeroSeries === key}
+                onClick={() => setActiveHeroSeries(key)}
+                className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left data-[active=true]:bg-muted/50 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+              >
+                <span className="text-xs text-muted-foreground">
+                  {key === "ventas" ? "Ventas" : "Compras"}
+                </span>
+                <span className="text-lg font-bold leading-none sm:text-2xl">
+                  {formatCurrency(heroTotals[key])}
+                </span>
+              </button>
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+          {dailyData.length ? (
+            <ChartContainer config={heroChartConfig} className="aspect-auto h-64 w-full">
+              <BarChart data={dailyData}>
+                <CartesianGrid vertical={false} className="stroke-border/60" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={32}
+                  tickFormatter={(value: string) =>
+                    dayjs(value).format("D MMM")
+                  }
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      className="w-[180px]"
+                      labelFormatter={(value: string) =>
+                        dayjs(value).format("D [de] MMMM, YYYY")
+                      }
+                      formatter={(value) => formatCurrency(Number(value))}
+                    />
+                  }
+                />
+                <Bar
+                  dataKey={activeHeroSeries}
+                  fill={`var(--color-${activeHeroSeries})`}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+              No hay datos diarios para este periodo.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Row 1: Flujo mensual + IVA por tasa ─── */}
       <div className="grid gap-4 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
@@ -363,6 +486,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* ─── Row 2: Ajustes + Compras por rubro ─── */}
       <div className="grid gap-4 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
@@ -429,6 +553,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* ─── Row 3: Actividad reciente mejorada + Estado tributario ─── */}
       <div className="grid gap-4 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
@@ -438,27 +563,44 @@ export default function DashboardPage() {
           <CardContent>
             {recentActivity.length ? (
               <div className="space-y-3">
-                {recentActivity.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">{item.type}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {dayjs(item.timestamp).fromNow()}
+                {recentActivity.map((item) => {
+                  const isVenta = item.type === "Venta";
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-muted/50"
+                    >
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          isVenta
+                            ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                            : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                        }`}
+                      >
+                        {isVenta ? (
+                          <DollarSign className="h-4 w-4" />
+                        ) : (
+                          <ShoppingCart className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {item.counterpartyName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.type} &middot; {dayjs(item.timestamp).fromNow()}
+                        </p>
+                      </div>
+                      <p
+                        className={`shrink-0 text-sm font-mono font-semibold ${
+                          isVenta ? "text-green-600 dark:text-green-400" : "text-foreground"
+                        }`}
+                      >
+                        {isVenta ? "+" : "-"}{formatCurrency(item.amount)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-mono font-semibold text-foreground">
-                        {formatCurrency(item.amount)}
-                      </p>
-                      <Badge variant="secondary" className="mt-1">
-                        {item.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
@@ -471,72 +613,80 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <PieChartIcon className="h-5 w-5 text-primary" />
-              Impuestos y vencimientos
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Estado tributario
             </CardTitle>
-            <CardDescription>Distribución mensual y próximos hitos</CardDescription>
+            <CardDescription>Declaración IVA mensual y resumen</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {taxDistribution.length ? (
-              <ChartContainer config={{}} className="mx-auto h-56 w-full">
-                <PieChart>
-                  <Pie
-                    data={taxDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={45}
-                    outerRadius={85}
-                    paddingAngle={4}
-                  >
-                    {taxDistribution.map((_, index) => (
-                      <Cell key={index} fill={taxColors[index % taxColors.length]} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent formatter={(value) => formatCurrency(Number(value))} />
-                    }
-                  />
-                  <ChartLegend content={<ChartLegendContent hideIcon />} />
-                </PieChart>
-              </ChartContainer>
+            {/* Próximo vencimiento SRI */}
+            {deadlineInfo && deadlineStatus ? (
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">Próximo vencimiento</p>
+                  <Badge className={urgencyColors[deadlineStatus.urgencyLevel]}>
+                    {urgencyLabels[deadlineStatus.urgencyLevel]}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Periodo: {deadlineInfo.declarationPeriodLabel}
+                  </p>
+                  <p className="text-lg font-semibold tracking-tight">
+                    {deadlineInfo.nextDeadlineDate.format("DD [de] MMMM, YYYY")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {deadlineInfo.daysUntilDeadline > 0
+                      ? `Faltan ${deadlineInfo.daysUntilDeadline} días`
+                      : deadlineInfo.daysUntilDeadline === 0
+                        ? "Vence hoy"
+                        : `Venció hace ${Math.abs(deadlineInfo.daysUntilDeadline)} días`}
+                    {" "}&middot; 9no dígito: {deadlineInfo.novenoDigito}
+                  </p>
+                </div>
+              </div>
             ) : (
-              <div className="flex h-56 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                No hay impuestos registrados este mes.
+              <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                Selecciona un contribuyente para ver vencimientos.
               </div>
             )}
 
+            {/* Balance IVA */}
             <div className="space-y-3">
-              {[
-                {
-                  title: "Declaración IVA",
-                  date: dayjs().add(10, "days").format("DD MMM YYYY"),
-                  priority: "Alta",
-                },
-                {
-                  title: "Retenciones en la fuente",
-                  date: dayjs().add(15, "days").format("DD MMM YYYY"),
-                  priority: "Media",
-                },
-                {
-                  title: "Impuesto a la renta",
-                  date: dayjs().add(90, "days").format("DD MMM YYYY"),
-                  priority: "Baja",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="flex items-center justify-between rounded-lg border border-border/40 p-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.date}</p>
-                  </div>
-                  <Badge variant={item.priority === "Alta" ? "destructive" : "outline"}>
-                    {item.priority}
-                  </Badge>
+              <p className="text-sm font-medium text-foreground">Balance IVA del periodo</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">IVA Cobrado (ventas)</span>
+                  <span className="font-mono font-medium">
+                    {formatCurrency(kpis.ivaVentas)}
+                  </span>
                 </div>
-              ))}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <ArrowRight className="h-3 w-3" />
+                    <span>IVA Pagado (compras)</span>
+                  </div>
+                  <span className="font-mono font-medium text-muted-foreground">
+                    {formatCurrency(kpis.ivaCompras)}
+                  </span>
+                </div>
+                <div className="border-t pt-2 flex items-center justify-between text-sm">
+                  <span className="font-medium text-foreground">IVA a Pagar</span>
+                  <span className="font-mono font-semibold text-primary">
+                    {formatCurrency(Math.max(0, kpis.ivaPagar))}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen de documentos */}
+            <div className="rounded-lg border border-border/40 p-3 flex items-center gap-2">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                {taxStatus.documentCounts.ventas} ventas &middot;{" "}
+                {taxStatus.documentCounts.compras} compras &middot;{" "}
+                {taxStatus.documentCounts.retenciones} retenciones
+              </p>
             </div>
           </CardContent>
         </Card>

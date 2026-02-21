@@ -95,12 +95,12 @@
   --input: oklch(0.898 0.005 285.823);
   --ring: oklch(0.623 0.214 259.815);
 
-  /* Charts - Paleta Azul */
+  /* Charts - Paleta diversificada */
   --chart-1: oklch(0.623 0.214 259.815); /* Azul primario */
-  --chart-2: oklch(0.723 0.188 252.845); /* Azul vibrante */
-  --chart-3: oklch(0.456 0.169 264.542); /* Azul oscuro */
-  --chart-4: oklch(0.785 0.152 238.925); /* Azul claro */
-  --chart-5: oklch(0.534 0.198 275.634); /* Púrpura-azul */
+  --chart-2: oklch(0.696 0.17 162.5);    /* Esmeralda */
+  --chart-3: oklch(0.705 0.175 47.6);    /* Ámbar */
+  --chart-4: oklch(0.627 0.185 303.5);   /* Violeta */
+  --chart-5: oklch(0.645 0.2 12.2);      /* Rosa */
 
   /* Sidebar */
   --sidebar: oklch(0.98 0 0);
@@ -158,11 +158,11 @@
   --ring: oklch(0.723 0.188 252.845);
 
   /* Charts - Optimizados para dark mode */
-  --chart-1: oklch(0.723 0.188 252.845);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.785 0.152 238.925);
-  --chart-4: oklch(0.534 0.198 275.634);
-  --chart-5: oklch(0.456 0.169 264.542);
+  --chart-1: oklch(0.723 0.188 252.845); /* Azul brillante */
+  --chart-2: oklch(0.756 0.155 162.5);   /* Esmeralda claro */
+  --chart-3: oklch(0.762 0.16 47.6);     /* Ámbar claro */
+  --chart-4: oklch(0.697 0.17 303.5);    /* Violeta claro */
+  --chart-5: oklch(0.715 0.185 12.2);    /* Rosa claro */
 
   /* Sidebar - Dark mode mejorado */
   --sidebar: oklch(0.181 0.006 285.885);
