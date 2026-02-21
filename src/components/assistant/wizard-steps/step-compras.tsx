@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { AgentMessage } from "../agent-message";
+import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   Upload,
@@ -57,15 +58,20 @@ import {
   Briefcase,
   HelpCircle,
   Trash2,
+  FileText,
+  FileCode2,
 } from "lucide-react";
 import { CompraParsed, ProveedorResumen } from "@/lib/compras-parser";
+import { ComprasXMLParseResult } from "@/lib/compras-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface StepComprasProps {
   compras: {
+    formato: "txt" | "xml";
     archivo: File | null;
+    archivosXml: File[];
     parsed: CompraParsed[];
     proveedores: ProveedorResumen[];
     guardadas: boolean;
@@ -73,6 +79,7 @@ interface StepComprasProps {
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
   onFileProcess: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[]; warnings?: string[]; skippedCount?: number }>;
+  onXmlFilesProcess: (files: File[], onProgress?: (percent: number) => void) => Promise<ComprasXMLParseResult>;
   onRubroChange: (ruc: string, rubro: string) => void;
   onBulkRubroChange: (rucs: string[], rubro: string) => void;
   onClear: () => void;
@@ -108,6 +115,7 @@ export function StepCompras({
   periodo,
   contribuyenteRuc,
   onFileProcess,
+  onXmlFilesProcess,
   onRubroChange,
   onBulkRubroChange,
   onClear,
@@ -120,6 +128,11 @@ export function StepCompras({
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
   const [skippedCount, setSkippedCount] = useState(0);
   const [warningsOpen, setWarningsOpen] = useState(false);
+
+  // XML-specific state
+  const [formato, setFormato] = useState<"txt" | "xml">(compras.formato);
+  const [xmlProgress, setXmlProgress] = useState(0);
+  const [xmlParseResult, setXmlParseResult] = useState<ComprasXMLParseResult | null>(null);
 
   // Multi-selection & bulk state
   const [selectedProveedores, setSelectedProveedores] = useState<Set<string>>(new Set());
@@ -244,7 +257,7 @@ export function StepCompras({
     setIsDragging(false);
   }, []);
 
-  const processFile = async (file: File) => {
+  const processTxtFile = async (file: File) => {
     if (!file.name.endsWith(".txt") && !file.name.endsWith(".TXT")) {
       setError("Por favor selecciona un archivo TXT del SRI");
       return;
@@ -270,20 +283,57 @@ export function StepCompras({
     }
   };
 
+  const processXmlFiles = async (files: File[]) => {
+    const xmlFiles = Array.from(files).filter(
+      (f) => f.name.toLowerCase().endsWith(".xml")
+    );
+    if (xmlFiles.length === 0) {
+      setError("No se encontraron archivos XML válidos");
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    setXmlProgress(0);
+    setXmlParseResult(null);
+    setSuggestionsLoaded(false);
+
+    try {
+      const result = await onXmlFilesProcess(xmlFiles, (percent) => {
+        setXmlProgress(percent);
+      });
+      setXmlParseResult(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al procesar los archivos XML.";
+      setError(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      await processFile(file);
+    const files = e.dataTransfer.files;
+    if (formato === "xml") {
+      await processXmlFiles(Array.from(files));
+    } else {
+      const file = files[0];
+      if (file) {
+        await processTxtFile(file);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [formato]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await processFile(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (formato === "xml") {
+      await processXmlFiles(Array.from(files));
+    } else {
+      await processTxtFile(files[0]);
     }
   };
 
@@ -352,10 +402,44 @@ export function StepCompras({
             ? proveedoresSinRubro > 0
               ? `He procesado ${compras.parsed.length} compras de ${compras.proveedores.length} proveedores. Por favor asigna un rubro a cada proveedor para clasificar correctamente los gastos. Faltan ${proveedoresSinRubro} por asignar.`
               : `¡Perfecto! He procesado ${compras.parsed.length} compras con un total de $${totalCompras.toFixed(2)}. Todos los proveedores tienen un rubro asignado. Puedes continuar al siguiente paso.`
+            : formato === "xml"
+            ? "Selecciona los archivos XML de facturas electrónicas autorizadas del SRI. Puedes arrastrar múltiples archivos a la vez."
             : "Ahora necesito el archivo TXT de compras del SRI. Este archivo contiene todas las facturas que has recibido de tus proveedores durante el período."
         }
         animate={!hasCompras}
       />
+
+      {/* Selector de formato (solo visible cuando no hay datos cargados) */}
+      {!hasCompras && (
+        <div className="flex gap-2">
+          <Button
+            variant={formato === "txt" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setFormato("txt");
+              setError(null);
+              setXmlParseResult(null);
+            }}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Archivo TXT
+          </Button>
+          <Button
+            variant={formato === "xml" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setFormato("xml");
+              setError(null);
+              setParseWarnings([]);
+            }}
+            className="gap-2"
+          >
+            <FileCode2 className="h-4 w-4" />
+            Facturas XML
+          </Button>
+        </div>
+      )}
 
       {/* Zona de carga */}
       <Card
@@ -373,7 +457,8 @@ export function StepCompras({
           <label className="flex flex-col items-center gap-4 cursor-pointer">
             <input
               type="file"
-              accept=".txt,.TXT"
+              accept={formato === "txt" ? ".txt,.TXT" : ".xml,.XML"}
+              multiple={formato === "xml"}
               className="hidden"
               onChange={handleFileSelect}
               disabled={isProcessing}
@@ -386,7 +471,9 @@ export function StepCompras({
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-primary">
-                    {compras.archivo?.name}
+                    {compras.formato === "xml"
+                      ? `${compras.archivosXml.length} archivos XML procesados`
+                      : compras.archivo?.name}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {compras.parsed.length} compras • {compras.proveedores.length} proveedores • Click para cambiar
@@ -400,14 +487,17 @@ export function StepCompras({
                     e.preventDefault();
                     e.stopPropagation();
                     onClear();
+                    setFormato("txt");
                     setError(null);
                     setParseWarnings([]);
+                    setXmlParseResult(null);
+                    setXmlProgress(0);
                     setSelectedProveedores(new Set());
                     setSuggestionsLoaded(false);
                   }}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Eliminar archivo
+                  Eliminar archivo{compras.formato === "xml" ? "s" : ""}
                 </Button>
               </>
             ) : (
@@ -434,11 +524,15 @@ export function StepCompras({
                     {isProcessing
                       ? "Procesando archivo..."
                       : isDragging
-                      ? "Suelta el archivo aquí"
+                      ? `Suelta ${formato === "xml" ? "los archivos" : "el archivo"} aquí`
+                      : formato === "xml"
+                      ? "Arrastra tus facturas XML aquí"
                       : "Arrastra tu archivo de compras aquí"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Formato: .TXT del portal SRI
+                    {formato === "xml"
+                      ? "Formato: .XML (facturas electrónicas del SRI) — puedes seleccionar múltiples"
+                      : "Formato: .TXT del portal SRI"}
                   </p>
                 </div>
               </>
@@ -446,6 +540,41 @@ export function StepCompras({
           </label>
         </CardContent>
       </Card>
+
+      {/* Barra de progreso XML */}
+      {isProcessing && formato === "xml" && (
+        <div className="space-y-2">
+          <Progress value={xmlProgress} className="w-full" />
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Parseando archivos XML...</span>
+            <span>{Math.round(xmlProgress)}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Resumen de parseo XML */}
+      {xmlParseResult && !isProcessing && (
+        <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+          <div>
+            <p className="text-sm text-muted-foreground">Parseadas correctamente</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {xmlParseResult.compras.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Errores</p>
+            <p className="text-2xl font-bold text-destructive">
+              {xmlParseResult.errores.length - xmlParseResult.skipped}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Omitidas (no autorizadas)</p>
+            <p className="text-2xl font-bold text-muted-foreground">
+              {xmlParseResult.skipped}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (

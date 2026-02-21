@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/lib/ventas-parser";
 import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
 import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
+import { parsearMultiplesXMLCompras, ComprasXMLParseResult } from "@/lib/compras-xml-parser";
 import { parsearXMLRetencion, RetencionParsed, validarRucRetencion } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -74,7 +75,9 @@ export interface WizardState {
     guardadas: boolean;
   };
   compras: {
+    formato: "txt" | "xml";
     archivo: File | null;
+    archivosXml: File[];
     parsed: CompraParsed[];
     proveedores: ProveedorResumen[];
     guardadas: boolean;
@@ -125,7 +128,9 @@ const initialState: WizardState = {
     guardadas: false,
   },
   compras: {
+    formato: "txt",
     archivo: null,
+    archivosXml: [],
     parsed: [],
     proveedores: [],
     guardadas: false,
@@ -303,13 +308,45 @@ export function ImportWizard() {
     setWizardState((prev) => ({
       ...prev,
       compras: {
+        formato: "txt",
         archivo: file,
+        archivosXml: [],
         parsed: result.data,
         proveedores,
         guardadas: false,
       },
     }));
     return { compras: result.data, proveedores, warnings: result.warnings, skippedCount: result.skippedCount };
+  };
+
+  // Procesar archivos XML de compras
+  const processComprasXmlFiles = async (files: File[], onProgress?: (percent: number) => void): Promise<ComprasXMLParseResult> => {
+    const result = await parsearMultiplesXMLCompras(files, onProgress);
+
+    if (result.compras.length === 0) {
+      throw new Error("No se pudo parsear ninguna factura XML correctamente.");
+    }
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucCompras(result.compras, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
+    const proveedores = agruparPorProveedor(result.compras);
+    setWizardState((prev) => ({
+      ...prev,
+      compras: {
+        formato: "xml",
+        archivo: null,
+        archivosXml: files,
+        parsed: result.compras,
+        proveedores,
+        guardadas: false,
+      },
+    }));
+
+    return result;
   };
 
   // Actualizar rubro de un proveedor
@@ -438,7 +475,7 @@ export function ImportWizard() {
   const clearCompras = () => {
     setWizardState((prev) => ({
       ...prev,
-      compras: { archivo: null, parsed: [], proveedores: [], guardadas: false },
+      compras: { formato: "txt", archivo: null, archivosXml: [], parsed: [], proveedores: [], guardadas: false },
     }));
   };
 
@@ -534,6 +571,7 @@ export function ImportWizard() {
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
             onFileProcess={processComprasFile}
+            onXmlFilesProcess={processComprasXmlFiles}
             onRubroChange={updateProveedorRubro}
             onBulkRubroChange={updateBulkProveedorRubro}
             onClear={clearCompras}
