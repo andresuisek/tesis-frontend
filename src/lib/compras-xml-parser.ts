@@ -170,7 +170,8 @@ export function parsearXMLCompra(
     // Calcular subtotales desde totalConImpuestos
     let subtotal_0 = 0;
     let subtotal_5 = 0;
-    let subtotal_iva = 0; // Para 8%, 12%, 15%
+    let subtotal_8 = 0;
+    let subtotal_15 = 0;
     let ivaTotal = 0;
 
     const totalImpuestos = asArray(
@@ -184,12 +185,22 @@ export function parsearXMLCompra(
 
       const mapping = CODIGO_PORCENTAJE_MAP[codigoPorcentaje];
       if (mapping) {
-        if (mapping.field === "subtotal_0") subtotal_0 += baseImponible;
-        else if (mapping.field === "subtotal_5") subtotal_5 += baseImponible;
-        else if (mapping.field === "subtotal_iva") subtotal_iva += baseImponible;
+        if (mapping.field === "subtotal_0") {
+          subtotal_0 += baseImponible;
+        } else if (mapping.field === "subtotal_5") {
+          subtotal_5 += baseImponible;
+        } else if (mapping.field === "subtotal_iva") {
+          // Split into subtotal_8 or subtotal_15 based on tarifa
+          const tarifa = parseFloat(impuesto.tarifa) || 0;
+          if (tarifa > 0 && tarifa <= 8) {
+            subtotal_8 += baseImponible;
+          } else {
+            subtotal_15 += baseImponible;
+          }
+        }
       } else {
-        // Código desconocido, asumimos IVA general
-        subtotal_iva += baseImponible;
+        // Código desconocido, asumimos IVA general (15%)
+        subtotal_15 += baseImponible;
       }
 
       ivaTotal += valor;
@@ -197,26 +208,6 @@ export function parsearXMLCompra(
 
     const valorSinImpuesto = parseFloat(infoFactura.totalSinImpuestos) || 0;
     const total = parseFloat(infoFactura.importeTotal) || 0;
-
-    // Determinar subtotal_8 y subtotal_15 a partir de subtotal_iva
-    // Usamos la tarifa del totalImpuesto para decidir
-    let subtotal_8 = 0;
-    let subtotal_15 = 0;
-
-    for (const impuesto of totalImpuestos) {
-      const codigoPorcentaje = String(impuesto.codigoPorcentaje || "");
-      const baseImponible = parseFloat(impuesto.baseImponible) || 0;
-      const mapping = CODIGO_PORCENTAJE_MAP[codigoPorcentaje];
-
-      if (mapping?.field === "subtotal_iva") {
-        const tarifa = parseFloat(impuesto.tarifa) || 0;
-        if (tarifa > 0 && tarifa <= 8) {
-          subtotal_8 += baseImponible;
-        } else {
-          subtotal_15 += baseImponible;
-        }
-      }
-    }
 
     const compra: CompraParsed = {
       ruc_proveedor: String(infoTributaria.ruc || ""),
