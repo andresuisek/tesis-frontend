@@ -62,10 +62,10 @@ interface ManualValores {
   comprasBase5: string;
   comprasBase8: string;
   comprasBase15: string;
-  ctPorAdquisicion: string;
-  ctPorRetencion: string;
+  ctAdquisicionAnterior: string;
+  ctRetencionAnterior: string;
+  retencionesIvaPeriodo: string;
   retencionesRenta: string;
-  creditoAnterior: string;
   rentaAPagar: string;
   ivaDiferidoMonto: string;
   mesesDiferimiento: string;
@@ -80,10 +80,10 @@ const defaultManualValores: ManualValores = {
   comprasBase5: "0",
   comprasBase8: "0",
   comprasBase15: "0",
-  ctPorAdquisicion: "0",
-  ctPorRetencion: "0",
+  ctAdquisicionAnterior: "0",
+  ctRetencionAnterior: "0",
+  retencionesIvaPeriodo: "0",
   retencionesRenta: "0",
-  creditoAnterior: "0",
   rentaAPagar: "0",
   ivaDiferidoMonto: "0",
   mesesDiferimiento: "0",
@@ -93,6 +93,8 @@ const toNumber = (value: string) => {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function GenerarLiquidacionDialog({
   open,
@@ -202,7 +204,7 @@ export function GenerarLiquidacionDialog({
     const { data: prevClosing, error: prevClosingError } = await supabase
       .from("tax_liquidations")
       .select(
-        "id, impuesto_causado, credito_favor_adquisicion, total_retenciones_iva_mayor_0, saldo_a_favor"
+        "id, ct_por_adquisicion, ct_por_retencion, saldo_a_favor, impuesto_causado, credito_favor_adquisicion, total_retenciones_iva_mayor_0"
       )
       .eq("contribuyente_ruc", contribuyenteRuc)
       .eq("fecha_inicio_cierre", previousInfo.startDate)
@@ -213,19 +215,31 @@ export function GenerarLiquidacionDialog({
 
     const advertencias: string[] = [];
 
-    // Use saldo_a_favor from new format if available, otherwise compute from legacy
-    const creditoAnterior = prevClosing
-      ? (Number(prevClosing.saldo_a_favor) || 0) > 0
-        ? Number(prevClosing.saldo_a_favor)
-        : Math.max(
-            0,
-            (Number(prevClosing.credito_favor_adquisicion) || 0) +
-              (Number(prevClosing.total_retenciones_iva_mayor_0) || 0) -
-              (Number(prevClosing.impuesto_causado) || 0)
-          )
-      : 0;
+    if (!prevClosing) {
+      return { advertencias, ctAdquisicionAnterior: 0, ctRetencionAnterior: 0 };
+    }
 
-    return { advertencias, creditoAnterior };
+    // New format: use ct_por_adquisicion and ct_por_retencion (resultante del periodo anterior)
+    const ctAdq = Number(prevClosing.ct_por_adquisicion) || 0;
+    const ctRet = Number(prevClosing.ct_por_retencion) || 0;
+
+    if (ctAdq > 0 || ctRet > 0) {
+      return { advertencias, ctAdquisicionAnterior: ctAdq, ctRetencionAnterior: ctRet };
+    }
+
+    // Legacy fallback: distribute saldo_a_favor as CT adquisición
+    const saldo = Number(prevClosing.saldo_a_favor) || 0;
+    if (saldo > 0) {
+      return { advertencias, ctAdquisicionAnterior: saldo, ctRetencionAnterior: 0 };
+    }
+
+    const legacyCredit = Math.max(
+      0,
+      (Number(prevClosing.credito_favor_adquisicion) || 0) +
+        (Number(prevClosing.total_retenciones_iva_mayor_0) || 0) -
+        (Number(prevClosing.impuesto_causado) || 0)
+    );
+    return { advertencias, ctAdquisicionAnterior: legacyCredit, ctRetencionAnterior: 0 };
   };
 
   const obtenerDiferidoRecibido = async (): Promise<number> => {
@@ -286,7 +300,7 @@ export function GenerarLiquidacionDialog({
     if (comprasError) throw comprasError;
     if (retencionesError) throw retencionesError;
 
-    const ventasTotales = ventas?.reduce(
+    const ventasRaw = ventas?.reduce(
       (acc, venta) => {
         acc.base0 += Number(venta.subtotal_0) || 0;
         acc.base5 += Number(venta.subtotal_5) || 0;
@@ -297,8 +311,13 @@ export function GenerarLiquidacionDialog({
       },
       { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 }
     ) ?? { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 };
+    const ventasTotales = {
+      base0: round2(ventasRaw.base0), base5: round2(ventasRaw.base5),
+      base8: round2(ventasRaw.base8), base15: round2(ventasRaw.base15),
+      iva: round2(ventasRaw.iva),
+    };
 
-    const comprasTotales = compras?.reduce(
+    const comprasRaw = compras?.reduce(
       (acc, compra) => {
         acc.base0 += Number(compra.subtotal_0) || 0;
         acc.base5 += Number(compra.subtotal_5) || 0;
@@ -309,14 +328,27 @@ export function GenerarLiquidacionDialog({
       },
       { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 }
     ) ?? { base0: 0, base5: 0, base8: 0, base15: 0, iva: 0 };
+    const comprasTotales = {
+      base0: round2(comprasRaw.base0), base5: round2(comprasRaw.base5),
+      base8: round2(comprasRaw.base8), base15: round2(comprasRaw.base15),
+      iva: round2(comprasRaw.iva),
+    };
 
-    const retencionesRenta =
+    const retencionesRenta = round2(
       retenciones?.reduce(
         (sum, ret) => sum + (Number(ret.retencion_renta_valor) || 0),
         0
-      ) ?? 0;
+      ) ?? 0
+    );
 
-    return { ventasTotales, comprasTotales, retencionesRenta };
+    const retencionesIva = round2(
+      retenciones?.reduce(
+        (sum, ret) => sum + (Number(ret.retencion_valor) || 0),
+        0
+      ) ?? 0
+    );
+
+    return { ventasTotales, comprasTotales, retencionesRenta, retencionesIva };
   };
 
   const handleCalcular = async () => {
@@ -345,7 +377,7 @@ export function GenerarLiquidacionDialog({
       }
 
       const [
-        { advertencias, creditoAnterior },
+        { advertencias, ctAdquisicionAnterior, ctRetencionAnterior },
         ivaDiferidoRecibidoDB,
       ] = await Promise.all([
         validarPeriodoAnterior(),
@@ -372,10 +404,10 @@ export function GenerarLiquidacionDialog({
             base8: toNumber(manualValores.comprasBase8),
             base15: toNumber(manualValores.comprasBase15),
           },
-          ctPorAdquisicion: toNumber(manualValores.ctPorAdquisicion),
-          ctPorRetencion: toNumber(manualValores.ctPorRetencion),
+          ctPorAdquisicionAnterior: toNumber(manualValores.ctAdquisicionAnterior),
+          ctPorRetencionAnterior: toNumber(manualValores.ctRetencionAnterior),
+          retencionesIvaPeriodo: toNumber(manualValores.retencionesIvaPeriodo),
           retencionesRenta: toNumber(manualValores.retencionesRenta),
-          creditoArrastradoAnterior: toNumber(manualValores.creditoAnterior),
           rentaAPagar: toNumber(manualValores.rentaAPagar),
           ivaDiferidoMonto: toNumber(manualValores.ivaDiferidoMonto),
           mesesDiferimiento: toNumber(manualValores.mesesDiferimiento),
@@ -389,6 +421,7 @@ export function GenerarLiquidacionDialog({
           ventasTotales,
           comprasTotales,
           retencionesRenta,
+          retencionesIva,
         } = await obtenerDatosPeriodo();
 
         if (
@@ -412,8 +445,10 @@ export function GenerarLiquidacionDialog({
           tipoPeriodo,
           ventas: ventasTotales,
           compras: comprasTotales,
+          ctPorAdquisicionAnterior: ctAdquisicionAnterior,
+          ctPorRetencionAnterior: ctRetencionAnterior,
+          retencionesIvaPeriodo: retencionesIva,
           retencionesRenta,
-          creditoArrastradoAnterior: creditoAnterior,
           rentaAPagar: 0,
           ivaDiferidoRecibido: ivaDiferidoRecibidoDB,
           advertencias,
@@ -431,10 +466,10 @@ export function GenerarLiquidacionDialog({
           comprasBase5: comprasTotales.base5.toString(),
           comprasBase8: comprasTotales.base8.toString(),
           comprasBase15: comprasTotales.base15.toString(),
-          ctPorAdquisicion: "0",
-          ctPorRetencion: "0",
+          ctAdquisicionAnterior: ctAdquisicionAnterior.toString(),
+          ctRetencionAnterior: ctRetencionAnterior.toString(),
+          retencionesIvaPeriodo: retencionesIva.toString(),
           retencionesRenta: retencionesRenta.toString(),
-          creditoAnterior: creditoAnterior.toString(),
           rentaAPagar: "0",
           ivaDiferidoMonto: "0",
           mesesDiferimiento: "0",
@@ -512,11 +547,10 @@ export function GenerarLiquidacionDialog({
         comprasBase5: resumenPreview.compras.base5.toString(),
         comprasBase8: resumenPreview.compras.base8.toString(),
         comprasBase15: resumenPreview.compras.base15.toString(),
-        ctPorAdquisicion: resumenPreview.creditoTributario.ctPorAdquisicion.toString(),
-        ctPorRetencion: resumenPreview.creditoTributario.ctPorRetencion.toString(),
+        ctAdquisicionAnterior: resumenPreview.creditoTributario.ctPorAdquisicionAnterior.toString(),
+        ctRetencionAnterior: resumenPreview.creditoTributario.ctPorRetencionAnterior.toString(),
+        retencionesIvaPeriodo: resumenPreview.creditoTributario.retencionesIvaPeriodo.toString(),
         retencionesRenta: resumenPreview.retencionesRenta.toString(),
-        creditoAnterior:
-          resumenPreview.ajustes.creditoArrastradoAnterior.toString(),
         rentaAPagar: resumenPreview.calculo.rentaAPagar.toString(),
         ivaDiferidoMonto: resumenPreview.ivaDiferido.ivaDiferidoMonto.toString(),
         mesesDiferimiento: resumenPreview.ivaDiferido.mesesDiferimiento.toString(),
@@ -761,29 +795,40 @@ export function GenerarLiquidacionDialog({
                 {/* CT + IVA Diferido */}
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-3 rounded-md border p-4">
-                    <p className="text-sm font-semibold">Crédito tributario del mes</p>
+                    <p className="text-sm font-semibold">Crédito tributario anterior</p>
                     <p className="text-xs text-muted-foreground">
-                      Campos informativos para el formulario 104 del SRI. No afectan el cálculo del IVA a pagar.
+                      Saldos de CT del periodo anterior. Se aplican con prelación: primero adquisición, luego retención.
                     </p>
                     <div className="space-y-1.5">
-                      <Label>CT por adquisición</Label>
+                      <Label>CT adquisición anterior</Label>
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={manualValores.ctPorAdquisicion}
+                        value={manualValores.ctAdquisicionAnterior}
                         onChange={(e) =>
-                          handleManualChange("ctPorAdquisicion", e.target.value)
+                          handleManualChange("ctAdquisicionAnterior", e.target.value)
                         }
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>CT por retención</Label>
+                      <Label>CT retención anterior</Label>
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={manualValores.ctPorRetencion}
+                        value={manualValores.ctRetencionAnterior}
                         onChange={(e) =>
-                          handleManualChange("ctPorRetencion", e.target.value)
+                          handleManualChange("ctRetencionAnterior", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Retenciones IVA del periodo</Label>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={manualValores.retencionesIvaPeriodo}
+                        onChange={(e) =>
+                          handleManualChange("retencionesIvaPeriodo", e.target.value)
                         }
                       />
                     </div>
@@ -854,7 +899,7 @@ export function GenerarLiquidacionDialog({
               </>
             )}
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Retenciones de Renta</Label>
                 <Input
@@ -863,18 +908,6 @@ export function GenerarLiquidacionDialog({
                   value={manualValores.retencionesRenta}
                   onChange={(e) =>
                     handleManualChange("retencionesRenta", e.target.value)
-                  }
-                  disabled={!modoManual}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Crédito arrastrado anterior</Label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  value={manualValores.creditoAnterior}
-                  onChange={(e) =>
-                    handleManualChange("creditoAnterior", e.target.value)
                   }
                   disabled={!modoManual}
                 />

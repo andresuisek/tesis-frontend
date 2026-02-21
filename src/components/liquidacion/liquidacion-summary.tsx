@@ -75,9 +75,9 @@ export function LiquidacionSummary({
     : "";
   const hasDiferido = resumen.ivaDiferido.ivaDiferidoMonto > 0;
   const hasDiferidoRecibido = resumen.ivaDiferido.ivaDiferidoRecibido > 0;
-  const hasCT =
-    resumen.creditoTributario.ctPorAdquisicion > 0 ||
-    resumen.creditoTributario.ctPorRetencion > 0;
+  const hasCtUsado =
+    resumen.calculo.ctAdquisicionUsado > 0 ||
+    resumen.calculo.ctRetencionUsado > 0;
 
   return (
     <div className="space-y-6">
@@ -253,13 +253,25 @@ export function LiquidacionSummary({
                   </div>
                 )}
               </div>
-              {resumen.calculo.impuestoCausado > 0 && resumen.calculo.creditoArrastradoAnterior > 0 && (
-                <div className="flex items-center justify-between">
-                  <span>(-) Crédito arrastrado anterior</span>
-                  <span className="text-red-500">
-                    -{formatCurrency(resumen.calculo.creditoArrastradoAnterior)}
-                  </span>
-                </div>
+              {resumen.calculo.impuestoCausado > 0 && hasCtUsado && (
+                <>
+                  {resumen.calculo.ctAdquisicionUsado > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span>(-) CT adquisición anterior</span>
+                      <span className="text-red-500">
+                        -{formatCurrency(resumen.calculo.ctAdquisicionUsado)}
+                      </span>
+                    </div>
+                  )}
+                  {resumen.calculo.ctRetencionUsado > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span>(-) CT retención anterior</span>
+                      <span className="text-red-500">
+                        -{formatCurrency(resumen.calculo.ctRetencionUsado)}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
               <div className="border-t pt-3">
                 {resumen.calculo.ivaAPagar > 0 ? (
@@ -304,24 +316,28 @@ export function LiquidacionSummary({
                 necesitas ingresar cálculos manuales de impuesto a la renta.
               </div>
 
-              {hasCT && (
-                <>
-                  <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wide pt-2">
-                    Crédito tributario del mes (F104)
-                  </h4>
-                  <div className="flex items-center justify-between">
-                    <span>CT por adquisición</span>
-                    <span>
-                      {formatCurrency(resumen.creditoTributario.ctPorAdquisicion)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>CT por retención</span>
-                    <span>
-                      {formatCurrency(resumen.creditoTributario.ctPorRetencion)}
-                    </span>
-                  </div>
-                </>
+              <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wide pt-2">
+                Crédito tributario del mes (F104)
+              </h4>
+              <div className="flex items-center justify-between">
+                <span>CT por adquisición</span>
+                <span className={resumen.creditoTributario.ctPorAdquisicion > 0 ? "font-medium text-emerald-600" : ""}>
+                  {formatCurrency(resumen.creditoTributario.ctPorAdquisicion)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>CT por retención</span>
+                <span className={resumen.creditoTributario.ctPorRetencion > 0 ? "font-medium text-emerald-600" : ""}>
+                  {formatCurrency(resumen.creditoTributario.ctPorRetencion)}
+                </span>
+              </div>
+              {resumen.creditoTributario.retencionesIvaPeriodo > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Ret. IVA del periodo (incluidas arriba)</span>
+                  <span>
+                    {formatCurrency(resumen.creditoTributario.retencionesIvaPeriodo)}
+                  </span>
+                </div>
               )}
             </div>
           </div>
