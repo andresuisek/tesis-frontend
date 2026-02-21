@@ -33,7 +33,8 @@
       "mcp__plugin_playwright_playwright__browser_press_key",
       "mcp__plugin_playwright_playwright__browser_close",
       "mcp__plugin_playwright_playwright__browser_handle_dialog",
-      "mcp__plugin_playwright_playwright__browser_file_upload"
+      "mcp__plugin_playwright_playwright__browser_file_upload",
+      "mcp__shadcn__get_item_examples_from_registries"
     ]
   },
   "enableAllProjectMcpServers": true,
