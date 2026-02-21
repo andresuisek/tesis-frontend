@@ -71,7 +71,7 @@ const heroChartConfig = {
 
 const ivaChartConfig = {
   ventas: { label: "Ventas", color: "var(--chart-1)" },
-  compras: { label: "Compras", color: "var(--chart-3)" },
+  compras: { label: "Compras", color: "var(--chart-2)" },
 };
 
 const ajustesChartConfig = {
@@ -479,7 +479,7 @@ export default function DashboardPage() {
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Bar dataKey="ventas" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="compras" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="compras" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
