@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Check, Circle, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 export interface WizardStep {
   id: string;
@@ -20,9 +21,28 @@ export function WizardNavigation({
   currentStep,
   completedSteps,
 }: WizardNavigationProps) {
+  const progressPercent = (currentStep / (steps.length - 1)) * 100;
+
   return (
     <nav aria-label="Progreso del wizard" className="mb-8">
-      <ol className="flex items-center justify-between">
+      {/* Mobile: compact view */}
+      <div className="sm:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-primary">
+            Paso {currentStep + 1} de {steps.length}
+          </span>
+          <span className="text-sm font-medium text-foreground">
+            {steps[currentStep].title}
+          </span>
+        </div>
+        <Progress value={progressPercent} className="h-2" />
+        <p className="text-xs text-muted-foreground text-center">
+          {steps[currentStep].description}
+        </p>
+      </div>
+
+      {/* Desktop: full stepper */}
+      <ol className="hidden sm:flex items-center justify-between">
         {steps.map((step, index) => {
           const isCompleted = completedSteps.has(index);
           const isCurrent = index === currentStep;
@@ -35,7 +55,7 @@ export function WizardNavigation({
                 {index > 0 && (
                   <div
                     className={cn(
-                      "absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2",
+                      "absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2 transition-colors duration-500",
                       isCompleted || isCurrent
                         ? "bg-primary"
                         : "bg-border"
@@ -76,6 +96,11 @@ export function WizardNavigation({
                   >
                     {step.title}
                   </p>
+                  {isCurrent && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 hidden md:block">
+                      {step.description}
+                    </p>
+                  )}
                 </div>
               </div>
             </li>
@@ -90,18 +115,23 @@ interface ProcessingIndicatorProps {
   label: string;
   isComplete: boolean;
   isActive: boolean;
+  index?: number;
 }
 
 export function ProcessingIndicator({
   label,
   isComplete,
   isActive,
+  index = 0,
 }: ProcessingIndicatorProps) {
   return (
-    <div className="flex items-center gap-3 py-2">
+    <div
+      className="flex items-center gap-3 py-2 animate-wizard-fade-in-up"
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
       <div className="flex-shrink-0">
         {isComplete ? (
-          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center animate-wizard-check-bounce">
             <Check className="h-4 w-4 text-primary-foreground" />
           </div>
         ) : isActive ? (
@@ -123,4 +153,3 @@ export function ProcessingIndicator({
     </div>
   );
 }
-

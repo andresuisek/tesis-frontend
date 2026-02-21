@@ -273,7 +273,7 @@ export function StepProcessing({
   return (
     <div className="space-y-6">
       {/* Mensaje del agente */}
-      <AgentMessage message={message} animate={false} />
+      <AgentMessage message={message} animate={true} />
 
       {/* Progreso */}
       <Card className="border-primary/20 bg-primary/5">
@@ -295,26 +295,31 @@ export function StepProcessing({
               label={`Ventas guardadas (${wizardState.ventas.parsed.length})`}
               isComplete={isSaved}
               isActive={currentProcessingStep === "saving"}
+              index={0}
             />
             <ProcessingIndicator
               label={`Notas de crédito guardadas (${wizardState.notasCredito.parsed.length})`}
               isComplete={isSaved}
               isActive={currentProcessingStep === "saving"}
+              index={1}
             />
             <ProcessingIndicator
               label={`Compras guardadas (${wizardState.compras.parsed.length})`}
               isComplete={isSaved}
               isActive={currentProcessingStep === "saving"}
+              index={2}
             />
             <ProcessingIndicator
               label={`Retenciones procesadas (${wizardState.retenciones.parsed.length})`}
               isComplete={isSaved}
               isActive={currentProcessingStep === "saving"}
+              index={3}
             />
             <ProcessingIndicator
               label="Generando resumen ejecutivo"
               isComplete={currentProcessingStep === "complete"}
               isActive={currentProcessingStep === "summary"}
+              index={4}
             />
           </div>
         </CardContent>
@@ -323,16 +328,27 @@ export function StepProcessing({
       {/* Animación central */}
       {currentProcessingStep !== "complete" && (
         <div className="flex justify-center py-8">
-          <div className="relative">
-            <div className="h-20 w-20 rounded-full bg-primary animate-pulse" />
-            <div className="absolute inset-0 h-20 w-20 rounded-full bg-primary animate-ping opacity-25" />
+          <div className="relative h-20 w-20">
+            {/* Conic gradient spinning ring */}
+            <div
+              className="absolute inset-0 rounded-full animate-wizard-spin-ring"
+              style={{
+                background: "conic-gradient(from 0deg, transparent 0%, var(--primary) 30%, transparent 60%)",
+                mask: "radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px))",
+                WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px))",
+              }}
+            />
+            {/* Inner circle */}
+            <div className="absolute inset-2 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="h-4 w-4 rounded-full bg-primary animate-pulse" />
+            </div>
           </div>
         </div>
       )}
 
       {currentProcessingStep === "complete" && (
         <div className="flex justify-center py-8">
-          <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center">
+          <div className="h-20 w-20 rounded-full bg-primary flex items-center justify-center animate-wizard-check-bounce">
             <svg
               className="h-10 w-10 text-primary-foreground"
               fill="none"
@@ -340,10 +356,13 @@ export function StepProcessing({
               viewBox="0 0 24 24"
             >
               <path
+                className="animate-wizard-check-draw"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={3}
                 d="M5 13l4 4L19 7"
+                strokeDasharray="24"
+                strokeDashoffset="24"
               />
             </svg>
           </div>

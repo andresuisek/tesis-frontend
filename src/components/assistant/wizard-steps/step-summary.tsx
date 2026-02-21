@@ -8,6 +8,7 @@ import { AgentMessage } from "../agent-message";
 import { WizardState } from "../import-wizard";
 import {
   AlertTriangle,
+  ArrowRight,
   Calculator,
   CheckCircle2,
   FileText,
@@ -18,6 +19,7 @@ import {
   TrendingUp,
   Receipt,
   FileX,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -55,7 +57,7 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
       />
 
       {/* KPIs principales — solo muestra secciones con datos */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-wizard-fade-in-up" style={{ animationDelay: "100ms" }}>
         {resumen.ventasCount > 0 && (
           <Card>
             <CardContent className="pt-6">
@@ -182,7 +184,7 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
       </div>
 
       {/* Detalle IVA — solo si hay datos de ventas o compras */}
-      {(resumen.ivaVentas > 0 || resumen.ivaCompras > 0) && <Card>
+      {(resumen.ivaVentas > 0 || resumen.ivaCompras > 0) && <Card className="animate-wizard-fade-in-up" style={{ animationDelay: "250ms" }}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Calculator className="h-5 w-5" />
@@ -237,7 +239,7 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
 
       {/* Alertas */}
       {resumen.alerts.length > 0 && (
-        <Card>
+        <Card className="animate-wizard-fade-in-up" style={{ animationDelay: "400ms" }}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
@@ -247,7 +249,16 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
           <CardContent>
             <div className="space-y-2">
               {resumen.alerts.map((alert, index) => (
-                <Alert key={index}>
+                <Alert
+                  key={index}
+                  className={cn(
+                    "animate-wizard-fade-in-up",
+                    alert.type === "warning" && "border-warning/50 bg-warning/10 text-warning-foreground [&>svg]:text-warning-foreground",
+                    alert.type === "info" && "border-info/50 bg-info/10 text-info-foreground [&>svg]:text-info-foreground",
+                    alert.type === "success" && "border-success/50 bg-success/10 text-success-foreground [&>svg]:text-success-foreground",
+                  )}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   {alert.type === "warning" && (
                     <AlertTriangle className="h-4 w-4" />
                   )}
@@ -269,7 +280,7 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
 
       {/* Recomendaciones */}
       {resumen.recommendations.length > 0 && (
-        <Card>
+        <Card className="animate-wizard-fade-in-up" style={{ animationDelay: "550ms" }}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Lightbulb className="h-5 w-5" />
@@ -279,8 +290,12 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
           <CardContent>
             <ul className="space-y-2">
               {resumen.recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary mt-1">→</span>
+                <li
+                  key={index}
+                  className="flex items-start gap-3 text-sm text-muted-foreground border-l-2 border-primary/30 pl-3 py-1 hover:bg-muted/30 rounded-r-md transition-colors animate-wizard-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <ArrowRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   {rec}
                 </li>
               ))}
@@ -291,10 +306,10 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
 
       {/* Insights */}
       {resumen.insights.length > 0 && (
-        <Card className="bg-muted/50">
+        <Card className="bg-muted/50 animate-wizard-fade-in-up" style={{ animationDelay: "600ms" }}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5" />
               Datos Interesantes
             </CardTitle>
           </CardHeader>
@@ -303,9 +318,10 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
               {resumen.insights.map((insight, index) => (
                 <li
                   key={index}
-                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                  className="flex items-start gap-3 text-sm text-muted-foreground border-l-2 border-primary/30 pl-3 py-1 hover:bg-muted/30 rounded-r-md transition-colors animate-wizard-fade-in-up"
+                  style={{ animationDelay: `${650 + index * 100}ms` }}
                 >
-                  <span className="text-primary">•</span>
+                  <Lightbulb className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   {insight}
                 </li>
               ))}
@@ -315,7 +331,7 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
       )}
 
       {/* Acciones */}
-      <div className="flex flex-wrap gap-3 justify-center pt-4">
+      <div className="flex flex-wrap gap-3 justify-center pt-4 animate-wizard-fade-in-up" style={{ animationDelay: "750ms" }}>
         <Button asChild variant="outline">
           <Link href="/dashboard">
             <TrendingUp className="mr-2 h-4 w-4" />

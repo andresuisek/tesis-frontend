@@ -525,6 +525,7 @@ export function ImportWizard() {
 
       {/* Contenido del paso actual */}
       <div className="min-h-[400px]">
+        <div key={currentStep} className="animate-wizard-step-enter">
         {currentStep === 0 && (
           <StepWelcome
             periodo={wizardState.periodo}
@@ -598,6 +599,7 @@ export function ImportWizard() {
             onNewImport={resetWizard}
           />
         )}
+        </div>
       </div>
     </div>
   );

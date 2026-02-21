@@ -12,8 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, FileText, X, Play, SkipForward, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, FileText, X, Play, SkipForward, Trash2, Receipt, DollarSign, Calculator } from "lucide-react";
 import { RetencionParsed } from "@/lib/retencion-xml-parser";
 import { cn } from "@/lib/utils";
 
@@ -155,7 +156,7 @@ export function StepRetenciones({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-primary bg-primary/5",
+          isDragging && "border-primary bg-primary/5 scale-[1.02] shadow-lg",
           hasRetenciones && "border-primary/30 bg-primary/5",
           !isDragging && !hasRetenciones && "border-border hover:border-primary"
         )}
@@ -176,8 +177,8 @@ export function StepRetenciones({
 
             {hasRetenciones ? (
               <>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-primary" />
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-wizard-check-bounce">
+                  <Check className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-primary">
@@ -207,17 +208,17 @@ export function StepRetenciones({
               <>
                 <div
                   className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center transition-colors",
+                    "h-16 w-16 rounded-full flex items-center justify-center transition-colors",
                     isDragging ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Upload
                       className={cn(
-                        "h-6 w-6",
-                        isDragging ? "text-primary" : "text-muted-foreground"
+                        "h-8 w-8 transition-transform",
+                        isDragging ? "text-primary animate-bounce" : "text-muted-foreground"
                       )}
                     />
                   )}
@@ -303,33 +304,89 @@ export function StepRetenciones({
         </Card>
       )}
 
+      {/* Skeleton loading during parse */}
+      {isProcessing && !hasRetenciones && !hasPendingFiles && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => (
+              <Card key={i} className="bg-muted/30">
+                <CardContent className="pt-4 pb-4">
+                  <Skeleton className="h-3 w-24 mb-2" />
+                  <Skeleton className="h-7 w-20" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <Skeleton className="h-4 w-40 mb-4" />
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Preview de retenciones */}
       {hasRetenciones && (
         <>
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "0ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Total Retenciones</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {retenciones.parsed.length}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Receipt className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Total Retenciones</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {retenciones.parsed.length}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "100ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Retención Renta</p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalRetencionRenta.toFixed(2)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Retención Renta</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      ${totalRetencionRenta.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "200ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Retención IVA</p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalRetencionIVA.toFixed(2)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Calculator className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Retención IVA</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      ${totalRetencionIVA.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -355,7 +412,7 @@ export function StepRetenciones({
                     {retenciones.parsed.map((retencion, index) => {
                       const totalRetenido = (retencion.retencion_renta_valor || 0) + (retencion.retencion_valor || 0);
                       return (
-                        <TableRow key={index}>
+                        <TableRow key={index} className="even:bg-muted/20">
                           <TableCell className="font-mono text-xs">
                             {retencion.serie_comprobante}
                           </TableCell>

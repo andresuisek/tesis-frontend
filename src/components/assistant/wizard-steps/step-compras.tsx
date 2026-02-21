@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AgentMessage } from "../agent-message";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Upload,
@@ -60,6 +61,8 @@ import {
   Trash2,
   FileText,
   FileCode2,
+  DollarSign,
+  Calculator,
 } from "lucide-react";
 import { CompraParsed, ProveedorResumen } from "@/lib/compras-parser";
 import { ComprasXMLParseResult } from "@/lib/compras-xml-parser";
@@ -445,7 +448,7 @@ export function StepCompras({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-primary bg-primary/5",
+          isDragging && "border-primary bg-primary/5 scale-[1.02] shadow-lg",
           hasCompras && "border-primary/30 bg-primary/5",
           !isDragging && !hasCompras && "border-border hover:border-primary"
         )}
@@ -466,8 +469,8 @@ export function StepCompras({
 
             {hasCompras ? (
               <>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Check className="h-6 w-6 text-primary" />
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-wizard-check-bounce">
+                  <Check className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-primary">
@@ -504,17 +507,17 @@ export function StepCompras({
               <>
                 <div
                   className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center transition-colors",
+                    "h-16 w-16 rounded-full flex items-center justify-center transition-colors",
                     isDragging ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
-                    <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Upload
                       className={cn(
-                        "h-6 w-6",
-                        isDragging ? "text-primary" : "text-muted-foreground"
+                        "h-8 w-8 transition-transform",
+                        isDragging ? "text-primary animate-bounce" : "text-muted-foreground"
                       )}
                     />
                   )}
@@ -585,33 +588,79 @@ export function StepCompras({
         </Alert>
       )}
 
+      {/* Skeleton loading during TXT parse */}
+      {isProcessing && formato === "txt" && !hasCompras && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => (
+              <Card key={i} className="bg-muted/30">
+                <CardContent className="pt-4 pb-4">
+                  <Skeleton className="h-3 w-24 mb-2" />
+                  <Skeleton className="h-7 w-20" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Preview de compras */}
       {hasCompras && (
         <>
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-4">
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "0ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Total Compras</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {compras.parsed.length}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <ShoppingBasket className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Total Compras</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {compras.parsed.length}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "100ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Total Monto</p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalCompras.toFixed(2)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Total Monto</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      ${totalCompras.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card className="bg-primary/5">
+            <Card
+              className="bg-primary/5 animate-wizard-fade-in-up"
+              style={{ animationDelay: "200ms" }}
+            >
               <CardContent className="pt-4 pb-4">
-                <p className="text-sm text-primary">Crédito Tributario</p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalIVA.toFixed(2)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Calculator className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary">Crédito Tributario</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      ${totalIVA.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -744,7 +793,9 @@ export function StepCompras({
                       {proveedoresFiltrados.map((proveedor) => (
                         <TableRow
                           key={proveedor.ruc_proveedor}
-                          className={selectedProveedores.has(proveedor.ruc_proveedor) ? "bg-primary/5" : ""}
+                          className={cn(
+                            selectedProveedores.has(proveedor.ruc_proveedor) ? "bg-primary/5" : "even:bg-muted/20"
+                          )}
                         >
                           <TableCell>
                             <Checkbox
@@ -887,7 +938,7 @@ export function StepCompras({
                         {rubroSummary.map((item) => {
                           const Icon = rubrosIconos[item.rubro] || HelpCircle;
                           return (
-                            <TableRow key={item.rubro}>
+                            <TableRow key={item.rubro} className="even:bg-muted/20">
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <Icon className="h-4 w-4 text-muted-foreground" />

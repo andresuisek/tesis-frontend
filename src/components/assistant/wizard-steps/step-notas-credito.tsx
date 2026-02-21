@@ -9,8 +9,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AgentMessage } from "../agent-message";
-import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown, Trash2, FileX, DollarSign, Calculator } from "lucide-react";
 import { NotaCreditoParsed, NotasCreditoParseResult } from "@/lib/notas-credito-parser";
 import { cn } from "@/lib/utils";
 
@@ -123,7 +124,7 @@ export function StepNotasCredito({
       <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300 cursor-pointer",
-          isDragging && "border-primary bg-primary/5",
+          isDragging && "border-primary bg-primary/5 scale-[1.02] shadow-lg",
           hasNotasCredito && "border-primary/30 bg-primary/5",
           !isDragging && !hasNotasCredito && "border-border hover:border-primary"
         )}
@@ -143,7 +144,7 @@ export function StepNotasCredito({
 
             {hasNotasCredito ? (
               <>
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center animate-wizard-check-bounce">
                   <Check className="h-8 w-8 text-primary" />
                 </div>
                 <div className="text-center">
@@ -185,9 +186,9 @@ export function StepNotasCredito({
                   ) : (
                     <Upload
                       className={cn(
-                        "h-8 w-8",
+                        "h-8 w-8 transition-transform",
                         isDragging
-                          ? "text-primary"
+                          ? "text-primary animate-bounce"
                           : "text-muted-foreground"
                       )}
                     />
@@ -220,6 +221,23 @@ export function StepNotasCredito({
         </Alert>
       )}
 
+      {/* Skeleton loading during parse */}
+      {isProcessing && (
+        <Card>
+          <CardContent className="pt-6">
+            <Skeleton className="h-4 w-48 mb-4" />
+            <div className="grid grid-cols-3 gap-4">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="p-4 rounded-lg bg-muted/50">
+                  <Skeleton className="h-3 w-20 mb-2" />
+                  <Skeleton className="h-7 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview de notas de crédito */}
       {hasNotasCredito && (
         <Card>
@@ -228,29 +246,53 @@ export function StepNotasCredito({
               Resumen de Notas de Crédito
             </h4>
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg bg-primary/5">
-                <p className="text-sm text-primary">
-                  Total Notas
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {notasCredito.parsed.length}
-                </p>
+              <div
+                className="p-4 rounded-lg bg-primary/5 flex items-center gap-3 animate-wizard-fade-in-up"
+                style={{ animationDelay: "0ms" }}
+              >
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileX className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-primary">
+                    Total Notas
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {notasCredito.parsed.length}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-primary/5">
-                <p className="text-sm text-primary">
-                  Total Monto
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalMonto.toFixed(2)}
-                </p>
+              <div
+                className="p-4 rounded-lg bg-primary/5 flex items-center gap-3 animate-wizard-fade-in-up"
+                style={{ animationDelay: "100ms" }}
+              >
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-primary">
+                    Total Monto
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    ${totalMonto.toFixed(2)}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-primary/5">
-                <p className="text-sm text-primary">
-                  IVA
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  ${totalIVA.toFixed(2)}
-                </p>
+              <div
+                className="p-4 rounded-lg bg-primary/5 flex items-center gap-3 animate-wizard-fade-in-up"
+                style={{ animationDelay: "200ms" }}
+              >
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Calculator className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-primary">
+                    IVA
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    ${totalIVA.toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
