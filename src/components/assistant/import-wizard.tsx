@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { WizardNavigation, WizardStep } from "./wizard-navigation";
 import { StepWelcome } from "./wizard-steps/step-welcome";
-// TXT import disabled — ventas and notas-credito steps only support TXT
-// import { StepVentas } from "./wizard-steps/step-ventas";
-// import { StepNotasCredito } from "./wizard-steps/step-notas-credito";
+import { StepVentas } from "./wizard-steps/step-ventas";
+import { StepNotasCredito } from "./wizard-steps/step-notas-credito";
 import { StepRetenciones } from "./wizard-steps/step-retenciones";
 import { StepCompras } from "./wizard-steps/step-compras";
 import { StepProcessing } from "./wizard-steps/step-processing";

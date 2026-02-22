@@ -111,6 +111,7 @@ export function ImportarComprasDialog({
   onComprasImportadas,
 }: ImportarComprasDialogProps) {
   const [step, setStep] = useState<Step>("upload");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [format, setFormat] = useState<ImportFormat>("xml");
   const [comprasParsed, setComprasParsed] = useState<CompraParsed[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResumen[]>([]);
