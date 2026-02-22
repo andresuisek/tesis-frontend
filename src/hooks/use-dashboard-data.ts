@@ -120,10 +120,10 @@ async function fetchDashboardData(
       ? previousReference.endOf("month")
       : previousReference.endOf("year");
 
-  const monthsWindow = selectedMonth !== null ? 6 : 12;
+  const monthsWindow = 12;
   const monthlyRangeStart =
     selectedMonth !== null
-      ? currentPeriodStart.subtract(monthsWindow - 1, "month")
+      ? currentPeriodStart.subtract(11, "month")
       : dayjs().year(selectedYear).startOf("year");
   const monthlyRangeEnd =
     selectedMonth !== null
@@ -323,7 +323,7 @@ async function fetchDashboardData(
     const date = monthlyRangeStart.add(i, "month");
     const monthKey = date.format("YYYY-MM");
     monthlyDataMap.set(monthKey, {
-      month: date.format("MMM"),
+      month: date.format("MMM YY"),
       ventas: 0,
       compras: 0,
       utilidad: 0,

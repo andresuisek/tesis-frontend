@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -23,6 +23,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts";
@@ -67,6 +70,7 @@ const monthlyFlowConfig = {
 const heroChartConfig = {
   ventas: { label: "Ventas", color: "var(--chart-1)" },
   compras: { label: "Compras", color: "var(--chart-2)" },
+  utilidad: { label: "Utilidad", color: "var(--chart-3)" },
 };
 
 const ivaChartConfig = {
@@ -105,6 +109,13 @@ const formatNumber = (value: number) =>
   new Intl.NumberFormat("es-EC", { maximumFractionDigits: 0 }).format(
     value || 0
   );
+
+const formatCurrencyShort = (value: number) => {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+  return `$${value.toFixed(0)}`;
+};
 
 const urgencyColors: Record<UrgencyLevel, string> = {
   critical: "bg-destructive text-destructive-foreground",
@@ -167,7 +178,6 @@ export default function DashboardPage() {
   const {
     kpis,
     monthlyData,
-    dailyData,
     rubroDistribution,
     ivaBreakdown,
     recentActivity,
@@ -178,7 +188,6 @@ export default function DashboardPage() {
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears } = useAvailableYears("ventas");
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const [activeHeroSeries, setActiveHeroSeries] = useState<"ventas" | "compras">("ventas");
 
   const periodBadgeLabel =
     selectedMonth !== null
@@ -225,12 +234,13 @@ export default function DashboardPage() {
     return `Vence: ${deadlineInfo.nextDeadlineDate.format("DD MMM")} (${deadlineInfo.daysUntilDeadline}d)`;
   }, [deadlineInfo]);
 
-  // Hero chart totals
+  // Hero chart totals (from monthly data — always 12 months)
   const heroTotals = useMemo(() => {
-    const ventas = dailyData.reduce((s, d) => s + d.ventas, 0);
-    const compras = dailyData.reduce((s, d) => s + d.compras, 0);
-    return { ventas, compras };
-  }, [dailyData]);
+    const ventas = monthlyData.reduce((s, d) => s + d.ventas, 0);
+    const compras = monthlyData.reduce((s, d) => s + d.compras, 0);
+    const utilidad = ventas - compras;
+    return { ventas, compras, utilidad };
+  }, [monthlyData]);
 
   if (loading) {
     return (
@@ -320,10 +330,9 @@ export default function DashboardPage() {
           change={{ value: Math.abs(comprasChange), positive: comprasChange >= 0 }}
         />
         <MetricCard
-          title="IVA a pagar"
-          value={formatCurrency(Math.max(0, kpis.ivaPagar))}
-          icon={Calculator}
-          helper={ivaDeadlineHelper}
+          title="Utilidad neta"
+          value={formatCurrency(kpis.ventasMes - kpis.comprasMes)}
+          icon={TrendingUp}
         />
         <MetricCard
           title="Retenciones registradas"
@@ -333,7 +342,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ─── Hero Chart: Ventas vs Compras diario ─── */}
+      {/* ─── Hero Chart: Ventas vs Compras mensual (combo) ─── */}
       <Card>
         <CardHeader className="flex flex-col items-stretch border-b sm:flex-row">
           <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-4 sm:py-0">
@@ -341,63 +350,78 @@ export default function DashboardPage() {
               Ventas vs Compras
             </CardTitle>
             <CardDescription>
-              Actividad diaria &middot; {periodBadgeLabel}
+              Resumen mensual &middot; últimos 12 meses
             </CardDescription>
           </div>
           <div className="flex">
-            {(["ventas", "compras"] as const).map((key) => (
-              <button
+            {(["ventas", "compras", "utilidad"] as const).map((key) => (
+              <div
                 key={key}
-                data-active={activeHeroSeries === key}
-                onClick={() => setActiveHeroSeries(key)}
-                className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left data-[active=true]:bg-muted/50 sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
+                className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
               >
                 <span className="text-xs text-muted-foreground">
-                  {key === "ventas" ? "Ventas" : "Compras"}
+                  {key === "ventas" ? "Ventas" : key === "compras" ? "Compras" : "Utilidad"}
                 </span>
-                <span className="text-lg font-bold leading-none sm:text-2xl">
+                <span className={`text-lg font-bold leading-none sm:text-2xl ${
+                  key === "utilidad" && heroTotals.utilidad < 0 ? "text-destructive" : ""
+                }`}>
                   {formatCurrency(heroTotals[key])}
                 </span>
-              </button>
+              </div>
             ))}
           </div>
         </CardHeader>
         <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-          {dailyData.length ? (
-            <ChartContainer config={heroChartConfig} className="aspect-auto h-64 w-full">
-              <BarChart data={dailyData}>
+          {monthlyData.length ? (
+            <ChartContainer config={heroChartConfig} className="aspect-auto h-72 w-full">
+              <ComposedChart data={monthlyData}>
                 <CartesianGrid vertical={false} className="stroke-border/60" />
                 <XAxis
-                  dataKey="date"
+                  dataKey="month"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  minTickGap={32}
-                  tickFormatter={(value: string) =>
-                    dayjs(value).format("D MMM")
-                  }
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={formatCurrencyShort}
+                  width={60}
                 />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      className="w-[180px]"
-                      labelFormatter={(value: string) =>
-                        dayjs(value).format("D [de] MMMM, YYYY")
-                      }
-                      formatter={(value) => formatCurrency(Number(value))}
+                      className="w-[200px]"
                     />
                   }
                 />
+                <ChartLegend content={<ChartLegendContent />} />
+                <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
                 <Bar
-                  dataKey={activeHeroSeries}
-                  fill={`var(--color-${activeHeroSeries})`}
+                  dataKey="ventas"
+                  fill="var(--color-ventas)"
                   radius={[4, 4, 0, 0]}
+                  barSize={20}
                 />
-              </BarChart>
+                <Bar
+                  dataKey="compras"
+                  fill="var(--color-compras)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={20}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="utilidad"
+                  stroke="var(--color-utilidad)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "var(--color-utilidad)" }}
+                  activeDot={{ r: 5 }}
+                />
+              </ComposedChart>
             </ChartContainer>
           ) : (
-            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-              No hay datos diarios para este periodo.
+            <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+              No hay datos mensuales para este periodo.
             </div>
           )}
         </CardContent>
@@ -411,7 +435,7 @@ export default function DashboardPage() {
               <BarChart3 className="h-5 w-5 text-primary" />
               Flujo mensual de ventas y compras
             </CardTitle>
-            <CardDescription>Comportamiento de los últimos 6 meses</CardDescription>
+            <CardDescription>Comportamiento de los últimos 12 meses</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={monthlyFlowConfig} className="h-72">
