@@ -438,7 +438,7 @@ export default function DashboardPage() {
             <CardDescription>Comportamiento de los últimos 12 meses</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={monthlyFlowConfig} className="h-72">
+            <ChartContainer config={monthlyFlowConfig} className="aspect-auto h-72 w-full">
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="ventasGradient" x1="0" x2="0" y1="0" y2="1">
