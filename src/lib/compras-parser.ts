@@ -317,10 +317,12 @@ export function validarRucCompras(
   const rucArchivo = primerRegistro.identificacion_receptor.trim();
   const rucUsuario = contribuyenteRuc.trim();
 
-  // Normalizar a 13 dígitos (RUC ecuatoriano) — archivos a veces omiten el 0 inicial
-  const normalizar = (ruc: string) => ruc.padStart(13, "0");
+  // Extraer cédula (primeros 10 dígitos) para comparación flexible
+  // En Ecuador, RUC = cédula (10 dígitos) + sufijo (001)
+  const extraerCedula = (ruc: string) =>
+    ruc.replace(/^0+/, "").slice(0, 10).padStart(10, "0");
 
-  if (normalizar(rucArchivo) !== normalizar(rucUsuario)) {
+  if (extraerCedula(rucArchivo) !== extraerCedula(rucUsuario)) {
     return `El archivo pertenece al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo el archivo correcto.`;
   }
 

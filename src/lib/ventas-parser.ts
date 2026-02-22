@@ -275,10 +275,12 @@ export function validarRucVentas(
   const rucArchivo = claveNumerica.substring(10, 23);
   const rucUsuario = contribuyenteRuc.trim();
 
-  // Normalizar a 13 dígitos
-  const normalizar = (ruc: string) => ruc.padStart(13, "0");
+  // Extraer cédula (primeros 10 dígitos) para comparación flexible
+  // En Ecuador, RUC = cédula (10 dígitos) + sufijo (001)
+  const extraerCedula = (ruc: string) =>
+    ruc.replace(/^0+/, "").slice(0, 10).padStart(10, "0");
 
-  if (normalizar(rucArchivo) !== normalizar(rucUsuario)) {
+  if (extraerCedula(rucArchivo) !== extraerCedula(rucUsuario)) {
     return `El archivo de ventas pertenece al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo el archivo correcto.`;
   }
 
