@@ -10,38 +10,30 @@ import { StepCompras } from "./wizard-steps/step-compras";
 import { StepProcessing } from "./wizard-steps/step-processing";
 import { StepSummary } from "./wizard-steps/step-summary";
 import { useAuth } from "@/contexts/auth-context";
-// TXT import disabled
-// import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/lib/ventas-parser";
-import type { VentaParsed, TasaIVA } from "@/lib/ventas-parser";
-// import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
-import type { NotaCreditoParsed } from "@/lib/notas-credito-parser";
-// import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
-import { CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
+import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/lib/ventas-parser";
+import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
+import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
 import { parsearMultiplesXMLCompras, ComprasXMLParseResult } from "@/lib/compras-xml-parser";
 import { parsearXMLRetencion, RetencionParsed, validarRucRetencion } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
 import { toast } from "sonner";
 
-// TXT import disabled — ventas (TXT) and notas-credito (TXT) steps commented out
-// Original order: Inicio → Ventas → Notas de Crédito → Retenciones → Compras → Procesando → Resumen
-// New order: Inicio → Retenciones → Compras → Procesando → Resumen
 const WIZARD_STEPS: WizardStep[] = [
   {
     id: "welcome",
     title: "Inicio",
     description: "Selecciona el período tributario",
   },
-  // TXT import disabled
-  // {
-  //   id: "ventas",
-  //   title: "Ventas",
-  //   description: "Carga el archivo de ventas",
-  // },
-  // {
-  //   id: "notas-credito",
-  //   title: "Notas de Crédito",
-  //   description: "Carga notas de crédito emitidas",
-  // },
+  {
+    id: "ventas",
+    title: "Ventas",
+    description: "Carga el archivo de ventas",
+  },
+  {
+    id: "notas-credito",
+    title: "Notas de Crédito",
+    description: "Carga notas de crédito emitidas",
+  },
   {
     id: "retenciones",
     title: "Retenciones",
