@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/tooltip";
 import { supabase, RubroCompra } from "@/lib/supabase";
 import {
-  parsearArchivoCompras,
+  // parsearArchivoCompras, // TXT import disabled
   agruparPorProveedor,
   CompraParsed,
   ProveedorResumen,
@@ -51,7 +51,7 @@ import {
 import { toast } from "sonner";
 import {
   Upload,
-  FileText,
+  // FileText, // TXT import disabled
   FileCode2,
   CheckCircle2,
   AlertCircle,
@@ -99,7 +99,9 @@ const rubrosIconos: Record<RubroCompra, React.ComponentType<{ className?: string
   actividad_profesional: Briefcase,
 };
 
-type ImportFormat = "txt" | "xml";
+// TXT import disabled — only XML format supported
+// type ImportFormat = "txt" | "xml";
+type ImportFormat = "xml";
 type Step = "upload" | "parsing" | "preview" | "importing" | "assign" | "updating" | "complete";
 
 export function ImportarComprasDialog({
@@ -109,7 +111,7 @@ export function ImportarComprasDialog({
   onComprasImportadas,
 }: ImportarComprasDialogProps) {
   const [step, setStep] = useState<Step>("upload");
-  const [format, setFormat] = useState<ImportFormat>("txt");
+  const [format, setFormat] = useState<ImportFormat>("xml");
   const [comprasParsed, setComprasParsed] = useState<CompraParsed[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResumen[]>([]);
   const [comprasInsertadas, setComprasInsertadas] = useState<string[]>([]);
@@ -163,37 +165,38 @@ export function ImportarComprasDialog({
     return comprasParsed.filter((c) => !duplicateClaves.has(c.clave_acceso));
   }, [comprasParsed, duplicateClaves]);
 
-  const handleTxtFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".txt")) {
-      toast.error("Por favor selecciona un archivo .txt");
-      return;
-    }
-
-    try {
-      const contenido = await file.text();
-      const result = parsearArchivoCompras(contenido);
-
-      if (result.data.length === 0) {
-        toast.error("No se encontraron compras en el archivo");
-        return;
-      }
-
-      setComprasParsed(result.data);
-      if (result.skippedCount > 0) {
-        toast.warning(`${result.data.length} compras parseadas. ${result.skippedCount} registros omitidos.`);
-      } else {
-        toast.success(`${result.data.length} compras parseadas. Iniciando importación...`);
-      }
-      await insertarComprasTemporales(result.data);
-    } catch (error: unknown) {
-      console.error("Error al parsear archivo:", error);
-      const message = error instanceof Error ? error.message : "Error desconocido";
-      toast.error(`Error al procesar archivo: ${message}`);
-    }
-  };
+  // TXT import disabled — keeping only XML import
+  // const handleTxtFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+  //
+  //   if (!file.name.endsWith(".txt")) {
+  //     toast.error("Por favor selecciona un archivo .txt");
+  //     return;
+  //   }
+  //
+  //   try {
+  //     const contenido = await file.text();
+  //     const result = parsearArchivoCompras(contenido);
+  //
+  //     if (result.data.length === 0) {
+  //       toast.error("No se encontraron compras en el archivo");
+  //       return;
+  //     }
+  //
+  //     setComprasParsed(result.data);
+  //     if (result.skippedCount > 0) {
+  //       toast.warning(`${result.data.length} compras parseadas. ${result.skippedCount} registros omitidos.`);
+  //     } else {
+  //       toast.success(`${result.data.length} compras parseadas. Iniciando importación...`);
+  //     }
+  //     await insertarComprasTemporales(result.data);
+  //   } catch (error: unknown) {
+  //     console.error("Error al parsear archivo:", error);
+  //     const message = error instanceof Error ? error.message : "Error desconocido";
+  //     toast.error(`Error al procesar archivo: ${message}`);
+  //   }
+  // };
 
   const handleXmlFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -258,11 +261,12 @@ export function ImportarComprasDialog({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (format === "txt") {
-      handleTxtFileSelect(e);
-    } else {
-      handleXmlFilesSelect(e);
-    }
+    // TXT import disabled — only XML supported
+    // if (format === "txt") {
+    //   handleTxtFileSelect(e);
+    // } else {
+    handleXmlFilesSelect(e);
+    // }
   };
 
   const handleConfirmXmlImport = async () => {
@@ -531,7 +535,7 @@ export function ImportarComprasDialog({
   const handleClose = () => {
     const wasComplete = step === "complete";
     setStep("upload");
-    setFormat("txt");
+    setFormat("xml"); // TXT import disabled
     setComprasParsed([]);
     setProveedores([]);
     setComprasInsertadas([]);
@@ -572,15 +576,15 @@ export function ImportarComprasDialog({
             Importar Compras
           </DialogTitle>
           <DialogDescription>
-            Sube un archivo TXT o facturas XML del SRI y asigna rubros a cada proveedor
+            Sube facturas XML del SRI y asigna rubros a cada proveedor
           </DialogDescription>
         </DialogHeader>
 
         {/* Step 1: Upload */}
         {step === "upload" && (
           <div className="space-y-4">
-            {/* Format selector */}
-            <div className="flex gap-2">
+            {/* TXT import disabled — only XML format supported */}
+            {/* <div className="flex gap-2">
               <Button
                 variant={format === "txt" ? "default" : "outline"}
                 size="sm"
@@ -605,17 +609,13 @@ export function ImportarComprasDialog({
                 <FileCode2 className="h-4 w-4" />
                 Facturas XML
               </Button>
-            </div>
+            </div> */}
 
             <Alert>
-              <FileText className="h-4 w-4" />
-              <AlertTitle>
-                {format === "txt" ? "Formato TXT" : "Facturas XML"}
-              </AlertTitle>
+              <FileCode2 className="h-4 w-4" />
+              <AlertTitle>Facturas XML</AlertTitle>
               <AlertDescription>
-                {format === "txt"
-                  ? "Sube el archivo TXT de compras descargado del portal del SRI. El archivo debe contener las columnas estándar del SRI."
-                  : "Sube los archivos XML de facturas electrónicas autorizadas del SRI. Puedes seleccionar múltiples archivos a la vez."}
+                Sube los archivos XML de facturas electrónicas autorizadas del SRI. Puedes seleccionar múltiples archivos a la vez.
               </AlertDescription>
             </Alert>
 
@@ -623,8 +623,8 @@ export function ImportarComprasDialog({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept={format === "txt" ? ".txt" : ".xml"}
-                multiple={format === "xml"}
+                accept=".xml"
+                multiple
                 onChange={handleFileSelect}
                 className="hidden"
                 id="file-upload"
@@ -635,12 +635,10 @@ export function ImportarComprasDialog({
               >
                 <Upload className="h-12 w-12 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  Haz clic para seleccionar {format === "txt" ? "un archivo" : "archivos"}
+                  Haz clic para seleccionar archivos
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {format === "txt"
-                    ? "Formato: .TXT (delimitado por tabuladores)"
-                    : "Formato: .XML (facturas electrónicas del SRI)"}
+                  Formato: .XML (facturas electrónicas del SRI)
                 </span>
               </label>
             </div>
