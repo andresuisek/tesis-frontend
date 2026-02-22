@@ -32,7 +32,7 @@ import {
 import {
   DollarSign,
   ShoppingCart,
-  Calculator,
+
   Receipt,
   AlertCircle,
   BarChart3,
@@ -228,11 +228,6 @@ export default function DashboardPage() {
       taxStatus.hasTransactions,
     );
   }, [deadlineInfo, taxStatus.hasCurrentLiquidation, taxStatus.hasTransactions]);
-
-  const ivaDeadlineHelper = useMemo(() => {
-    if (!deadlineInfo) return "";
-    return `Vence: ${deadlineInfo.nextDeadlineDate.format("DD MMM")} (${deadlineInfo.daysUntilDeadline}d)`;
-  }, [deadlineInfo]);
 
   // Hero chart totals (from monthly data — always 12 months)
   const heroTotals = useMemo(() => {
