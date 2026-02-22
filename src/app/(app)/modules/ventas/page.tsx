@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Plus, Upload } from "lucide-react";
 import { supabase, Venta } from "@/lib/supabase";
-import { SkeletonStatCard } from "@/components/skeletons";
+import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
 import { useAuth } from "@/contexts/auth-context";
 import { VentasKPIs } from "@/components/ventas/ventas-kpis";
 import { VentasTable } from "@/components/ventas/ventas-table";
+import { VentasTableFilters } from "@/components/ventas/ventas-table-filters";
+import { VentasPagination } from "@/components/ventas/ventas-pagination";
 import { NuevaVentaDialog } from "@/components/ventas/nueva-venta-dialog";
 import { NuevaNotaCreditoDialog } from "@/components/ventas/nueva-nota-credito-dialog";
 import { NuevaRetencionDialog } from "@/components/ventas/nueva-retencion-dialog";
@@ -26,86 +27,91 @@ import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import { useVentasTable } from "@/hooks/use-ventas-table";
 import posthog from "posthog-js";
 
 dayjs.locale("es");
 
 export default function VentasPage() {
-  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const [ventas, setVentas] = useState<Venta[]>([]);
+  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { years: availableYears, refresh: refreshAvailableYears } =
+    useAvailableYears("ventas");
+
+  // ── Flow A: Summary data for KPIs ──
+  const [todasLasVentas, setTodasLasVentas] = useState<Venta[]>([]);
   const [ventasMesAnterior, setVentasMesAnterior] = useState<Venta[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
   const [showNewVentaDialog, setShowNewVentaDialog] = useState(false);
   const [showNotaCreditoDialog, setShowNotaCreditoDialog] = useState(false);
   const [showRetencionDialog, setShowRetencionDialog] = useState(false);
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
   const [showImportarDialog, setShowImportarDialog] = useState(false);
-  const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(
-    null
-  );
+  const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(null);
 
-  const { year: selectedYear, month: selectedMonth } = useDateFilter();
-  const { years: availableYears, refresh: refreshAvailableYears } =
-    useAvailableYears("ventas");
+  // ── Flow B: Table with server-side filtering + pagination ──
+  const {
+    ventas: tableVentas,
+    totalCount,
+    totals: tableTotals,
+    page,
+    setPage,
+    filters,
+    updateFilter,
+    resetFilters,
+    activeFilterCount,
+    isLoading: tableLoading,
+    isFetching: tableFetching,
+    invalidate: invalidateTable,
+    itemsPerPage,
+  } = useVentasTable();
 
-  // Cargar ventas desde Supabase
-  const cargarVentas = async () => {
+  const cargarResumen = useCallback(async () => {
     if (!contribuyente?.ruc) {
-      setLoading(false);
+      setSummaryLoading(false);
       return;
     }
 
+    setSummaryLoading(true);
     try {
-      setLoading(true);
-
-      // Construir query base
       let query = supabase
         .from("ventas")
         .select("*")
-        .eq("contribuyente_ruc", contribuyente.ruc)
-        .order("fecha_emision", { ascending: false });
+        .eq("contribuyente_ruc", contribuyente.ruc);
 
-      // Aplicar filtros de fecha si hay selección
       if (selectedMonth !== null) {
-        // Filtrar por mes y año específicos
-        const startDate = dayjs()
+        const start = dayjs()
           .year(selectedYear)
           .month(selectedMonth - 1)
           .startOf("month")
           .format("YYYY-MM-DD");
-        const endDate = dayjs()
+        const end = dayjs()
           .year(selectedYear)
           .month(selectedMonth - 1)
           .endOf("month")
           .format("YYYY-MM-DD");
-
-        query = query
-          .gte("fecha_emision", startDate)
-          .lte("fecha_emision", endDate);
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
       } else {
-        // Filtrar solo por año
-        const startDate = dayjs()
+        const start = dayjs()
           .year(selectedYear)
           .startOf("year")
           .format("YYYY-MM-DD");
-        const endDate = dayjs()
+        const end = dayjs()
           .year(selectedYear)
           .endOf("year")
           .format("YYYY-MM-DD");
-
-        query = query
-          .gte("fecha_emision", startDate)
-          .lte("fecha_emision", endDate);
+        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.order("fecha_emision", {
+        ascending: false,
+      });
 
       if (error) throw error;
+      setTodasLasVentas(data || []);
 
-      setVentas(data || []);
-
-      // Cargar ventas del mes anterior para comparación de tendencias
+      // Cargar ventas del mes anterior para comparacion de tendencias
       if (selectedMonth !== null) {
         const mesAnterior = dayjs()
           .year(selectedYear)
@@ -128,38 +134,43 @@ export default function VentasPage() {
         setVentasMesAnterior(dataMesAnterior || []);
       }
     } catch (error: unknown) {
-      console.error("Error al cargar ventas:", error);
+      console.error("Error al cargar resumen de ventas:", error);
       toast.error("Error al cargar las ventas");
     } finally {
-      setLoading(false);
+      setSummaryLoading(false);
     }
-  };
-
-  // Cargar datos cuando cambia el contribuyente o los filtros
-  useEffect(() => {
-    cargarVentas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contribuyente, selectedYear, selectedMonth]);
 
+  useEffect(() => {
+    if (contribuyente) {
+      cargarResumen();
+    }
+  }, [contribuyente, cargarResumen]);
+
+  // Reset table page when period changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedYear, selectedMonth, setPage]);
+
   const handleVentaCreada = () => {
-    // Track sale creation
     posthog.capture("venta_created", {
       contribuyente_ruc: contribuyente?.ruc,
       selected_year: selectedYear,
       selected_month: selectedMonth,
     });
-    cargarVentas();
+    cargarResumen();
+    invalidateTable();
     refreshAvailableYears();
   };
 
   const handleVentasImportadas = () => {
-    // Track sales import
     posthog.capture("ventas_imported", {
       contribuyente_ruc: contribuyente?.ruc,
       selected_year: selectedYear,
       selected_month: selectedMonth,
     });
-    cargarVentas();
+    cargarResumen();
+    invalidateTable();
     refreshAvailableYears();
   };
 
@@ -169,7 +180,8 @@ export default function VentasPage() {
   };
 
   const handleNotaCreditoCreada = () => {
-    cargarVentas();
+    cargarResumen();
+    invalidateTable();
   };
 
   const handleCrearRetencion = (venta: Venta) => {
@@ -178,7 +190,8 @@ export default function VentasPage() {
   };
 
   const handleRetencionCreada = () => {
-    cargarVentas();
+    cargarResumen();
+    invalidateTable();
   };
 
   const handleVerDetalle = (venta: Venta) => {
@@ -189,7 +202,6 @@ export default function VentasPage() {
   const handleCloseNotaCreditoDialog = (open: boolean) => {
     setShowNotaCreditoDialog(open);
     if (!open) {
-      // Limpiar la selección después de cerrar el diálogo
       setTimeout(() => {
         if (!showDetalleDialog && !showRetencionDialog) {
           setVentaSeleccionada(null);
@@ -212,7 +224,6 @@ export default function VentasPage() {
   const handleCloseDetalleDialog = (open: boolean) => {
     setShowDetalleDialog(open);
     if (!open) {
-      // Limpiar la selección después de cerrar el diálogo
       setTimeout(() => {
         if (!showNotaCreditoDialog && !showRetencionDialog) {
           setVentaSeleccionada(null);
@@ -237,10 +248,10 @@ export default function VentasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Gestión de Ventas
+            Gestion de Ventas
           </h1>
           <p className="text-muted-foreground">
-            Administra todas tus facturas, notas de crédito y débito
+            Administra todas tus facturas, notas de credito y debito
           </p>
         </div>
         <div className="flex gap-2">
@@ -255,42 +266,71 @@ export default function VentasPage() {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros de periodo */}
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs de ventas */}
-      {loading ? (
+      {summaryLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonStatCard key={i} />
           ))}
         </div>
       ) : (
-        <VentasKPIs ventas={ventas} mesAnterior={ventasMesAnterior} />
+        <VentasKPIs ventas={todasLasVentas} mesAnterior={ventasMesAnterior} />
       )}
 
       {/* Tabla de ventas */}
       <Card>
         <CardHeader>
-          <CardTitle>Registro de Ventas</CardTitle>
-          <CardDescription>
-            Listado completo de todas las ventas registradas
-            {selectedMonth !== null &&
-              ` - ${dayjs()
-                .month(selectedMonth - 1)
-                .format("MMMM")} ${selectedYear}`}
-            {selectedMonth === null && ` - Año ${selectedYear}`}
-          </CardDescription>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Registro de ventas
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {totalCount} venta{totalCount !== 1 ? "s" : ""} encontrada
+                  {totalCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+
+            <VentasTableFilters
+              filters={filters}
+              onFilterChange={updateFilter}
+              onReset={resetFilters}
+              activeFilterCount={activeFilterCount}
+              isFetching={tableFetching}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <VentasTable
-            ventas={ventas}
-            loading={loading}
-            onCrearNotaCredito={handleCrearNotaCredito}
-            onCrearRetencion={handleCrearRetencion}
-            onView={handleVerDetalle}
-          />
+          {tableLoading ? (
+            <SkeletonTableRows rows={8} columns={7} />
+          ) : (
+            <VentasTable
+              ventas={tableVentas}
+              onCrearNotaCredito={handleCrearNotaCredito}
+              onCrearRetencion={handleCrearRetencion}
+              onView={handleVerDetalle}
+              isFetching={tableFetching}
+              totals={tableTotals}
+            />
+          )}
         </CardContent>
+
+        {/* Pagination inside card */}
+        {!tableLoading && totalCount > 0 && (
+          <div className="border-t px-6">
+            <VentasPagination
+              paginaActual={page}
+              totalItems={totalCount}
+              itemsPorPagina={itemsPerPage}
+              onPaginaChange={setPage}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Dialog para nueva venta */}
@@ -309,7 +349,7 @@ export default function VentasPage() {
         contribuyenteRuc={contribuyente.ruc}
       />
 
-      {/* Dialogs - Mantener montados para preservar el estado */}
+      {/* Dialogs */}
       {ventaSeleccionada && showNotaCreditoDialog && (
         <NuevaNotaCreditoDialog
           open={showNotaCreditoDialog}

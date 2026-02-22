@@ -1,29 +1,28 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RetencionesTable } from "@/components/retenciones/retenciones-table";
+import { RetencionesTableFilters } from "@/components/retenciones/retenciones-table-filters";
+import { RetencionesPagination } from "@/components/retenciones/retenciones-pagination";
 import { DetalleRetencionDialog } from "@/components/retenciones/detalle-retencion-dialog";
 import { ImportarRetencionesDialog } from "@/components/retenciones/importar-retenciones-dialog";
 import { Retencion } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { Receipt, DollarSign, Calculator, Calendar, Upload } from "lucide-react";
-import { toast } from "sonner";
 import { SkeletonStatCardSimple, SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import { useRetencionesTable } from "@/hooks/use-retenciones-table";
 
 dayjs.locale("es");
 
 export default function RetencionesPage() {
-  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { user, contribuyenteEfectivo: contribuyente } = useAuth();
-  const [retenciones, setRetenciones] = useState<Retencion[]>([]);
-  const [loading, setLoading] = useState(true);
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears } = useAvailableYears("retenciones");
 
@@ -32,56 +31,26 @@ export default function RetencionesPage() {
   const [retencionSeleccionada, setRetencionSeleccionada] =
     useState<Retencion | null>(null);
 
-  // Función para recargar retenciones
-  const recargarRetenciones = useCallback(async () => {
-    if (!contribuyente?.ruc) return;
+  const {
+    retenciones: tableRetenciones,
+    totalCount,
+    totals: tableTotals,
+    page,
+    setPage,
+    filters,
+    updateFilter,
+    resetFilters,
+    activeFilterCount,
+    isLoading: tableLoading,
+    isFetching: tableFetching,
+    invalidate: invalidateTable,
+    itemsPerPage,
+  } = useRetencionesTable();
 
-    setLoading(true);
-    try {
-      const { supabase } = await import("@/lib/supabase");
-
-      let query = supabase
-        .from("retenciones")
-        .select("*")
-        .eq("contribuyente_ruc", contribuyente.ruc)
-        .order("fecha_emision", { ascending: false });
-
-      if (selectedMonth !== null) {
-        const start = dayjs()
-          .year(selectedYear)
-          .month(selectedMonth - 1)
-          .startOf("month")
-          .format("YYYY-MM-DD");
-        const end = dayjs()
-          .year(selectedYear)
-          .month(selectedMonth - 1)
-          .endOf("month")
-          .format("YYYY-MM-DD");
-        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-      } else {
-        const start = dayjs()
-          .year(selectedYear)
-          .startOf("year")
-          .format("YYYY-MM-DD");
-        const end = dayjs()
-          .year(selectedYear)
-          .endOf("year")
-          .format("YYYY-MM-DD");
-        query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setRetenciones(data || []);
-    } catch (error) {
-      console.error("Error al recargar retenciones:", error);
-      toast.error("Error al recargar las retenciones");
-    } finally {
-      setLoading(false);
-    }
-  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
+  // Reset table page when period changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedYear, selectedMonth, setPage]);
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -93,75 +62,13 @@ export default function RetencionesPage() {
     }).format(valor);
   };
 
-  // Cargar retenciones del usuario logueado
-  useEffect(() => {
-    const cargarRetenciones = async () => {
-      if (!contribuyente?.ruc) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { supabase } = await import("@/lib/supabase");
-
-        let query = supabase
-          .from("retenciones")
-          .select("*")
-          .eq("contribuyente_ruc", contribuyente.ruc)
-          .order("fecha_emision", { ascending: false });
-
-        if (selectedMonth !== null) {
-          const start = dayjs()
-            .year(selectedYear)
-            .month(selectedMonth - 1)
-            .startOf("month")
-            .format("YYYY-MM-DD");
-          const end = dayjs()
-            .year(selectedYear)
-            .month(selectedMonth - 1)
-            .endOf("month")
-            .format("YYYY-MM-DD");
-          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-        } else {
-          const start = dayjs()
-            .year(selectedYear)
-            .startOf("year")
-            .format("YYYY-MM-DD");
-          const end = dayjs()
-            .year(selectedYear)
-            .endOf("year")
-            .format("YYYY-MM-DD");
-          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        setRetenciones(data || []);
-      } catch (error) {
-        console.error("Error al cargar retenciones:", error);
-        toast.error("Error al cargar las retenciones");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarRetenciones();
-  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
-
-  // Calcular estadísticas
-  const totalRetenciones = retenciones.length;
-  const totalMonto = retenciones.reduce(
-    (sum, ret) =>
-      sum + (ret.retencion_valor || 0) + (ret.retencion_renta_valor || 0),
-    0
-  );
-
+  // KPIs derivados del hook
+  const totalRetenciones = totalCount;
+  const totalMonto = tableTotals.total;
   const periodoLabel =
     selectedMonth !== null
       ? `${dayjs().month(selectedMonth - 1).format("MMMM")} ${selectedYear}`
-      : `Año ${selectedYear}`;
+      : `Ano ${selectedYear}`;
   const promedioPeriodo =
     totalRetenciones > 0 ? totalMonto / totalRetenciones : 0;
 
@@ -180,11 +87,15 @@ export default function RetencionesPage() {
     }
   };
 
+  const handleRetencionesImportadas = () => {
+    invalidateTable();
+  };
+
   if (!user || !contribuyente) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-muted-foreground">
-          Debes iniciar sesión para ver este contenido.
+          Debes iniciar sesion para ver este contenido.
         </p>
       </div>
     );
@@ -214,7 +125,7 @@ export default function RetencionesPage() {
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
-      {loading ? (
+      {tableLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonStatCardSimple key={i} />
@@ -272,7 +183,7 @@ export default function RetencionesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Promedio por retención
+                Promedio por retencion
               </CardTitle>
               <Calculator className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -289,24 +200,55 @@ export default function RetencionesPage() {
       )}
 
       {/* Tabla de Retenciones */}
-      {loading ? (
-        <SkeletonTableRows rows={5} columns={7} />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              Listado de Retenciones
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RetencionesTable
-              retenciones={retenciones}
-              onView={handleVerDetalle}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <Receipt className="h-5 w-5 text-primary" />
+                  Listado de Retenciones
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {totalCount} retencion{totalCount !== 1 ? "es" : ""} encontrada{totalCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+
+            <RetencionesTableFilters
+              filters={filters}
+              onFilterChange={updateFilter}
+              onReset={resetFilters}
+              activeFilterCount={activeFilterCount}
+              isFetching={tableFetching}
             />
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {tableLoading ? (
+            <SkeletonTableRows rows={8} columns={7} />
+          ) : (
+            <RetencionesTable
+              retenciones={tableRetenciones}
+              onView={handleVerDetalle}
+              isFetching={tableFetching}
+              totals={tableTotals}
+            />
+          )}
+        </CardContent>
+
+        {/* Pagination inside card */}
+        {!tableLoading && totalCount > 0 && (
+          <div className="border-t px-6">
+            <RetencionesPagination
+              paginaActual={page}
+              totalItems={totalCount}
+              itemsPorPagina={itemsPerPage}
+              onPaginaChange={setPage}
+            />
+          </div>
+        )}
+      </Card>
 
       {/* Dialog de Detalle */}
       {retencionSeleccionada && showDetalleDialog && (
@@ -322,7 +264,7 @@ export default function RetencionesPage() {
         open={showImportarDialog}
         onOpenChange={setShowImportarDialog}
         contribuyenteRuc={contribuyente.ruc}
-        onRetencionesImportadas={recargarRetenciones}
+        onRetencionesImportadas={handleRetencionesImportadas}
       />
     </div>
   );

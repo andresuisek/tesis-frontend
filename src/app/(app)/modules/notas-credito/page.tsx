@@ -3,31 +3,50 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotasCreditoTable } from "@/components/notas-credito/notas-credito-table";
+import { NotasCreditoTableFilters } from "@/components/notas-credito/notas-credito-table-filters";
+import { NotasCreditoPagination } from "@/components/notas-credito/notas-credito-pagination";
 import { DetalleNotaCreditoDialog } from "@/components/notas-credito/detalle-nota-credito-dialog";
 import { NotaCredito } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { FileX, DollarSign, TrendingDown, Calendar } from "lucide-react";
-import { toast } from "sonner";
 import { SkeletonStatCardSimple, SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { TaxPeriodFilter } from "@/components/filters/tax-period-filter";
 import { useDateFilter } from "@/contexts/date-filter-context";
 import { useAvailableYears } from "@/hooks/use-available-years";
+import { useNotasCreditoTable } from "@/hooks/use-notas-credito-table";
 
 dayjs.locale("es");
 
 export default function NotasCreditoPage() {
-  // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { user, contribuyenteEfectivo: contribuyente } = useAuth();
-  const [notasCredito, setNotasCredito] = useState<NotaCredito[]>([]);
   const { year: selectedYear, month: selectedMonth } = useDateFilter();
   const { years: availableYears } = useAvailableYears("notas_credito");
 
-  const [loading, setLoading] = useState(true);
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
   const [notaCreditoSeleccionada, setNotaCreditoSeleccionada] =
     useState<NotaCredito | null>(null);
+
+  const {
+    notasCredito: tableNotasCredito,
+    totalCount,
+    totals: tableTotals,
+    page,
+    setPage,
+    filters,
+    updateFilter,
+    resetFilters,
+    activeFilterCount,
+    isLoading: tableLoading,
+    isFetching: tableFetching,
+    itemsPerPage,
+  } = useNotasCreditoTable();
+
+  // Reset table page when period changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedYear, selectedMonth, setPage]);
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -39,70 +58,13 @@ export default function NotasCreditoPage() {
     }).format(valor);
   };
 
-  // Cargar notas de crédito del usuario logueado
-  useEffect(() => {
-    const cargarNotasCredito = async () => {
-      if (!contribuyente?.ruc) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { supabase } = await import("@/lib/supabase");
-
-        let query = supabase
-          .from("notas_credito")
-          .select("*")
-          .eq("contribuyente_ruc", contribuyente.ruc)
-          .order("fecha_emision", { ascending: false });
-
-        if (selectedMonth !== null) {
-          const start = dayjs()
-            .year(selectedYear)
-            .month(selectedMonth - 1)
-            .startOf("month")
-            .format("YYYY-MM-DD");
-          const end = dayjs()
-            .year(selectedYear)
-            .month(selectedMonth - 1)
-            .endOf("month")
-            .format("YYYY-MM-DD");
-          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-        } else {
-          const start = dayjs()
-            .year(selectedYear)
-            .startOf("year")
-            .format("YYYY-MM-DD");
-          const end = dayjs()
-            .year(selectedYear)
-            .endOf("year")
-            .format("YYYY-MM-DD");
-          query = query.gte("fecha_emision", start).lte("fecha_emision", end);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        setNotasCredito(data || []);
-      } catch (error) {
-        console.error("Error al cargar notas de crédito:", error);
-        toast.error("Error al cargar las notas de crédito");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarNotasCredito();
-  }, [contribuyente?.ruc, selectedMonth, selectedYear]);
-
-  // Calcular estadísticas
-  const totalNotasCredito = notasCredito.length;
-  const totalMonto = notasCredito.reduce((sum, nc) => sum + nc.total, 0);
+  // KPIs derivados del hook
+  const totalNotasCredito = totalCount;
+  const totalMonto = tableTotals.total;
   const periodoLabel =
     selectedMonth !== null
       ? `${dayjs().month(selectedMonth - 1).format("MMMM")} ${selectedYear}`
-      : `Año ${selectedYear}`;
+      : `Ano ${selectedYear}`;
   const promedioPeriodo =
     totalNotasCredito > 0 ? totalMonto / totalNotasCredito : 0;
 
@@ -125,7 +87,7 @@ export default function NotasCreditoPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-muted-foreground">
-          Debes iniciar sesión para ver este contenido.
+          Debes iniciar sesion para ver este contenido.
         </p>
       </div>
     );
@@ -139,17 +101,17 @@ export default function NotasCreditoPage() {
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
             <FileX className="h-5 w-5" />
           </span>
-          Notas de Crédito
+          Notas de Credito
         </h1>
         <p className="text-muted-foreground">
-          Gestiona y visualiza las notas de crédito emitidas
+          Gestiona y visualiza las notas de credito emitidas
         </p>
       </div>
 
       <TaxPeriodFilter availableYears={availableYears} />
 
       {/* KPIs */}
-      {loading ? (
+      {tableLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonStatCardSimple key={i} />
@@ -160,7 +122,7 @@ export default function NotasCreditoPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Notas de Crédito
+                Total Notas de Credito
               </CardTitle>
               <FileX className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -182,7 +144,7 @@ export default function NotasCreditoPage() {
                 {formatearMoneda(totalMonto)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Total en notas de crédito
+                Total en notas de credito
               </p>
             </CardContent>
           </Card>
@@ -223,25 +185,56 @@ export default function NotasCreditoPage() {
         </div>
       )}
 
-      {/* Tabla de Notas de Crédito */}
-      {loading ? (
-        <SkeletonTableRows rows={5} columns={7} />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileX className="h-5 w-5 text-primary" />
-              Listado de Notas de Crédito
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NotasCreditoTable
-              notasCredito={notasCredito}
-              onView={handleVerDetalle}
+      {/* Tabla de Notas de Credito */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                  <FileX className="h-5 w-5 text-primary" />
+                  Listado de Notas de Credito
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {totalCount} nota{totalCount !== 1 ? "s" : ""} de credito encontrada{totalCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+
+            <NotasCreditoTableFilters
+              filters={filters}
+              onFilterChange={updateFilter}
+              onReset={resetFilters}
+              activeFilterCount={activeFilterCount}
+              isFetching={tableFetching}
             />
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {tableLoading ? (
+            <SkeletonTableRows rows={8} columns={7} />
+          ) : (
+            <NotasCreditoTable
+              notasCredito={tableNotasCredito}
+              onView={handleVerDetalle}
+              isFetching={tableFetching}
+              totals={tableTotals}
+            />
+          )}
+        </CardContent>
+
+        {/* Pagination inside card */}
+        {!tableLoading && totalCount > 0 && (
+          <div className="border-t px-6">
+            <NotasCreditoPagination
+              paginaActual={page}
+              totalItems={totalCount}
+              itemsPorPagina={itemsPerPage}
+              onPaginaChange={setPage}
+            />
+          </div>
+        )}
+      </Card>
 
       {/* Dialog de Detalle */}
       {notaCreditoSeleccionada && showDetalleDialog && (
