@@ -45,7 +45,3 @@ next-env.d.ts
 sentry.properties
 
 .playwright-mcp
-
-# test data & artifacts
-/docs/compras-xml/
-/test-results/

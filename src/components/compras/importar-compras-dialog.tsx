@@ -99,6 +99,9 @@ const rubrosIconos: Record<RubroCompra, React.ComponentType<{ className?: string
   actividad_profesional: Briefcase,
 };
 
+// TXT import disabled — only XML format supported
+// type ImportFormat = "txt" | "xml";
+type ImportFormat = "xml";
 type Step = "upload" | "parsing" | "preview" | "importing" | "assign" | "updating" | "complete";
 
 export function ImportarComprasDialog({
@@ -108,6 +111,7 @@ export function ImportarComprasDialog({
   onComprasImportadas,
 }: ImportarComprasDialogProps) {
   const [step, setStep] = useState<Step>("upload");
+  const [format, setFormat] = useState<ImportFormat>("xml");
   const [comprasParsed, setComprasParsed] = useState<CompraParsed[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResumen[]>([]);
   const [comprasInsertadas, setComprasInsertadas] = useState<string[]>([]);
@@ -531,6 +535,7 @@ export function ImportarComprasDialog({
   const handleClose = () => {
     const wasComplete = step === "complete";
     setStep("upload");
+    setFormat("xml"); // TXT import disabled
     setComprasParsed([]);
     setProveedores([]);
     setComprasInsertadas([]);
@@ -578,6 +583,33 @@ export function ImportarComprasDialog({
         {/* Step 1: Upload */}
         {step === "upload" && (
           <div className="space-y-4">
+            {/* TXT import disabled — only XML format supported */}
+            {/* <div className="flex gap-2">
+              <Button
+                variant={format === "txt" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFormat("txt");
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Archivo TXT
+              </Button>
+              <Button
+                variant={format === "xml" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFormat("xml");
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="gap-2"
+              >
+                <FileCode2 className="h-4 w-4" />
+                Facturas XML
+              </Button>
+            </div> */}
 
             <Alert>
               <FileCode2 className="h-4 w-4" />

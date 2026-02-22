@@ -36,8 +36,7 @@ import {
 } from "@/components/ui/tooltip";
 import { AgentMessage } from "../agent-message";
 import { Progress } from "@/components/ui/progress";
-// TXT import disabled — Skeleton no longer needed
-// import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Upload,
@@ -60,9 +59,8 @@ import {
   Briefcase,
   HelpCircle,
   Trash2,
-  // TXT import disabled — FileText no longer needed
-  // FileText,
-  // FileCode2, // TXT import disabled
+  FileText,
+  FileCode2,
   DollarSign,
   Calculator,
 } from "lucide-react";
@@ -83,8 +81,7 @@ interface StepComprasProps {
   };
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
-  // TXT import disabled — onFileProcess is now optional
-  onFileProcess?: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[]; warnings?: string[]; skippedCount?: number }>;
+  onFileProcess: (file: File) => Promise<{ compras: CompraParsed[]; proveedores: ProveedorResumen[]; warnings?: string[]; skippedCount?: number }>;
   onXmlFilesProcess: (files: File[], onProgress?: (percent: number) => void) => Promise<ComprasXMLParseResult>;
   onRubroChange: (ruc: string, rubro: string) => void;
   onBulkRubroChange: (rucs: string[], rubro: string) => void;
@@ -120,8 +117,6 @@ export function StepCompras({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   periodo,
   contribuyenteRuc,
-  // TXT import disabled
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onFileProcess,
   onXmlFilesProcess,
   onRubroChange,
@@ -134,12 +129,11 @@ export function StepCompras({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [parseWarnings, setParseWarnings] = useState<string[]>([]);
-  const [skippedCount, setSkippedCount] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars -- TXT import disabled, kept for re-enable
+  const [skippedCount, setSkippedCount] = useState(0);
   const [warningsOpen, setWarningsOpen] = useState(false);
 
   // XML-specific state
-  // TXT import disabled — always default to XML
-  const [formato, setFormato] = useState<"txt" | "xml">("xml");
+  const [formato, setFormato] = useState<"txt" | "xml">(compras.formato);
   const [xmlProgress, setXmlProgress] = useState(0);
   const [xmlParseResult, setXmlParseResult] = useState<ComprasXMLParseResult | null>(null);
 
@@ -266,32 +260,31 @@ export function StepCompras({
     setIsDragging(false);
   }, []);
 
-  // TXT import disabled — processTxtFile removed
-  // const processTxtFile = async (file: File) => {
-  //   if (!file.name.endsWith(".txt") && !file.name.endsWith(".TXT")) {
-  //     setError("Por favor selecciona un archivo TXT del SRI");
-  //     return;
-  //   }
-  //
-  //   setIsProcessing(true);
-  //   setError(null);
-  //   setParseWarnings([]);
-  //   setSkippedCount(0);
-  //   setSuggestionsLoaded(false);
-  //
-  //   try {
-  //     const result = await onFileProcess(file);
-  //     if (result.warnings && result.warnings.length > 0) {
-  //       setParseWarnings(result.warnings);
-  //       setSkippedCount(result.skippedCount || 0);
-  //     }
-  //   } catch (err) {
-  //     const message = err instanceof Error ? err.message : "Error al procesar el archivo. Verifica que sea el formato correcto del SRI.";
-  //     setError(message);
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // };
+  const processTxtFile = async (file: File) => {
+    if (!file.name.endsWith(".txt") && !file.name.endsWith(".TXT")) {
+      setError("Por favor selecciona un archivo TXT del SRI");
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    setParseWarnings([]);
+    setSkippedCount(0);
+    setSuggestionsLoaded(false);
+
+    try {
+      const result = await onFileProcess(file);
+      if (result.warnings && result.warnings.length > 0) {
+        setParseWarnings(result.warnings);
+        setSkippedCount(result.skippedCount || 0);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al procesar el archivo. Verifica que sea el formato correcto del SRI.";
+      setError(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const processXmlFiles = async (files: File[]) => {
     const xmlFiles = Array.from(files).filter(
@@ -325,8 +318,14 @@ export function StepCompras({
     e.preventDefault();
     setIsDragging(false);
     const files = e.dataTransfer.files;
-    // TXT import disabled — always process as XML
-    await processXmlFiles(Array.from(files));
+    if (formato === "xml") {
+      await processXmlFiles(Array.from(files));
+    } else {
+      const file = files[0];
+      if (file) {
+        await processTxtFile(file);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formato]);
 
@@ -334,8 +333,11 @@ export function StepCompras({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // TXT import disabled — always process as XML
-    await processXmlFiles(Array.from(files));
+    if (formato === "xml") {
+      await processXmlFiles(Array.from(files));
+    } else {
+      await processTxtFile(files[0]);
+    }
   };
 
   // Selection handlers
@@ -403,14 +405,15 @@ export function StepCompras({
             ? proveedoresSinRubro > 0
               ? `He procesado ${compras.parsed.length} compras de ${compras.proveedores.length} proveedores. Por favor asigna un rubro a cada proveedor para clasificar correctamente los gastos. Faltan ${proveedoresSinRubro} por asignar.`
               : `¡Perfecto! He procesado ${compras.parsed.length} compras con un total de $${totalCompras.toFixed(2)}. Todos los proveedores tienen un rubro asignado. Puedes continuar al siguiente paso.`
-            // TXT import disabled — only XML message
-            : "Selecciona los archivos XML de facturas electrónicas autorizadas del SRI. Puedes arrastrar múltiples archivos a la vez."
+            : formato === "xml"
+            ? "Selecciona los archivos XML de facturas electrónicas autorizadas del SRI. Puedes arrastrar múltiples archivos a la vez."
+            : "Ahora necesito el archivo TXT de compras del SRI. Este archivo contiene todas las facturas que has recibido de tus proveedores durante el período."
         }
         animate={!hasCompras}
       />
 
-      {/* TXT import disabled — format selector commented out */}
-      {/* {!hasCompras && (
+      {/* Selector de formato (solo visible cuando no hay datos cargados) */}
+      {!hasCompras && (
         <div className="flex gap-2">
           <Button
             variant={formato === "txt" ? "default" : "outline"}
@@ -439,7 +442,7 @@ export function StepCompras({
             Facturas XML
           </Button>
         </div>
-      )} */}
+      )}
 
       {/* Zona de carga */}
       <Card
@@ -457,8 +460,8 @@ export function StepCompras({
           <label className="flex flex-col items-center gap-4 cursor-pointer">
             <input
               type="file"
-              accept=".xml,.XML"
-              multiple
+              accept={formato === "txt" ? ".txt,.TXT" : ".xml,.XML"}
+              multiple={formato === "xml"}
               className="hidden"
               onChange={handleFileSelect}
               disabled={isProcessing}
@@ -487,8 +490,7 @@ export function StepCompras({
                     e.preventDefault();
                     e.stopPropagation();
                     onClear();
-                    // TXT import disabled — reset to XML
-                    setFormato("xml");
+                    setFormato("txt");
                     setError(null);
                     setParseWarnings([]);
                     setXmlParseResult(null);
@@ -520,17 +522,20 @@ export function StepCompras({
                     />
                   )}
                 </div>
-                {/* TXT import disabled — always show XML messages */}
                 <div className="text-center">
                   <p className="font-medium text-foreground">
                     {isProcessing
-                      ? "Procesando archivos..."
+                      ? "Procesando archivo..."
                       : isDragging
-                      ? "Suelta los archivos aquí"
-                      : "Arrastra tus facturas XML aquí"}
+                      ? `Suelta ${formato === "xml" ? "los archivos" : "el archivo"} aquí`
+                      : formato === "xml"
+                      ? "Arrastra tus facturas XML aquí"
+                      : "Arrastra tu archivo de compras aquí"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Formato: .XML (facturas electrónicas del SRI) — puedes seleccionar múltiples
+                    {formato === "xml"
+                      ? "Formato: .XML (facturas electrónicas del SRI) — puedes seleccionar múltiples"
+                      : "Formato: .TXT del portal SRI"}
                   </p>
                 </div>
               </>
@@ -583,8 +588,8 @@ export function StepCompras({
         </Alert>
       )}
 
-      {/* TXT import disabled — TXT skeleton loading commented out */}
-      {/* {isProcessing && formato === "txt" && !hasCompras && (
+      {/* Skeleton loading during TXT parse */}
+      {isProcessing && formato === "txt" && !hasCompras && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             {[0, 1, 2].map((i) => (
@@ -597,7 +602,7 @@ export function StepCompras({
             ))}
           </div>
         </div>
-      )} */}
+      )}
 
       {/* Preview de compras */}
       {hasCompras && (

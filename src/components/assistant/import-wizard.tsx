@@ -187,29 +187,43 @@ export function ImportWizard() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [wizardState, setWizardState] = useState<WizardState>(initialState);
 
-  // TXT import disabled — ventas/notas-credito steps removed, new indices:
-  // welcome=0, retenciones=1, compras=2, processing=3, summary=4
+  // Skip logic: si ventas está vacío, saltar NC (2) y Retenciones (3) → ir a Compras (4)
   const goToNextStep = () => {
-    // Validar que al menos 1 tipo de dato esté cargado antes de procesar (step 2 = Compras)
-    if (currentStep === 2) {
+    // Validar que al menos 1 tipo de dato esté cargado antes de procesar (step 4 = Compras)
+    if (currentStep === 4) {
       const hasAnyData =
+        wizardState.ventas.parsed.length > 0 ||
+        wizardState.notasCredito.parsed.length > 0 ||
         wizardState.compras.parsed.length > 0 ||
         wizardState.retenciones.parsed.length > 0;
       if (!hasAnyData) {
-        toast.error("Debes cargar al menos un tipo de dato (compras o retenciones) para procesar.");
+        toast.error("Debes cargar al menos un tipo de dato (ventas, compras, notas de crédito o retenciones) para procesar.");
         return;
       }
     }
 
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
 
-    const nextStep = currentStep + 1;
+    let nextStep = currentStep + 1;
+
+    // Si estamos en Ventas (1) y no hay ventas cargadas, saltar NC y Retenciones → ir a Compras (4)
+    if (currentStep === 1 && wizardState.ventas.parsed.length === 0) {
+      // Marcar NC y Retenciones como completados (skipped)
+      setCompletedSteps((prev) => new Set([...prev, currentStep, 2, 3]));
+      nextStep = 4;
+    }
 
     setCurrentStep(Math.min(nextStep, WIZARD_STEPS.length - 1));
   };
 
+  // Reverse skip: si en Compras (4) y ventas vacío, volver a Ventas (1)
   const goToPreviousStep = () => {
-    const prevStep = currentStep - 1;
+    let prevStep = currentStep - 1;
+
+    if (currentStep === 4 && wizardState.ventas.parsed.length === 0) {
+      prevStep = 1;
+    }
+
     setCurrentStep(Math.max(prevStep, 0));
   };
 
@@ -230,88 +244,88 @@ export function ImportWizard() {
   };
 
   // Límites de tamaño de archivo
-  // const MAX_TXT_SIZE = 10 * 1024 * 1024; // 10MB // TXT import disabled
+  const MAX_TXT_SIZE = 10 * 1024 * 1024; // 10MB
   const MAX_XML_SIZE = 1 * 1024 * 1024;  // 1MB
 
-  // TXT import disabled
-  // const processVentasFile = async (file: File, tasaIVA: TasaIVA) => {
-  //   if (file.size > MAX_TXT_SIZE) {
-  //     throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
-  //   }
-  //   const text = await file.text();
-  //   const result = parsearArchivoVentas(text, tasaIVA, wizardState.periodo.mes, wizardState.periodo.anio);
-  //
-  //   // Validar RUC del archivo vs contribuyente
-  //   const rucError = validarRucVentas(result.data, contribuyente!.ruc);
-  //   if (rucError) {
-  //     throw new Error(rucError);
-  //   }
-  //
-  //   setWizardState((prev) => ({
-  //     ...prev,
-  //     ventas: {
-  //       archivo: file,
-  //       parsed: result.data,
-  //       tasaIVA,
-  //       guardadas: false,
-  //     },
-  //   }));
-  //   return result;
-  // };
+  // Procesar archivo de ventas
+  const processVentasFile = async (file: File, tasaIVA: TasaIVA) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
+    const text = await file.text();
+    const result = parsearArchivoVentas(text, tasaIVA, wizardState.periodo.mes, wizardState.periodo.anio);
 
-  // TXT import disabled
-  // const processNotasCreditoFile = async (file: File) => {
-  //   if (file.size > MAX_TXT_SIZE) {
-  //     throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
-  //   }
-  //   const text = await file.text();
-  //   const result = parsearArchivoNotasCredito(text, wizardState.periodo.mes, wizardState.periodo.anio);
-  //
-  //   // Validar RUC del archivo vs contribuyente
-  //   const rucError = validarRucNotasCredito(result.data, contribuyente!.ruc);
-  //   if (rucError) {
-  //     throw new Error(rucError);
-  //   }
-  //
-  //   setWizardState((prev) => ({
-  //     ...prev,
-  //     notasCredito: {
-  //       archivo: file,
-  //       parsed: result.data,
-  //       guardadas: false,
-  //     },
-  //   }));
-  //   return result;
-  // };
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucVentas(result.data, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
 
-  // TXT import disabled
-  // const processComprasFile = async (file: File) => {
-  //   if (file.size > MAX_TXT_SIZE) {
-  //     throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
-  //   }
-  //   const text = await file.text();
-  //   const result = parsearArchivoCompras(text, wizardState.periodo.mes, wizardState.periodo.anio);
-  //
-  //   // Validar RUC del archivo vs contribuyente
-  //   const rucError = validarRucCompras(result.data, contribuyente!.ruc);
-  //   if (rucError) {
-  //     throw new Error(rucError);
-  //   }
-  //
-  //   const proveedores = agruparPorProveedor(result.data);
-  //   setWizardState((prev) => ({
-  //     ...prev,
-  //     compras: {
-  //       formato: "txt",
-  //       archivo: file,
-  //       archivosXml: [],
-  //       parsed: result.data,
-  //       proveedores,
-  //       guardadas: false,
-  //     },
-  //   }));
-  //   return { compras: result.data, proveedores, warnings: result.warnings, skippedCount: result.skippedCount };
-  // };
+    setWizardState((prev) => ({
+      ...prev,
+      ventas: {
+        archivo: file,
+        parsed: result.data,
+        tasaIVA,
+        guardadas: false,
+      },
+    }));
+    return result;
+  };
+
+  // Procesar archivo de notas de crédito
+  const processNotasCreditoFile = async (file: File) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
+    const text = await file.text();
+    const result = parsearArchivoNotasCredito(text, wizardState.periodo.mes, wizardState.periodo.anio);
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucNotasCredito(result.data, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
+    setWizardState((prev) => ({
+      ...prev,
+      notasCredito: {
+        archivo: file,
+        parsed: result.data,
+        guardadas: false,
+      },
+    }));
+    return result;
+  };
+
+  // Procesar archivo de compras
+  const processComprasFile = async (file: File) => {
+    if (file.size > MAX_TXT_SIZE) {
+      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
+    }
+    const text = await file.text();
+    const result = parsearArchivoCompras(text, wizardState.periodo.mes, wizardState.periodo.anio);
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucCompras(result.data, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
+    const proveedores = agruparPorProveedor(result.data);
+    setWizardState((prev) => ({
+      ...prev,
+      compras: {
+        formato: "txt",
+        archivo: file,
+        archivosXml: [],
+        parsed: result.data,
+        proveedores,
+        guardadas: false,
+      },
+    }));
+    return { compras: result.data, proveedores, warnings: result.warnings, skippedCount: result.skippedCount };
+  };
 
   // Procesar archivos XML de compras
   const processComprasXmlFiles = async (files: File[], onProgress?: (percent: number) => void): Promise<ComprasXMLParseResult> => {
@@ -451,25 +465,25 @@ export function ImportWizard() {
     }));
   };
 
-  // TXT import disabled — clearVentas/clearNotasCredito no longer used
-  // const clearVentas = () => {
-  //   setWizardState((prev) => ({
-  //     ...prev,
-  //     ventas: { archivo: null, parsed: [], tasaIVA: prev.ventas.tasaIVA, guardadas: false },
-  //   }));
-  // };
+  // Limpiar datos de un paso específico
+  const clearVentas = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      ventas: { archivo: null, parsed: [], tasaIVA: prev.ventas.tasaIVA, guardadas: false },
+    }));
+  };
 
-  // const clearNotasCredito = () => {
-  //   setWizardState((prev) => ({
-  //     ...prev,
-  //     notasCredito: { archivo: null, parsed: [], guardadas: false },
-  //   }));
-  // };
+  const clearNotasCredito = () => {
+    setWizardState((prev) => ({
+      ...prev,
+      notasCredito: { archivo: null, parsed: [], guardadas: false },
+    }));
+  };
 
   const clearCompras = () => {
     setWizardState((prev) => ({
       ...prev,
-      compras: { formato: "xml", archivo: null, archivosXml: [], parsed: [], proveedores: [], guardadas: false }, // TXT import disabled
+      compras: { formato: "txt", archivo: null, archivosXml: [], parsed: [], proveedores: [], guardadas: false },
     }));
   };
 
@@ -528,6 +542,28 @@ export function ImportWizard() {
           />
         )}
         {currentStep === 1 && (
+          <StepVentas
+            ventas={wizardState.ventas}
+            periodo={wizardState.periodo}
+            contribuyenteRuc={contribuyente.ruc}
+            onFileProcess={processVentasFile}
+            onClear={clearVentas}
+            onNext={goToNextStep}
+            onBack={goToPreviousStep}
+          />
+        )}
+        {currentStep === 2 && (
+          <StepNotasCredito
+            notasCredito={wizardState.notasCredito}
+            periodo={wizardState.periodo}
+            contribuyenteRuc={contribuyente.ruc}
+            onFileProcess={processNotasCreditoFile}
+            onClear={clearNotasCredito}
+            onNext={goToNextStep}
+            onBack={goToPreviousStep}
+          />
+        )}
+        {currentStep === 3 && (
           <StepRetenciones
             retenciones={wizardState.retenciones}
             periodo={wizardState.periodo}
@@ -538,11 +574,12 @@ export function ImportWizard() {
             onBack={goToPreviousStep}
           />
         )}
-        {currentStep === 2 && (
+        {currentStep === 4 && (
           <StepCompras
             compras={wizardState.compras}
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
+            onFileProcess={processComprasFile}
             onXmlFilesProcess={processComprasXmlFiles}
             onRubroChange={updateProveedorRubro}
             onBulkRubroChange={updateBulkProveedorRubro}
@@ -551,7 +588,7 @@ export function ImportWizard() {
             onBack={goToPreviousStep}
           />
         )}
-        {currentStep === 3 && (
+        {currentStep === 5 && (
           <StepProcessing
             wizardState={wizardState}
             contribuyenteRuc={contribuyente.ruc}
@@ -563,7 +600,7 @@ export function ImportWizard() {
             onComplete={goToNextStep}
           />
         )}
-        {currentStep === 4 && (
+        {currentStep === 6 && (
           <StepSummary
             wizardState={wizardState}
             periodo={wizardState.periodo}
