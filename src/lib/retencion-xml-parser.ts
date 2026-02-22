@@ -232,8 +232,10 @@ export function validarRucRetencion(
 
   // Extraer cédula (primeros 10 dígitos) para comparación flexible
   // En Ecuador, RUC = cédula (10 dígitos) + sufijo (001)
-  const extraerCedula = (ruc: string) =>
-    ruc.replace(/^0+/, "").slice(0, 10).padStart(10, "0");
+  const extraerCedula = (ruc: string) => {
+    const digitos = ruc.replace(/\D/g, "");
+    return digitos.length >= 13 ? digitos.slice(0, 10) : digitos.padStart(10, "0");
+  };
 
   if (extraerCedula(rucArchivo) !== extraerCedula(rucUsuario)) {
     return `La retención está dirigida al RUC ${rucArchivo}, pero tu RUC es ${rucUsuario}. Verifica que estés subiendo las retenciones correctas.`;
