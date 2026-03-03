@@ -10,7 +10,7 @@ import { StepCompras } from "./wizard-steps/step-compras";
 import { StepProcessing } from "./wizard-steps/step-processing";
 import { StepSummary } from "./wizard-steps/step-summary";
 import { useAuth } from "@/contexts/auth-context";
-import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/lib/ventas-parser";
+import { VentaParsed, TasaIVA } from "@/lib/ventas-parser";
 import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
 import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
 import { parsearMultiplesXMLCompras, ComprasXMLParseResult } from "@/lib/compras-xml-parser";
@@ -244,35 +244,6 @@ export function ImportWizard() {
   // Límites de tamaño de archivo
   const MAX_TXT_SIZE = 10 * 1024 * 1024; // 10MB
   const MAX_XML_SIZE = 1 * 1024 * 1024;  // 1MB
-
-  // Procesar archivo de ventas
-  const processVentasFile = async (file: File, tasaIVA: TasaIVA) => {
-    if (file.size > MAX_TXT_SIZE) {
-      throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Máximo permitido: 10MB.`);
-    }
-    const text = await file.text();
-    const result = parsearArchivoVentas(text, tasaIVA, wizardState.periodo.mes, wizardState.periodo.anio);
-
-    // Validar RUC del archivo vs contribuyente
-    const rucError = validarRucVentas(result.data, contribuyente!.ruc);
-    if (rucError) {
-      throw new Error(rucError);
-    }
-
-    setWizardState((prev) => ({
-      ...prev,
-      ventas: {
-        formato: "txt",
-        archivo: file,
-        archivosXml: [],
-        parsed: result.data,
-        parsedXml: [],
-        tasaIVA,
-        guardadas: false,
-      },
-    }));
-    return result;
-  };
 
   // Procesar archivos XML de ventas
   const processVentasXmlFiles = async (files: File[], onProgress?: (percent: number) => void): Promise<VentasXMLParseResult> => {
