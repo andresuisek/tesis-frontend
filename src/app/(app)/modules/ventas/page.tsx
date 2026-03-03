@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus /*, Upload */ } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { supabase, Venta } from "@/lib/supabase";
 import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
 import { useAuth } from "@/contexts/auth-context";
@@ -20,8 +20,7 @@ import { NuevaVentaDialog } from "@/components/ventas/nueva-venta-dialog";
 import { NuevaNotaCreditoDialog } from "@/components/ventas/nueva-nota-credito-dialog";
 import { NuevaRetencionDialog } from "@/components/ventas/nueva-retencion-dialog";
 import { DetalleVentaDialog } from "@/components/ventas/detalle-venta-dialog";
-// TXT import disabled — keeping only XML and manual entry
-// import { ImportarVentasDialog } from "@/components/ventas/importar-ventas-dialog";
+import { ImportarVentasDialog } from "@/components/ventas/importar-ventas-dialog";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -48,8 +47,7 @@ export default function VentasPage() {
   const [showNotaCreditoDialog, setShowNotaCreditoDialog] = useState(false);
   const [showRetencionDialog, setShowRetencionDialog] = useState(false);
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
-  // TXT import disabled
-  // const [showImportarDialog, setShowImportarDialog] = useState(false);
+  const [showImportarDialog, setShowImportarDialog] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(null);
 
   // ── Flow B: Table with server-side filtering + pagination ──
@@ -165,17 +163,16 @@ export default function VentasPage() {
     refreshAvailableYears();
   };
 
-  // TXT import disabled
-  // const handleVentasImportadas = () => {
-  //   posthog.capture("ventas_imported", {
-  //     contribuyente_ruc: contribuyente?.ruc,
-  //     selected_year: selectedYear,
-  //     selected_month: selectedMonth,
-  //   });
-  //   cargarResumen();
-  //   invalidateTable();
-  //   refreshAvailableYears();
-  // };
+  const handleVentasImportadas = () => {
+    posthog.capture("ventas_imported", {
+      contribuyente_ruc: contribuyente?.ruc,
+      selected_year: selectedYear,
+      selected_month: selectedMonth,
+    });
+    cargarResumen();
+    invalidateTable();
+    refreshAvailableYears();
+  };
 
   const handleCrearNotaCredito = (venta: Venta) => {
     setVentaSeleccionada(venta);
@@ -258,11 +255,10 @@ export default function VentasPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* TXT import disabled — keeping only XML and manual entry */}
-          {/* <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
+          <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
             <Upload className="mr-2 h-4 w-4" />
-            Importar TXT
-          </Button> */}
+            Importar XML
+          </Button>
           <Button onClick={() => setShowNewVentaDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nueva Venta
@@ -345,13 +341,12 @@ export default function VentasPage() {
         contribuyenteRuc={contribuyente.ruc}
       />
 
-      {/* TXT import disabled — keeping only XML and manual entry */}
-      {/* <ImportarVentasDialog
+      <ImportarVentasDialog
         open={showImportarDialog}
         onOpenChange={setShowImportarDialog}
         onVentasImportadas={handleVentasImportadas}
         contribuyenteRuc={contribuyente.ruc}
-      /> */}
+      />
 
       {/* Dialogs */}
       {ventaSeleccionada && showNotaCreditoDialog && (
