@@ -342,9 +342,11 @@ export async function POST(req: Request) {
 
       try {
         // Phase 1: Routing
+        console.info("[AI-Agent-Stream] Processing question:", question.slice(0, 80));
         send("phase", { phase: "routing" });
 
         const intentResult = await classifyIntent(question);
+        console.info("[AI-Agent-Stream] Intent:", intentResult.intent);
 
         posthog.capture({
           distinctId: contribuyenteRuc,
@@ -396,7 +398,6 @@ export async function POST(req: Request) {
           });
 
           send("done", {});
-          controller.close();
           return;
         }
 
@@ -627,7 +628,11 @@ Los xKey y yKeys deben ser nombres EXACTOS de columnas del resultado.`,
         });
         send("done", {});
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Controller may already be closed
+        }
       }
     },
   });

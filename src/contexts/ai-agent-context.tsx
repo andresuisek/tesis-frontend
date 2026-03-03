@@ -294,6 +294,7 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
 
         if (!response.ok) {
           const errorPayload = await response.json().catch(() => ({}));
+          console.error("[AI-Agent] API error:", response.status, errorPayload);
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantId
@@ -407,7 +408,8 @@ export function AiAgentProvider({ children }: { children: React.ReactNode }) {
               : msg
           )
         );
-      } catch {
+      } catch (error) {
+        console.error("[AI-Agent] Stream error:", error);
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantId

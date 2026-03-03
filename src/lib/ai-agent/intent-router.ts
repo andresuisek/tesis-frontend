@@ -30,10 +30,7 @@ export async function classifyIntent(
     return { intent: "database", searchQuery: null };
   }
 
-  // If no Tavily key, always default to database
-  if (!process.env.TAVILY_API_KEY) {
-    return { intent: "database", searchQuery: null };
-  }
+  const hasTavily = !!process.env.TAVILY_API_KEY;
 
   try {
     const response = await fetch(OPENAI_URL, {
@@ -71,9 +68,14 @@ export async function classifyIntent(
     const parsed = JSON.parse(jsonMatch[0]);
 
     const validIntents = ["database", "web_search", "both", "app_help"];
-    const intent = validIntents.includes(parsed.intent)
+    let intent = validIntents.includes(parsed.intent)
       ? (parsed.intent as IntentResult["intent"])
       : "database";
+
+    // Downgrade web-dependent intents when Tavily is unavailable
+    if (!hasTavily && (intent === "web_search" || intent === "both")) {
+      intent = "database";
+    }
 
     return {
       intent,
