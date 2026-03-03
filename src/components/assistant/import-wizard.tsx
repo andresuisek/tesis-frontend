@@ -14,6 +14,7 @@ import { parsearArchivoVentas, VentaParsed, TasaIVA, validarRucVentas } from "@/
 import { parsearArchivoNotasCredito, NotaCreditoParsed, validarRucNotasCredito } from "@/lib/notas-credito-parser";
 import { parsearArchivoCompras, CompraParsed, ProveedorResumen, agruparPorProveedor, validarRucCompras } from "@/lib/compras-parser";
 import { parsearMultiplesXMLCompras, ComprasXMLParseResult } from "@/lib/compras-xml-parser";
+import { parsearMultiplesXMLVentas, VentaXmlParsed, VentasXMLParseResult, validarRucVentasXml } from "@/lib/ventas-xml-parser";
 import { parsearXMLRetencion, RetencionParsed, validarRucRetencion } from "@/lib/retencion-xml-parser";
 import { RubroCompra } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -63,8 +64,11 @@ export interface WizardState {
     anio: number;
   };
   ventas: {
+    formato: "txt" | "xml";
     archivo: File | null;
+    archivosXml: File[];
     parsed: VentaParsed[];
+    parsedXml: VentaXmlParsed[];
     tasaIVA: TasaIVA;
     guardadas: boolean;
   };
@@ -116,8 +120,11 @@ const initialState: WizardState = {
     anio: currentDate.getFullYear(),
   },
   ventas: {
+    formato: "xml",
     archivo: null,
+    archivosXml: [],
     parsed: [],
+    parsedXml: [],
     tasaIVA: 15,
     guardadas: false,
   },
@@ -255,12 +262,58 @@ export function ImportWizard() {
     setWizardState((prev) => ({
       ...prev,
       ventas: {
+        formato: "txt",
         archivo: file,
+        archivosXml: [],
         parsed: result.data,
+        parsedXml: [],
         tasaIVA,
         guardadas: false,
       },
     }));
+    return result;
+  };
+
+  // Procesar archivos XML de ventas
+  const processVentasXmlFiles = async (files: File[], onProgress?: (percent: number) => void): Promise<VentasXMLParseResult> => {
+    const result = await parsearMultiplesXMLVentas(files, onProgress);
+
+    if (result.ventas.length === 0) {
+      throw new Error("No se pudo parsear ninguna factura XML correctamente.");
+    }
+
+    // Validar RUC del archivo vs contribuyente
+    const rucError = validarRucVentasXml(result.ventas, contribuyente!.ruc);
+    if (rucError) {
+      throw new Error(rucError);
+    }
+
+    // Convert VentaXmlParsed[] -> VentaParsed[] for pipeline compatibility
+    const ventasParsed: VentaParsed[] = result.ventas.map((v) => ({
+      fecha_emision: v.fecha_emision,
+      tipo_comprobante: v.tipo_comprobante,
+      numero_comprobante: v.numero_comprobante,
+      ruc_cliente: v.ruc_cliente,
+      razon_social_cliente: v.razon_social_cliente,
+      clave_acceso: v.clave_acceso,
+      subtotal: v.subtotal_0 + v.subtotal_5 + v.subtotal_8 + v.subtotal_15,
+      iva: v.iva,
+      total: v.total,
+    }));
+
+    setWizardState((prev) => ({
+      ...prev,
+      ventas: {
+        formato: "xml",
+        archivo: null,
+        archivosXml: files,
+        parsed: ventasParsed,
+        parsedXml: result.ventas,
+        tasaIVA: 15,
+        guardadas: false,
+      },
+    }));
+
     return result;
   };
 
@@ -460,7 +513,7 @@ export function ImportWizard() {
   const clearVentas = () => {
     setWizardState((prev) => ({
       ...prev,
-      ventas: { archivo: null, parsed: [], tasaIVA: prev.ventas.tasaIVA, guardadas: false },
+      ventas: { formato: "xml", archivo: null, archivosXml: [], parsed: [], parsedXml: [], tasaIVA: prev.ventas.tasaIVA, guardadas: false },
     }));
   };
 
@@ -537,7 +590,7 @@ export function ImportWizard() {
             ventas={wizardState.ventas}
             periodo={wizardState.periodo}
             contribuyenteRuc={contribuyente.ruc}
-            onFileProcess={processVentasFile}
+            onXmlFilesProcess={processVentasXmlFiles}
             onClear={clearVentas}
             onNext={goToNextStep}
             onBack={goToPreviousStep}

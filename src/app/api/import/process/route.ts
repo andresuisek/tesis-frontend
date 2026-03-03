@@ -13,7 +13,11 @@ interface ImportProcessRequest {
     fecha_emision: string;
     ruc_cliente: string;
     razon_social_cliente: string;
-    subtotal: number;
+    subtotal?: number;      // TXT (backward compat)
+    subtotal_0?: number;    // XML
+    subtotal_5?: number;    // XML
+    subtotal_8?: number;    // XML
+    subtotal_15?: number;   // XML
     iva: number;
     total: number;
   }>;

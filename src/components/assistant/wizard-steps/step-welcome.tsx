@@ -131,7 +131,7 @@ export function StepWelcome({
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Cargar tu archivo de <strong>Ventas</strong> del SRI (formato TXT)
+                  Cargar los XML de <strong>Ventas</strong> (facturas electrónicas emitidas)
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -143,7 +143,7 @@ export function StepWelcome({
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  Cargar tu archivo de <strong>Compras</strong> del SRI (formato TXT)
+                  Cargar los XML de <strong>Compras</strong> (facturas electrónicas recibidas)
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />

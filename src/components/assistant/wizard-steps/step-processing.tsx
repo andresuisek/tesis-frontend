@@ -99,12 +99,17 @@ export function StepProcessing({
   const guardarTodo = async (): Promise<ImportResult> => {
     const { ventas, notasCredito, compras, retenciones } = wizardState;
 
+    // When ventas formato="xml", send parsedXml with exact subtotals per rate
+    const ventasPayload = ventas.formato === "xml" && ventas.parsedXml.length > 0
+      ? ventas.parsedXml
+      : ventas.parsed;
+
     const response = await fetch("/api/import/process", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contribuyenteRuc,
-        ventas: ventas.parsed,
+        ventas: ventasPayload,
         notasCredito: notasCredito.parsed,
         compras: compras.parsed,
         retenciones: retenciones.parsed,

@@ -3,37 +3,32 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { AgentMessage } from "../agent-message";
 import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, AlertTriangle, SkipForward, ChevronDown, Trash2, FileText, DollarSign, Calculator } from "lucide-react";
-import { VentaParsed, VentasParseResult, TasaIVA } from "@/lib/ventas-parser";
-
-const TASAS_IVA: TasaIVA[] = [0, 5, 8, 12, 15];
+import { VentaParsed } from "@/lib/ventas-parser";
+import { VentaXmlParsed, VentasXMLParseResult } from "@/lib/ventas-xml-parser";
 import { cn } from "@/lib/utils";
 
 interface StepVentasProps {
   ventas: {
+    formato: "txt" | "xml";
     archivo: File | null;
+    archivosXml: File[];
     parsed: VentaParsed[];
-    tasaIVA: TasaIVA;
+    parsedXml: VentaXmlParsed[];
+    tasaIVA: number;
     guardadas: boolean;
   };
   periodo: { mes: number; anio: number };
   contribuyenteRuc: string;
-  onFileProcess: (file: File, tasaIVA: TasaIVA) => Promise<VentasParseResult>;
+  onXmlFilesProcess: (files: File[], onProgress?: (percent: number) => void) => Promise<VentasXMLParseResult>;
   onClear: () => void;
   onNext: () => void;
   onBack: () => void;
@@ -41,22 +36,19 @@ interface StepVentasProps {
 
 export function StepVentas({
   ventas,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  periodo,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  contribuyenteRuc,
-  onFileProcess,
+  onXmlFilesProcess,
   onClear,
   onNext,
   onBack,
 }: StepVentasProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [tasaIVA, setTasaIVA] = useState<TasaIVA>(ventas.tasaIVA);
   const [error, setError] = useState<string | null>(null);
-  const [parseWarnings, setParseWarnings] = useState<string[]>([]);
-  const [skippedCount, setSkippedCount] = useState(0);
   const [warningsOpen, setWarningsOpen] = useState(false);
+
+  // XML-specific state
+  const [xmlProgress, setXmlProgress] = useState(0);
+  const [xmlParseResult, setXmlParseResult] = useState<VentasXMLParseResult | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -68,49 +60,44 @@ export function StepVentas({
     setIsDragging(false);
   }, []);
 
-  const processFile = async (file: File) => {
-    if (!file.name.endsWith(".txt") && !file.name.endsWith(".TXT")) {
-      setError("Por favor selecciona un archivo TXT del SRI");
+  const processXmlFiles = async (files: File[]) => {
+    const xmlFiles = Array.from(files).filter(
+      (f) => f.name.toLowerCase().endsWith(".xml")
+    );
+    if (xmlFiles.length === 0) {
+      setError("No se encontraron archivos XML válidos");
       return;
     }
 
     setIsProcessing(true);
     setError(null);
-    setParseWarnings([]);
-    setSkippedCount(0);
+    setXmlProgress(0);
+    setXmlParseResult(null);
 
     try {
-      const result = await onFileProcess(file, tasaIVA);
-      if (result.warnings.length > 0) {
-        setParseWarnings(result.warnings);
-        setSkippedCount(result.skippedCount);
-      }
+      const result = await onXmlFilesProcess(xmlFiles, (percent) => {
+        setXmlProgress(percent);
+      });
+      setXmlParseResult(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al procesar el archivo. Verifica que sea el formato correcto del SRI.";
+      const message = err instanceof Error ? err.message : "Error al procesar los archivos XML.";
       setError(message);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        await processFile(file);
-      }
-    },
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    await processXmlFiles(Array.from(e.dataTransfer.files));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tasaIVA]
-  );
+  }, []);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await processFile(file);
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await processXmlFiles(Array.from(files));
   };
 
   // Calcular totales
@@ -125,47 +112,11 @@ export function StepVentas({
       <AgentMessage
         message={
           hasVentas
-            ? `¡Excelente! He procesado ${ventas.parsed.length} ventas con un total de $${totalVentas.toFixed(2)}. El IVA generado es de $${totalIVA.toFixed(2)}. Puedes continuar al siguiente paso o cargar otro archivo si lo necesitas.`
-            : "Primero, sube el archivo TXT de ventas que descargaste del portal del SRI. Este archivo contiene todas tus facturas emitidas del período seleccionado."
+            ? `He procesado ${ventas.parsed.length} ventas con un total de $${totalVentas.toFixed(2)}. El IVA generado es de $${totalIVA.toFixed(2)}. Puedes continuar al siguiente paso o cargar otros archivos si lo necesitas.`
+            : "Selecciona los archivos XML de facturas electrónicas emitidas. Puedes arrastrar múltiples archivos a la vez."
         }
         animate={!hasVentas}
       />
-
-      {/* Selector de tasa IVA */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-foreground">
-                Tasa de IVA del período
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Selecciona la tasa de IVA vigente para este período
-              </p>
-            </div>
-            <Select
-              value={tasaIVA.toString()}
-              onValueChange={(value) => setTasaIVA(parseInt(value) as TasaIVA)}
-              disabled={hasVentas}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASAS_IVA.map((tasa) => (
-                  <SelectItem key={tasa} value={tasa.toString()}>
-                    {tasa}%
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            <AlertTriangle className="inline h-3 w-3 mr-1" />
-            Esta tasa se aplica a todas las ventas. Si tienes ventas con tarifa 0% y {tasaIVA}% en el mismo período, el cálculo de IVA será aproximado.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Zona de carga */}
       <Card
@@ -183,7 +134,8 @@ export function StepVentas({
           <label className="flex flex-col items-center gap-4 cursor-pointer">
             <input
               type="file"
-              accept=".txt,.TXT"
+              accept=".xml,.XML"
+              multiple
               className="hidden"
               onChange={handleFileSelect}
               disabled={isProcessing}
@@ -196,10 +148,10 @@ export function StepVentas({
                 </div>
                 <div className="text-center">
                   <p className="font-medium text-primary">
-                    {ventas.archivo?.name}
+                    {ventas.archivosXml.length} archivos XML procesados
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {ventas.parsed.length} ventas procesadas • Click para cambiar archivo
+                    {ventas.parsed.length} ventas procesadas • Click para cambiar
                   </p>
                 </div>
                 <Button
@@ -211,11 +163,12 @@ export function StepVentas({
                     e.stopPropagation();
                     onClear();
                     setError(null);
-                    setParseWarnings([]);
+                    setXmlParseResult(null);
+                    setXmlProgress(0);
                   }}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Eliminar archivo
+                  Eliminar archivos
                 </Button>
               </>
             ) : (
@@ -223,9 +176,7 @@ export function StepVentas({
                 <div
                   className={cn(
                     "h-16 w-16 rounded-full flex items-center justify-center transition-colors",
-                    isDragging
-                      ? "bg-primary/10"
-                      : "bg-muted"
+                    isDragging ? "bg-primary/10" : "bg-muted"
                   )}
                 >
                   {isProcessing ? (
@@ -234,9 +185,7 @@ export function StepVentas({
                     <Upload
                       className={cn(
                         "h-8 w-8 transition-transform",
-                        isDragging
-                          ? "text-primary animate-bounce"
-                          : "text-muted-foreground"
+                        isDragging ? "text-primary animate-bounce" : "text-muted-foreground"
                       )}
                     />
                   )}
@@ -244,13 +193,13 @@ export function StepVentas({
                 <div className="text-center">
                   <p className="font-medium text-foreground">
                     {isProcessing
-                      ? "Procesando archivo..."
+                      ? "Procesando archivos..."
                       : isDragging
-                      ? "Suelta el archivo aquí"
-                      : "Arrastra tu archivo aquí o haz clic"}
+                      ? "Suelta los archivos aquí"
+                      : "Arrastra tus facturas XML aquí o haz clic"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Formato: .TXT del portal SRI
+                    Formato: .XML (facturas electrónicas) — puedes seleccionar múltiples
                   </p>
                 </div>
               </>
@@ -259,6 +208,41 @@ export function StepVentas({
         </CardContent>
       </Card>
 
+      {/* Barra de progreso XML */}
+      {isProcessing && (
+        <div className="space-y-2">
+          <Progress value={xmlProgress} className="w-full" />
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Parseando archivos XML...</span>
+            <span>{Math.round(xmlProgress)}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Resumen de parseo XML */}
+      {xmlParseResult && !isProcessing && (
+        <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+          <div>
+            <p className="text-sm text-muted-foreground">Parseadas correctamente</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {xmlParseResult.ventas.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Errores</p>
+            <p className="text-2xl font-bold text-destructive">
+              {xmlParseResult.errores.length - xmlParseResult.skipped}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Omitidas (no autorizadas)</p>
+            <p className="text-2xl font-bold text-muted-foreground">
+              {xmlParseResult.skipped}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <Alert variant="destructive">
@@ -266,23 +250,6 @@ export function StepVentas({
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      )}
-
-      {/* Skeleton loading during parse */}
-      {isProcessing && (
-        <Card>
-          <CardContent className="pt-6">
-            <Skeleton className="h-4 w-40 mb-4" />
-            <div className="grid grid-cols-3 gap-4">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="p-4 rounded-lg bg-muted/50">
-                  <Skeleton className="h-3 w-20 mb-2" />
-                  <Skeleton className="h-7 w-24" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       )}
 
       {/* Preview de ventas */}
@@ -346,15 +313,13 @@ export function StepVentas({
         </Card>
       )}
 
-      {/* Warnings del parseo */}
-      {parseWarnings.length > 0 && (
+      {/* XML errors collapsible */}
+      {xmlParseResult && xmlParseResult.errores.length > 0 && (
         <Collapsible open={warningsOpen} onOpenChange={setWarningsOpen}>
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>
-              {skippedCount > 0
-                ? `${skippedCount} registros omitidos por datos inválidos`
-                : `${parseWarnings.length} advertencias durante el parseo`}
+              {xmlParseResult.errores.length} archivos con problemas
             </AlertTitle>
             <AlertDescription>
               <CollapsibleTrigger className="flex items-center gap-1 text-xs hover:underline cursor-pointer mt-1">
@@ -363,8 +328,8 @@ export function StepVentas({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto text-xs">
-                  {parseWarnings.map((w, i) => (
-                    <li key={i}>• {w}</li>
+                  {xmlParseResult.errores.map((e, i) => (
+                    <li key={i}>• {e}</li>
                   ))}
                 </ul>
               </CollapsibleContent>

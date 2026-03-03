@@ -45,3 +45,6 @@ next-env.d.ts
 sentry.properties
 
 .playwright-mcp
+
+/docs/compras-xml/*
+/docs/ventas-xml/*
