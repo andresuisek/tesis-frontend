@@ -88,7 +88,6 @@ function extractTableSummaries(source: string) {
       .filter((line) => !columnIgnorePatterns.some((regex) => regex.test(line)))
       .map(sanitizeColumnDefinition)
       .filter(Boolean)
-      .slice(0, 12)
       .join(", ");
 
     if (columnSummary) {
