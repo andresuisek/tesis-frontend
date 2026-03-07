@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,14 @@ import { DetalleLiquidacionDialog } from "@/components/liquidacion/detalle-liqui
 import posthog from "posthog-js";
 
 export default function LiquidacionPage() {
+  return (
+    <Suspense>
+      <LiquidacionContent />
+    </Suspense>
+  );
+}
+
+function LiquidacionContent() {
   // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
   const { year: selectedYear, month: selectedMonth, setYear, setMonth } = useDateFilter();
