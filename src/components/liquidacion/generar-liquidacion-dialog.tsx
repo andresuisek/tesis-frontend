@@ -51,6 +51,8 @@ interface GenerarLiquidacionDialogProps {
   onOpenChange: (open: boolean) => void;
   contribuyenteRuc: string;
   onCreated: () => void;
+  initialYear?: number;
+  initialMonth?: number;
 }
 
 interface ManualValores {
@@ -101,14 +103,16 @@ export function GenerarLiquidacionDialog({
   onOpenChange,
   contribuyenteRuc,
   onCreated,
+  initialYear,
+  initialMonth,
 }: GenerarLiquidacionDialogProps) {
   const today = dayjs();
   const currentYear = today.year();
   const previousMonth = dayjs().subtract(1, "month");
 
   const [tipoPeriodo, setTipoPeriodo] = useState<PeriodType>("mensual");
-  const [year, setYear] = useState(previousMonth.year());
-  const [month, setMonth] = useState(previousMonth.month() + 1);
+  const [year, setYear] = useState(initialYear ?? previousMonth.year());
+  const [month, setMonth] = useState(initialMonth ?? previousMonth.month() + 1);
   const [semestre, setSemestre] = useState<SemesterValue>(
     previousMonth.month() < 6 ? "S1" : "S2"
   );
@@ -177,13 +181,14 @@ export function GenerarLiquidacionDialog({
       setAlertas([]);
       setDiferidoRecibido(0);
     } else {
-      const prev = dayjs().subtract(1, "month");
       setTipoPeriodo("mensual");
-      setYear(prev.year());
-      setMonth(prev.month() + 1);
+      // Use initial values from query params if provided, otherwise default to previous month
+      const prev = dayjs().subtract(1, "month");
+      setYear(initialYear ?? prev.year());
+      setMonth(initialMonth ?? prev.month() + 1);
       setSemestre(prev.month() < 6 ? "S1" : "S2");
     }
-  }, [open]);
+  }, [open, initialYear, initialMonth]);
 
   const handleManualChange = (field: keyof ManualValores, value: string) => {
     setManualValores((prev) => ({ ...prev, [field]: value }));

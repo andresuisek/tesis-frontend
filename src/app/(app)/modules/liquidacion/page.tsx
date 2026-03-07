@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,7 +29,9 @@ import posthog from "posthog-js";
 export default function LiquidacionPage() {
   // Usar contribuyenteEfectivo para soportar tanto contribuyentes como contadores
   const { contribuyenteEfectivo: contribuyente } = useAuth();
-  const { year: selectedYear, month: selectedMonth } = useDateFilter();
+  const { year: selectedYear, month: selectedMonth, setYear, setMonth } = useDateFilter();
+  const searchParams = useSearchParams();
+  const queryProcessed = useRef(false);
   const { years: availableYears, refresh: refreshAvailableYears } = useAvailableYears(
     "tax_liquidations",
     "fecha_inicio_cierre"
@@ -36,6 +39,8 @@ export default function LiquidacionPage() {
   const [liquidaciones, setLiquidaciones] = useState<TaxLiquidation[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [dialogInitialYear, setDialogInitialYear] = useState<number | undefined>();
+  const [dialogInitialMonth, setDialogInitialMonth] = useState<number | undefined>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const pageSize = 5;
@@ -56,6 +61,27 @@ export default function LiquidacionPage() {
         : null,
     [liquidacionSeleccionada]
   );
+
+  // Read query params from import wizard to auto-open dialog with period
+  useEffect(() => {
+    if (queryProcessed.current) return;
+    const anio = searchParams.get("anio");
+    const mes = searchParams.get("mes");
+    const nuevo = searchParams.get("nuevo");
+
+    if (anio && mes && nuevo === "1") {
+      queryProcessed.current = true;
+      const numAnio = Number(anio);
+      const numMes = Number(mes);
+      setYear(numAnio);
+      setMonth(numMes);
+      setDialogInitialYear(numAnio);
+      setDialogInitialMonth(numMes);
+      setModalAbierto(true);
+      // Clean up URL without navigation
+      window.history.replaceState({}, "", "/modules/liquidacion");
+    }
+  }, [searchParams, setYear, setMonth]);
 
   const cargarLiquidaciones = async () => {
     if (!contribuyente?.ruc) {
@@ -232,6 +258,8 @@ export default function LiquidacionPage() {
         onOpenChange={setModalAbierto}
         contribuyenteRuc={contribuyente.ruc}
         onCreated={handleCierreCreado}
+        initialYear={dialogInitialYear}
+        initialMonth={dialogInitialMonth}
       />
       <DetalleLiquidacionDialog
         open={detalleAbierto}

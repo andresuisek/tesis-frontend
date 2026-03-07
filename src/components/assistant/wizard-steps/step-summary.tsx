@@ -338,14 +338,12 @@ export function StepSummary({ wizardState, periodo, onNewImport }: StepSummaryPr
           </Link>
         </Button>
 
-        {resumen.ivaAPagar > 0 && (
-          <Button asChild>
-            <Link href="/modules/liquidacion">
-              <Calculator className="mr-2 h-4 w-4" />
-              Generar Liquidación
-            </Link>
-          </Button>
-        )}
+        <Button asChild>
+          <Link href={`/modules/liquidacion?anio=${periodo.anio}&mes=${periodo.mes}&nuevo=1`}>
+            <Calculator className="mr-2 h-4 w-4" />
+            Ir a Liquidación de IVA
+          </Link>
+        </Button>
 
         <Button
           onClick={onNewImport}
