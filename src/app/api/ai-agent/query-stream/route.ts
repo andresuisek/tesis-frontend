@@ -250,7 +250,7 @@ async function executeQueryViaRpc(sql: string, allowedRuc: string) {
 function prepareRowsForModel(
   rows: Record<string, unknown>[],
   limit = 20,
-  maxColumns = 12
+  maxColumns = 20
 ) {
   return rows.slice(0, limit).map((row) => {
     const entries = Object.entries(row)
