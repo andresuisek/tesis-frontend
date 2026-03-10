@@ -6,6 +6,7 @@ import {
   Calculator,
   FileText,
   Home,
+  Landmark,
   Receipt,
   ShoppingCart,
   TrendingUp,
@@ -82,6 +83,11 @@ const mainItems = [
     title: "Liquidación",
     url: "/modules/liquidacion",
     icon: Calculator,
+  },
+  {
+    title: "Impuesto a la Renta",
+    url: "/modules/declaracion-renta",
+    icon: Landmark,
   },
 ];
 

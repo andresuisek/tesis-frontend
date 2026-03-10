@@ -207,3 +207,64 @@ export interface ContadorContribuyenteConDetalle extends ContadorContribuyente {
 export interface ContribuyenteConContador extends Contribuyente {
   contador?: Contador;
 }
+
+// =============================================================================
+// TIPOS PARA DECLARACIÓN ANUAL DE IMPUESTO A LA RENTA
+// =============================================================================
+
+export interface TramoImpuestoRenta {
+  id: string;
+  anio_fiscal: number;
+  fraccion_basica: number;
+  exceso_hasta: number;
+  impuesto_fraccion_basica: number;
+  porcentaje_excedente: number;
+  orden: number;
+}
+
+export interface ParametrosAnuales {
+  id: string;
+  anio_fiscal: number;
+  canasta_basica: number;
+  limite_vivienda: number;
+  limite_alimentacion: number;
+  limite_educacion: number;
+  limite_vestimenta: number;
+  limite_salud: number;
+  limite_turismo: number;
+  limite_total_gastos: number;
+  incremento_por_carga: number;
+  max_cargas_deduccion: number;
+}
+
+export interface DeclaracionRenta {
+  id: string;
+  contribuyente_ruc: string;
+  anio_fiscal: number;
+  ingresos_brutos: number;
+  costos_gastos_deducibles: number;
+  utilidad_ejercicio: number;
+  gasto_vivienda: number;
+  gasto_alimentacion: number;
+  gasto_educacion: number;
+  gasto_vestimenta: number;
+  gasto_salud: number;
+  gasto_turismo: number;
+  gasto_vivienda_deducible: number;
+  gasto_alimentacion_deducible: number;
+  gasto_educacion_deducible: number;
+  gasto_vestimenta_deducible: number;
+  gasto_salud_deducible: number;
+  gasto_turismo_deducible: number;
+  total_gastos_personales_deducibles: number;
+  base_imponible: number;
+  impuesto_causado: number;
+  retenciones_renta: number;
+  impuesto_a_pagar: number;
+  cargas_familiares_usadas: number;
+  canasta_basica_usada: number;
+  modo_manual: boolean;
+  notas: string | null;
+  created_at: string;
+  deleted_at: string | null;
+}
