@@ -279,6 +279,9 @@ export async function POST(req: Request) {
     const rows = await executeQueryViaRpc(sanitizedSql, contribuyenteRuc);
     const previewRows = prepareRowsForModel(rows);
 
+    // Compute real aggregates from ALL rows to avoid hallucinated totals
+    const aggregates = computeAggregates(rows);
+
     const friendlyResponse = await callOpenAi({
       responseFormat: friendlyResponseFormat,
       temperature: 0.2,
@@ -286,7 +289,7 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Eres un asesor tributario que explica resultados en español claro. Nunca muestres el SQL ni detalles técnicos. Resume en uno o dos párrafos, añade viñetas si ayudan y sugiere próximos pasos.",
+            "Eres un asesor tributario que explica resultados en español claro. Nunca muestres el SQL ni detalles técnicos. Resume en uno o dos párrafos, añade viñetas si ayudan y sugiere próximos pasos. IMPORTANTE: Si el JSON incluye 'aggregates', usa EXCLUSIVAMENTE esos valores para reportar totales y sumas. NUNCA calcules totales sumando las sampleRows, son solo una muestra parcial.",
         },
         {
           role: "user",
@@ -294,6 +297,9 @@ export async function POST(req: Request) {
             question,
             contribuyenteRuc,
             rowCount: rows.length,
+            ...(aggregates
+              ? { aggregates, note: "Usa SIEMPRE los valores de 'aggregates' para cifras y totales. Son calculados con TODOS los datos reales." }
+              : {}),
             sampleRows: previewRows,
           }),
         },
@@ -365,6 +371,47 @@ async function executeQueryViaRpc(sql: string, allowedRuc: string) {
   const rows = (Array.isArray(data) ? data : []) as Record<string, unknown>[];
 
   return rows;
+}
+
+function computeAggregates(rows: Record<string, unknown>[]) {
+  if (!rows.length) return null;
+
+  const numericColumns = Object.keys(rows[0]).filter((key) => {
+    const val = rows[0][key];
+    return typeof val === "number" || (typeof val === "string" && !isNaN(Number(val)) && val.trim() !== "");
+  });
+
+  if (!numericColumns.length) return null;
+
+  const aggregates: Record<string, { sum: number; min: number; max: number; avg: number }> = {};
+
+  for (const col of numericColumns) {
+    let sum = 0;
+    let min = Infinity;
+    let max = -Infinity;
+    let count = 0;
+
+    for (const row of rows) {
+      const val = Number(row[col]);
+      if (!isNaN(val)) {
+        sum += val;
+        if (val < min) min = val;
+        if (val > max) max = val;
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      aggregates[col] = {
+        sum: Math.round(sum * 100) / 100,
+        min: Math.round(min * 100) / 100,
+        max: Math.round(max * 100) / 100,
+        avg: Math.round((sum / count) * 100) / 100,
+      };
+    }
+  }
+
+  return Object.keys(aggregates).length ? aggregates : null;
 }
 
 function sanitizeSql(sql: string) {

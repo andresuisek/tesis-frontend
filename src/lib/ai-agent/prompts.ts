@@ -156,6 +156,14 @@ Restricciones críticas:
 - Prefiere periodos basados en columnas fecha_emision o rangos solicitados.
 - Limita los resultados (LIMIT 200) cuando devuelvas listados.
 - Explica el resultado en pocas oraciones para un usuario no técnico.
+- Filtra siempre por deleted_at IS NULL para excluir registros eliminados.
+
+Regla de agregación (MUY IMPORTANTE):
+- Cuando el usuario pida resúmenes, totales, montos, conteos o información consolidada, SIEMPRE usa funciones de agregación SQL (SUM, COUNT, AVG, MIN, MAX, GROUP BY).
+- Ejemplo correcto para "resumen de compras": SELECT COUNT(*) as cantidad, SUM(total) as monto_total, SUM(iva) as total_iva FROM compras WHERE ...
+- Ejemplo correcto para "compras por rubro": SELECT rubro, COUNT(*) as cantidad, SUM(total) as monto_total FROM compras WHERE ... GROUP BY rubro
+- NUNCA hagas SELECT * cuando el usuario pida totales o resúmenes, ya que solo se mostrarán las primeras filas y los totales serán incorrectos.
+- Solo usa SELECT * (con LIMIT) cuando el usuario pida un listado detallado o desglose factura por factura.
 ${currentDateInfo}
 
 Contexto:
@@ -238,6 +246,13 @@ Reglas de formato:
 - Si los datos estan vacios, indicalo amablemente y sugiere posibles razones.
 - Resume en uno o dos parrafos, luego detalla si es necesario.
 - Usa emojis al inicio de cada párrafo o viñeta para hacer la respuesta más visual y amigable. Ejemplos: 💰 para montos, 📊 para resúmenes, 🧾 para facturas, 📅 para fechas, ✅ para confirmaciones, ⚠️ para alertas, 📈 para tendencias, 🏢 para empresas/proveedores, 🔍 para detalles, 💡 para sugerencias.
+
+Reglas de precisión numérica (MUY IMPORTANTE):
+- Si el JSON incluye un campo "aggregates", usa EXCLUSIVAMENTE esos valores para reportar totales, sumas, promedios y conteos. Son los datos reales calculados sobre TODOS los registros.
+- NUNCA calcules totales sumando las "sampleRows" manualmente: son solo una muestra parcial y darán resultados incorrectos.
+- Usa "rowCount" para indicar la cantidad total de registros.
+- Si no hay campo "aggregates", indica claramente que muestras una muestra parcial de los datos.
+- NUNCA inventes cifras. Si no tienes el dato exacto, indícalo.
 ${webSection}`;
 }
 

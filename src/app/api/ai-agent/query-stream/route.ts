@@ -267,6 +267,47 @@ function prepareRowsForModel(
   });
 }
 
+function computeAggregates(rows: Record<string, unknown>[]) {
+  if (!rows.length) return null;
+
+  const numericColumns = Object.keys(rows[0]).filter((key) => {
+    const val = rows[0][key];
+    return typeof val === "number" || (typeof val === "string" && !isNaN(Number(val)) && val.trim() !== "");
+  });
+
+  if (!numericColumns.length) return null;
+
+  const aggregates: Record<string, { sum: number; min: number; max: number; avg: number }> = {};
+
+  for (const col of numericColumns) {
+    let sum = 0;
+    let min = Infinity;
+    let max = -Infinity;
+    let count = 0;
+
+    for (const row of rows) {
+      const val = Number(row[col]);
+      if (!isNaN(val)) {
+        sum += val;
+        if (val < min) min = val;
+        if (val > max) max = val;
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      aggregates[col] = {
+        sum: Math.round(sum * 100) / 100,
+        min: Math.round(min * 100) / 100,
+        max: Math.round(max * 100) / 100,
+        avg: Math.round((sum / count) * 100) / 100,
+      };
+    }
+  }
+
+  return Object.keys(aggregates).length ? aggregates : null;
+}
+
 function sanitizeSql(sql: string) {
   return sql.trim().replace(/;+\s*$/g, "");
 }
@@ -539,11 +580,17 @@ Los xKey y yKeys deben ser nombres EXACTOS de columnas del resultado.`,
         // Stage 2: Streaming narrative
         const narrativeSystemPrompt = buildFriendlyStreamingPrompt(webContext);
 
+        // Compute real aggregates from ALL rows to avoid hallucinated totals
+        const aggregates = sqlExecuted ? computeAggregates(rows) : null;
+
         const narrativeUserContent = sqlExecuted
           ? JSON.stringify({
               question,
               contribuyenteRuc,
               rowCount,
+              ...(aggregates
+                ? { aggregates, note: "Usa SIEMPRE los valores de 'aggregates' para cifras y totales. Son calculados con TODOS los datos reales. Las sampleRows son solo una muestra parcial, NO las uses para calcular totales." }
+                : {}),
               sampleRows: previewRows,
             })
           : `Pregunta: ${question}\n\nNo se consultaron datos del contribuyente. Responde solo con el contexto normativo proporcionado.`;
