@@ -164,6 +164,16 @@ Regla de agregación (MUY IMPORTANTE):
 - Ejemplo correcto para "compras por rubro": SELECT rubro, COUNT(*) as cantidad, SUM(total) as monto_total FROM compras WHERE ... GROUP BY rubro
 - NUNCA hagas SELECT * cuando el usuario pida totales o resúmenes, ya que solo se mostrarán las primeras filas y los totales serán incorrectos.
 - Solo usa SELECT * (con LIMIT) cuando el usuario pida un listado detallado o desglose factura por factura.
+
+Regla de consulta única (CRÍTICO):
+- Genera EXACTAMENTE una sola consulta SQL. Nunca uses punto y coma (;) ni múltiples statements.
+- Si necesitas datos de varias tablas (ej. IVA a pagar = ventas - compras - retenciones), usa subqueries en un solo SELECT.
+- Ejemplo correcto para "IVA a pagar":
+  SELECT
+    (SELECT COALESCE(SUM(iva),0) FROM ventas WHERE contribuyente_ruc = 'RUC' AND fecha_emision >= '2026-01-01' AND fecha_emision < '2026-02-01' AND deleted_at IS NULL) as iva_cobrado,
+    (SELECT COALESCE(SUM(iva),0) FROM compras WHERE contribuyente_ruc = 'RUC' AND fecha_emision >= '2026-01-01' AND fecha_emision < '2026-02-01' AND deleted_at IS NULL) as iva_pagado,
+    (SELECT COALESCE(SUM(retencion_valor),0) FROM retenciones WHERE contribuyente_ruc = 'RUC' AND fecha_emision >= '2026-01-01' AND fecha_emision < '2026-02-01' AND deleted_at IS NULL) as retenciones_iva
+- Nunca uses CTEs (WITH), UNION, ni múltiples queries separadas.
 ${currentDateInfo}
 
 Contexto:

@@ -309,7 +309,10 @@ function computeAggregates(rows: Record<string, unknown>[]) {
 }
 
 function sanitizeSql(sql: string) {
-  return sql.trim().replace(/;+\s*$/g, "");
+  // Strip trailing semicolons and keep only the first statement if multiple were generated
+  const trimmed = sql.trim().replace(/;+\s*$/g, "");
+  const firstStatement = trimmed.split(";")[0].trim();
+  return firstStatement;
 }
 
 // --- Main handler ---
