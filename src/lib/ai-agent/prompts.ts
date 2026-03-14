@@ -181,7 +181,9 @@ Formato esperado (response_format):
 
 function containsUnsafeKeyword(sql: string) {
   const lowerSql = sql.toLowerCase();
-  return forbiddenSqlKeywords.some((keyword) => lowerSql.includes(keyword));
+  return forbiddenSqlKeywords.some((keyword) =>
+    new RegExp(`\\b${keyword}\\b`).test(lowerSql)
+  );
 }
 
 export function validateSqlForUser(
