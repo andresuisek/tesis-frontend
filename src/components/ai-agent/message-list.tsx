@@ -101,12 +101,12 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
   ]);
   const columns = Object.keys(rows[0])
     .filter((col) => !hiddenColumns.has(col))
-    .slice(0, 5);
+    .slice(0, 8); // Aumentado a 8 columnas máx
   if (!columns.length) {
     return null;
   }
 
-  const limitedRows = rows.slice(0, 5);
+  const limitedRows = rows.slice(0, 10); // Aumentado a 10 filas
 
   // Hide table if all cell values are null/undefined/empty
   const hasAnyValue = limitedRows.some((row) =>
@@ -121,34 +121,39 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
 
   return (
     <div className="rounded-xl border border-border/60 bg-background/80 p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-        <Database className="h-3.5 w-3.5 text-primary" />
-        Vista previa (máx. {limitedRows.length} filas)
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+          <Database className="h-3.5 w-3.5 text-primary" />
+          Vista previa ({limitedRows.length} de {rows.length} filas)
+        </div>
+        <span className="text-[10px] text-muted-foreground/60">
+          {columns.length} columnas
+        </span>
       </div>
-      <div className="max-h-48 overflow-auto">
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="bg-muted text-muted-foreground">
+      <div className="max-h-72 overflow-auto rounded-lg border border-border/40">
+        <table className="w-full min-w-max border-collapse text-xs">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-muted/90 backdrop-blur-sm text-muted-foreground">
               {columns.map((column) => (
                 <th
                   key={column}
-                  className="px-2 py-1 text-left font-medium capitalize"
+                  className="whitespace-nowrap px-3 py-2 text-left font-semibold capitalize border-b border-border/40"
                 >
                   {column.replace(/_/g, " ")}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/30">
             {limitedRows.map((row, rowIndex) => (
               <tr
                 key={`${rowIndex}`}
-                className="border-b border-border/40 last:border-none"
+                className="hover:bg-muted/30 transition-colors"
               >
                 {columns.map((column) => (
                   <td
                     key={column}
-                    className="px-2 py-1 text-muted-foreground"
+                    className="whitespace-nowrap px-3 py-2 text-muted-foreground"
                   >
                     {formatCellValue(row[column])}
                   </td>
@@ -158,6 +163,11 @@ function RowsTable({ rows }: { rows: Record<string, unknown>[] }) {
           </tbody>
         </table>
       </div>
+      {rows.length > 10 && (
+        <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
+          Mostrando las primeras 10 filas de {rows.length} registros
+        </p>
+      )}
     </div>
   );
 }
@@ -455,27 +465,66 @@ export function MessageList() {
                     {message.content}
                   </p>
                 ) : message.content ? (
-                  <div className="prose-sm max-w-none">
+                  <div className="prose-sm max-w-none text-foreground">
                     <ReactMarkdown
                       components={{
                         p: ({ children }) => (
                           <p className="mb-2 leading-relaxed">{children}</p>
                         ),
                         strong: ({ children }) => (
-                          <strong className="font-semibold">{children}</strong>
+                          <strong className="font-semibold text-foreground">{children}</strong>
                         ),
                         ul: ({ children }) => (
-                          <ul className="list-disc pl-4 space-y-1">
+                          <ul className="list-disc pl-4 space-y-1 my-2">
                             {children}
                           </ul>
                         ),
                         ol: ({ children }) => (
-                          <ol className="list-decimal pl-4 space-y-1">
+                          <ol className="list-decimal pl-4 space-y-1 my-2">
                             {children}
                           </ol>
                         ),
                         li: ({ children }) => (
                           <li className="leading-relaxed">{children}</li>
+                        ),
+                        table: ({ children }) => (
+                          <div className="my-3 overflow-auto rounded-lg border border-border/40">
+                            <table className="w-full min-w-max border-collapse text-xs">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-muted/90">{children}</thead>
+                        ),
+                        th: ({ children }) => (
+                          <th className="whitespace-nowrap px-3 py-2 text-left font-semibold border-b border-border/40">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="whitespace-nowrap px-3 py-2 border-b border-border/20">
+                            {children}
+                          </td>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="hover:bg-muted/30 transition-colors">
+                            {children}
+                          </tr>
+                        ),
+                        h1: ({ children }) => (
+                          <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-base font-semibold mt-3 mb-2">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
+                        ),
+                        code: ({ children }) => (
+                          <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
+                            {children}
+                          </code>
                         ),
                       }}
                     >

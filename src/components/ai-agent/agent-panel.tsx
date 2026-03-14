@@ -21,7 +21,7 @@ export function AgentPanel() {
       open={isPanelOpen}
       onOpenChange={(open) => (open ? openPanel() : closePanel())}
     >
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-2xl">
+      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-4xl">
         <SheetHeader className="border-b px-6 pb-4 pt-8">
           <SheetTitle className="text-left text-2xl font-semibold">
             Asistente Tributario
@@ -32,12 +32,14 @@ export function AgentPanel() {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex h-full flex-1 flex-col gap-4 overflow-hidden px-6 pb-6 pt-4">
-          <div className="flex-1 overflow-hidden rounded-2xl border border-border/50 bg-muted/30 p-4 backdrop-blur-sm">
+        <div className="flex h-[calc(100vh-120px)] flex-col gap-3 overflow-hidden px-6 pb-4 pt-4">
+          {/* Área de mensajes - ocupa el máximo espacio disponible */}
+          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/50 bg-muted/30 p-4 backdrop-blur-sm">
             <MessageList />
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm">
+          {/* Compositor - altura fija */}
+          <div className="shrink-0 rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm">
             <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
               <Lightbulb className="h-4 w-4 text-amber-500" aria-hidden />
               <span>
@@ -46,7 +48,9 @@ export function AgentPanel() {
             </div>
             <AgentComposer />
           </div>
-          <div className="flex items-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-xs text-muted-foreground">
+
+          {/* Footer informativo */}
+          <div className="shrink-0 flex items-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-xs text-muted-foreground">
             <Shield className="h-4 w-4 text-emerald-500" aria-hidden />
             Tu RUC y filtros obligatorios se aplican automáticamente en cada
             consulta.

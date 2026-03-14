@@ -91,8 +91,8 @@ export function AgentComposer() {
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           onKeyDown={handleTextareaKeyDown}
-          rows={3}
-          className="min-h-[120px] resize-none border-none bg-transparent focus-visible:ring-0"
+          rows={2}
+          className="min-h-[72px] max-h-32 resize-none border-none bg-transparent focus-visible:ring-0"
           disabled={isProcessing}
         />
         <div className="mt-2 flex items-center justify-end">
