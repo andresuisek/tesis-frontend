@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { NotasCreditoTable } from "@/components/notas-credito/notas-credito-table";
 import { NotasCreditoTableFilters } from "@/components/notas-credito/notas-credito-table-filters";
 import { NotasCreditoPagination } from "@/components/notas-credito/notas-credito-pagination";
 import { DetalleNotaCreditoDialog } from "@/components/notas-credito/detalle-nota-credito-dialog";
 import { NotaCredito } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
-import { FileX, DollarSign, TrendingDown, Calendar } from "lucide-react";
+import { FileX, DollarSign, TrendingDown, Calendar, Download } from "lucide-react";
+import { exportNotasCreditoExcel } from "@/lib/reports/notas-credito-excel";
+import { toast } from "sonner";
 import { SkeletonStatCardSimple, SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -25,6 +28,7 @@ export default function NotasCreditoPage() {
   const { years: availableYears } = useAvailableYears("notas_credito");
 
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [notaCreditoSeleccionada, setNotaCreditoSeleccionada] =
     useState<NotaCredito | null>(null);
 
@@ -47,6 +51,37 @@ export default function NotasCreditoPage() {
   useEffect(() => {
     setPage(1);
   }, [selectedYear, selectedMonth, setPage]);
+
+  // Period bounds for exports
+  const periodStart = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).startOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD");
+  const periodEnd = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).endOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD");
+  const periodoExportLabel = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).format("MMMM_YYYY")
+    : `${selectedYear}`;
+
+  const handleExportExcel = async () => {
+    if (!contribuyente?.ruc) return;
+    setExporting(true);
+    try {
+      await exportNotasCreditoExcel({
+        ruc: contribuyente.ruc,
+        periodStart,
+        periodEnd,
+        busqueda: filters.busqueda || undefined,
+        fechaDesde: filters.fechaDesde,
+        fechaHasta: filters.fechaHasta,
+      }, periodoExportLabel);
+      toast.success("Excel de notas de credito descargado");
+    } catch {
+      toast.error("Error al exportar notas de credito");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -96,16 +131,26 @@ export default function NotasCreditoPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <FileX className="h-5 w-5" />
-          </span>
-          Notas de Credito
-        </h1>
-        <p className="text-muted-foreground">
-          Gestiona y visualiza las notas de credito emitidas
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <FileX className="h-5 w-5" />
+            </span>
+            Notas de Credito
+          </h1>
+          <p className="text-muted-foreground">
+            Gestiona y visualiza las notas de credito emitidas
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleExportExcel}
+          disabled={exporting}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {exporting ? "Exportando..." : "Exportar Excel"}
+        </Button>
       </div>
 
       <TaxPeriodFilter availableYears={availableYears} />

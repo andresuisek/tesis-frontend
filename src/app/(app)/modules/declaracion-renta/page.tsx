@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, PlusCircle } from "lucide-react";
+import { PlusCircle, Download } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
+import { exportDeclaracionRentaPDF } from "@/lib/reports/declaracion-renta-pdf";
 import { SkeletonStatCard } from "@/components/skeletons";
 import {
   supabase,
@@ -56,6 +57,7 @@ function DeclaracionRentaContent() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 5;
   const [totalRows, setTotalRows] = useState(0);
@@ -204,6 +206,20 @@ function DeclaracionRentaContent() {
     setDetalleAbierto(true);
   };
 
+  const handleExportPDF = async () => {
+    if (!resumenSeleccionado || !contribuyente) return;
+    setExportingPDF(true);
+    try {
+      const nombre = `${contribuyente.first_name ?? ""} ${contribuyente.last_name ?? ""}`.trim() || contribuyente.ruc;
+      await exportDeclaracionRentaPDF(resumenSeleccionado, nombre, contribuyente.ruc);
+      toast.success("PDF de declaracion de renta descargado");
+    } catch {
+      toast.error("Error al generar el PDF");
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   const handleCreated = () => {
     posthog.capture("declaracion_renta_created", {
       contribuyente_ruc: contribuyente?.ruc,
@@ -235,9 +251,14 @@ function DeclaracionRentaContent() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Exportar historial
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleExportPDF}
+            disabled={exportingPDF || !resumenSeleccionado}
+          >
+            <Download className="h-4 w-4" />
+            {exportingPDF ? "Generando PDF..." : "Descargar PDF"}
           </Button>
           <Button className="gap-2" onClick={() => setModalAbierto(true)}>
             <PlusCircle className="h-4 w-4" />

@@ -8,8 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Download } from "lucide-react";
 import { supabase, Venta } from "@/lib/supabase";
+import { exportVentasExcel } from "@/lib/reports/ventas-excel";
 import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
 import { useAuth } from "@/contexts/auth-context";
 import { VentasKPIs } from "@/components/ventas/ventas-kpis";
@@ -43,6 +44,7 @@ export default function VentasPage() {
   const [ventasMesAnterior, setVentasMesAnterior] = useState<Venta[]>([]);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
+  const [exporting, setExporting] = useState(false);
   const [showNewVentaDialog, setShowNewVentaDialog] = useState(false);
   const [showNotaCreditoDialog, setShowNotaCreditoDialog] = useState(false);
   const [showRetencionDialog, setShowRetencionDialog] = useState(false);
@@ -66,6 +68,38 @@ export default function VentasPage() {
     invalidate: invalidateTable,
     itemsPerPage,
   } = useVentasTable();
+
+  // Period bounds for exports
+  const periodStart = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).startOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD");
+  const periodEnd = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).endOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD");
+  const periodoLabel = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).format("MMMM_YYYY")
+    : `${selectedYear}`;
+
+  const handleExportExcel = async () => {
+    if (!contribuyente?.ruc) return;
+    setExporting(true);
+    try {
+      await exportVentasExcel({
+        ruc: contribuyente.ruc,
+        periodStart,
+        periodEnd,
+        tipoComprobante: filters.tipoComprobante,
+        busqueda: filters.busqueda || undefined,
+        fechaDesde: filters.fechaDesde,
+        fechaHasta: filters.fechaHasta,
+      }, periodoLabel);
+      toast.success("Excel de ventas descargado");
+    } catch {
+      toast.error("Error al exportar ventas");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const cargarResumen = useCallback(async () => {
     if (!contribuyente?.ruc) {
@@ -255,6 +289,14 @@ export default function VentasPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {exporting ? "Exportando..." : "Exportar Excel"}
+          </Button>
           <Button variant="outline" onClick={() => setShowImportarDialog(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Importar XML

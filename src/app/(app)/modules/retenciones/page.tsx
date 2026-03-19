@@ -10,7 +10,9 @@ import { DetalleRetencionDialog } from "@/components/retenciones/detalle-retenci
 import { ImportarRetencionesDialog } from "@/components/retenciones/importar-retenciones-dialog";
 import { Retencion } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
-import { Receipt, DollarSign, Calculator, Calendar, Upload } from "lucide-react";
+import { Receipt, DollarSign, Calculator, Calendar, Upload, Download } from "lucide-react";
+import { exportRetencionesExcel } from "@/lib/reports/retenciones-excel";
+import { toast } from "sonner";
 import { SkeletonStatCardSimple, SkeletonTableRows } from "@/components/skeletons";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -28,6 +30,7 @@ export default function RetencionesPage() {
 
   const [showDetalleDialog, setShowDetalleDialog] = useState(false);
   const [showImportarDialog, setShowImportarDialog] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [retencionSeleccionada, setRetencionSeleccionada] =
     useState<Retencion | null>(null);
 
@@ -51,6 +54,37 @@ export default function RetencionesPage() {
   useEffect(() => {
     setPage(1);
   }, [selectedYear, selectedMonth, setPage]);
+
+  // Period bounds for exports
+  const periodStart = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).startOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD");
+  const periodEnd = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).endOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD");
+  const periodoExportLabel = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).format("MMMM_YYYY")
+    : `${selectedYear}`;
+
+  const handleExportExcel = async () => {
+    if (!contribuyente?.ruc) return;
+    setExporting(true);
+    try {
+      await exportRetencionesExcel({
+        ruc: contribuyente.ruc,
+        periodStart,
+        periodEnd,
+        busqueda: filters.busqueda || undefined,
+        fechaDesde: filters.fechaDesde,
+        fechaHasta: filters.fechaHasta,
+      }, periodoExportLabel);
+      toast.success("Excel de retenciones descargado");
+    } catch {
+      toast.error("Error al exportar retenciones");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Formatear moneda
   const formatearMoneda = (valor: number) => {
@@ -116,10 +150,20 @@ export default function RetencionesPage() {
             Gestiona y visualiza las retenciones emitidas
           </p>
         </div>
-        <Button onClick={() => setShowImportarDialog(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          Importar XML
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {exporting ? "Exportando..." : "Exportar Excel"}
+          </Button>
+          <Button onClick={() => setShowImportarDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar XML
+          </Button>
+        </div>
       </div>
 
       <TaxPeriodFilter availableYears={availableYears} />

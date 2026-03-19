@@ -11,8 +11,10 @@ import { ComprasPagination } from "@/components/compras/compras-pagination";
 import { ComprasTableFilters } from "@/components/compras/compras-table-filters";
 import { NuevaCompraDialog } from "@/components/compras/nueva-compra-dialog";
 import { ImportarComprasDialog } from "@/components/compras/importar-compras-dialog";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportComprasExcel } from "@/lib/reports/compras-excel";
+import { exportGastosPersonalesPDF } from "@/lib/reports/gastos-personales-pdf";
 import { SkeletonStatCard, SkeletonTableRows } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +38,8 @@ export default function ComprasPage() {
 
   const [showNuevaCompraDialog, setShowNuevaCompraDialog] = useState(false);
   const [showImportarDialog, setShowImportarDialog] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportingGastosPDF, setExportingGastosPDF] = useState(false);
 
   // ── Flow B: Table with server-side filtering + pagination ──
   const {
@@ -55,6 +59,62 @@ export default function ComprasPage() {
   } = useComprasTable();
 
   dayjs.locale("es");
+
+  // Period bounds for exports
+  const periodStart = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).startOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD");
+  const periodEnd = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).endOf("month").format("YYYY-MM-DD")
+    : dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD");
+  const periodoLabel = selectedMonth !== null
+    ? dayjs().year(selectedYear).month(selectedMonth - 1).format("MMMM_YYYY")
+    : `${selectedYear}`;
+
+  const handleExportExcel = async () => {
+    if (!contribuyente?.ruc) return;
+    setExporting(true);
+    try {
+      await exportComprasExcel({
+        ruc: contribuyente.ruc,
+        periodStart,
+        periodEnd,
+        rubro: filters.rubro,
+        tipoComprobante: filters.tipoComprobante,
+        busqueda: filters.busqueda || undefined,
+        fechaDesde: filters.fechaDesde,
+        fechaHasta: filters.fechaHasta,
+      }, periodoLabel);
+      toast.success("Excel de compras descargado");
+    } catch {
+      toast.error("Error al exportar compras");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportGastosPDF = async () => {
+    if (!contribuyente?.ruc) return;
+    setExportingGastosPDF(true);
+    try {
+      const nombre = `${contribuyente.first_name ?? ""} ${contribuyente.last_name ?? ""}`.trim() || contribuyente.ruc;
+      const label = selectedMonth !== null
+        ? dayjs().year(selectedYear).month(selectedMonth - 1).format("MMMM YYYY")
+        : `${selectedYear}`;
+      await exportGastosPersonalesPDF(
+        todasLasCompras,
+        contribuyente.cargas_familiares,
+        nombre,
+        contribuyente.ruc,
+        label
+      );
+      toast.success("PDF de gastos personales descargado");
+    } catch {
+      toast.error("Error al generar el PDF");
+    } finally {
+      setExportingGastosPDF(false);
+    }
+  };
 
   const cargarResumen = useCallback(async () => {
     if (!contribuyente) return;
@@ -190,6 +250,15 @@ export default function ComprasPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "Exportando..." : "Exportar Excel"}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setShowImportarDialog(true)}
               className="gap-2"
             >
@@ -229,10 +298,24 @@ export default function ComprasPage() {
           </CardContent>
         </Card>
       ) : (
-        <GastosPersonalesSummary
-          compras={todasLasCompras}
-          cargasFamiliares={contribuyente.cargas_familiares}
-        />
+        <div className="space-y-2">
+          <GastosPersonalesSummary
+            compras={todasLasCompras}
+            cargasFamiliares={contribuyente.cargas_familiares}
+          />
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportGastosPDF}
+              disabled={exportingGastosPDF}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exportingGastosPDF ? "Generando..." : "Descargar PDF Gastos Personales"}
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Tabla de compras */}
