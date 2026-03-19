@@ -53,6 +53,7 @@ export function RetencionesTable({
         <TableHeader>
           <TableRow>
             <TableHead>Fecha Emision</TableHead>
+            <TableHead>Agente de Retencion</TableHead>
             <TableHead>Serie</TableHead>
             <TableHead className="hidden lg:table-cell">Clave de Acceso</TableHead>
             <TableHead className="text-right hidden md:table-cell">IVA %</TableHead>
@@ -66,7 +67,7 @@ export function RetencionesTable({
         <TableBody className={cn(isFetching && "opacity-50 transition-opacity")}>
           {retenciones.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground">
+              <TableCell colSpan={10} className="text-center text-muted-foreground">
                 No se encontraron retenciones
               </TableCell>
             </TableRow>
@@ -78,6 +79,18 @@ export function RetencionesTable({
                 <TableRow key={ret.id}>
                   <TableCell className="font-medium whitespace-nowrap">
                     {dayjs(ret.fecha_emision).format("DD/MM/YYYY")}
+                  </TableCell>
+                  <TableCell>
+                    {ret.razon_social_agente ? (
+                      <div>
+                        <span className="font-medium text-sm">{ret.razon_social_agente}</span>
+                        {ret.ruc_agente_retencion && (
+                          <p className="text-xs text-muted-foreground">{ret.ruc_agente_retencion}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -150,7 +163,7 @@ export function RetencionesTable({
         {totals && retenciones.length > 0 && (
           <TableFooter>
             <TableRow className="bg-muted/50 font-semibold">
-              <TableCell colSpan={3} className="text-right text-xs uppercase tracking-wide text-muted-foreground">
+              <TableCell colSpan={4} className="text-right text-xs uppercase tracking-wide text-muted-foreground">
                 Totales
               </TableCell>
               <TableCell className="text-right hidden md:table-cell" />

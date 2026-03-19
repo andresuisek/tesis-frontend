@@ -262,6 +262,8 @@ export function ImportarRetencionesDialog({
             retencion_valor: retencion.retencion_valor,
             retencion_renta_percent: retencion.retencion_renta_percent,
             retencion_renta_valor: retencion.retencion_renta_valor,
+            ruc_agente_retencion: retencion.ruc_emisor || null,
+            razon_social_agente: retencion.razon_social_emisor || null,
           })
           .select("id")
           .single();

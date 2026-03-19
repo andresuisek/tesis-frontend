@@ -90,6 +90,8 @@ export interface Retencion {
   retencion_valor?: number;
   retencion_renta_percent?: number;
   retencion_renta_valor?: number;
+  ruc_agente_retencion?: string;
+  razon_social_agente?: string;
   created_at: string;
 }
 

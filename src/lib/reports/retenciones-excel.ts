@@ -3,6 +3,8 @@ import { exportToExcel, type ExcelColumn } from "./export-excel";
 
 const columns: ExcelColumn<Retencion>[] = [
   { header: "Fecha", key: "fecha_emision", format: "date", width: 12 },
+  { header: "RUC Agente Retencion", key: "ruc_agente_retencion", width: 16 },
+  { header: "Agente de Retencion", key: "razon_social_agente", width: 30 },
   { header: "Serie Comprobante", key: "serie_comprobante", width: 22 },
   { header: "Clave de Acceso", key: "clave_acceso", width: 50 },
   { header: "% Ret. IVA", key: "retencion_iva_percent", format: "percent", width: 12 },
