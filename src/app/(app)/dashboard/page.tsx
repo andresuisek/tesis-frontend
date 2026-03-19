@@ -63,19 +63,19 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 const monthlyFlowConfig = {
-  ventas: { label: "Ventas", color: "var(--chart-1)" },
-  compras: { label: "Compras", color: "var(--chart-2)" },
+  ventas: { label: "Ingresos", color: "var(--chart-1)" },
+  compras: { label: "Gastos", color: "var(--chart-2)" },
 };
 
 const heroChartConfig = {
-  ventas: { label: "Ventas", color: "var(--chart-1)" },
-  compras: { label: "Compras", color: "var(--chart-2)" },
+  ventas: { label: "Ingresos", color: "var(--chart-1)" },
+  compras: { label: "Gastos", color: "var(--chart-2)" },
   utilidad: { label: "Utilidad", color: "var(--chart-3)" },
 };
 
 const ivaChartConfig = {
-  ventas: { label: "Ventas", color: "var(--chart-1)" },
-  compras: { label: "Compras", color: "var(--chart-2)" },
+  ventas: { label: "Ingresos", color: "var(--chart-1)" },
+  compras: { label: "Gastos", color: "var(--chart-2)" },
 };
 
 const ajustesChartConfig = {
@@ -295,10 +295,10 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Resumen tributario
+            Control de Ingresos y Gastos
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Visualiza tus métricas clave y el desempeño de tus obligaciones fiscales.
+            Visualiza tus ingresos, gastos y el estado de tus obligaciones tributarias.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -313,13 +313,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          title="Ventas del mes"
+          title="Ingresos del periodo"
           value={formatCurrency(kpis.ventasMes)}
           icon={DollarSign}
           change={{ value: Math.abs(ventasChange), positive: ventasChange >= 0 }}
         />
         <MetricCard
-          title="Compras del mes"
+          title="Gastos del periodo"
           value={formatCurrency(kpis.comprasMes)}
           icon={ShoppingCart}
           change={{ value: Math.abs(comprasChange), positive: comprasChange >= 0 }}
@@ -342,10 +342,10 @@ export default function DashboardPage() {
         <CardHeader className="flex flex-col items-stretch border-b sm:flex-row">
           <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-4 sm:py-0">
             <CardTitle className="text-base font-semibold">
-              Ventas vs Compras
+              Ingresos vs Gastos
             </CardTitle>
             <CardDescription>
-              Resumen mensual &middot; últimos 12 meses
+              Resumen mensual &middot; ultimos 12 meses
             </CardDescription>
           </div>
           <div className="flex">
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                 className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
               >
                 <span className="text-xs text-muted-foreground">
-                  {key === "ventas" ? "Ventas" : key === "compras" ? "Compras" : "Utilidad"}
+                  {key === "ventas" ? "Ingresos" : key === "compras" ? "Gastos" : "Utilidad"}
                 </span>
                 <span className={`text-lg font-bold leading-none sm:text-2xl ${
                   key === "utilidad" && heroTotals.utilidad < 0 ? "text-destructive" : ""
@@ -428,9 +428,9 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <BarChart3 className="h-5 w-5 text-primary" />
-              Flujo mensual de ventas y compras
+              Flujo mensual de ingresos y gastos
             </CardTitle>
-            <CardDescription>Comportamiento de los últimos 12 meses</CardDescription>
+            <CardDescription>Comportamiento de los ultimos 12 meses</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={monthlyFlowConfig} className="aspect-auto h-72 w-full">
@@ -481,9 +481,9 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Layers className="h-5 w-5 text-primary" />
-              Distribución de IVA por tasa (año)
+              Distribucion de IVA por tasa (ano)
             </CardTitle>
-            <CardDescription>Comparativo entre ventas y compras</CardDescription>
+            <CardDescription>Comparativo entre ingresos y gastos</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={ivaChartConfig} className="h-72">
@@ -538,9 +538,9 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Layers className="h-5 w-5 text-primary" />
-              Compras por rubro (año)
+              Gastos por rubro (ano)
             </CardTitle>
-            <CardDescription>Categorías deducibles con mayor peso</CardDescription>
+            <CardDescription>Categorias deducibles con mayor peso</CardDescription>
           </CardHeader>
           <CardContent>
             {rubrosData.length ? (
@@ -583,7 +583,7 @@ export default function DashboardPage() {
             {recentActivity.length ? (
               <div className="space-y-3">
                 {recentActivity.map((item) => {
-                  const isVenta = item.type === "Venta";
+                  const isVenta = item.type === "Venta" || item.type === "Ingreso";
                   return (
                     <div
                       key={item.id}
@@ -607,7 +607,7 @@ export default function DashboardPage() {
                           {item.counterpartyName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {item.type} &middot; {dayjs(item.timestamp).fromNow()}
+                          {item.type === "Venta" ? "Ingreso" : item.type === "Compra" ? "Gasto" : item.type} &middot; {dayjs(item.timestamp).fromNow()}
                         </p>
                       </div>
                       <p
@@ -675,7 +675,7 @@ export default function DashboardPage() {
               <p className="text-sm font-medium text-foreground">Balance IVA del periodo</p>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">IVA Cobrado (ventas)</span>
+                  <span className="text-muted-foreground">IVA Cobrado (ingresos)</span>
                   <span className="font-mono font-medium">
                     {formatCurrency(kpis.ivaVentas)}
                   </span>
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <ArrowRight className="h-3 w-3" />
-                    <span>IVA Pagado (compras)</span>
+                    <span>IVA Pagado (gastos)</span>
                   </div>
                   <span className="font-mono font-medium text-muted-foreground">
                     {formatCurrency(kpis.ivaCompras)}
@@ -702,8 +702,8 @@ export default function DashboardPage() {
             <div className="rounded-lg border border-border/40 p-3 flex items-center gap-2">
               <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">
-                {taxStatus.documentCounts.ventas} ventas &middot;{" "}
-                {taxStatus.documentCounts.compras} compras &middot;{" "}
+                {taxStatus.documentCounts.ventas} ingresos &middot;{" "}
+                {taxStatus.documentCounts.compras} gastos &middot;{" "}
                 {taxStatus.documentCounts.retenciones} retenciones
               </p>
             </div>
