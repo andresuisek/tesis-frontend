@@ -1,303 +1,235 @@
-# Sistema de Gestión Tributaria
+# Sistema de Gestion Tributaria
 
-Un sistema completo desarrollado en Next.js para la gestión de obligaciones tributarias empresariales, construido con las mejores prácticas y tecnologías modernas.
+Sistema web para la gestion de obligaciones tributarias de personas naturales en Ecuador. Soporta dos roles: **contribuyente** (gestiona sus propios datos fiscales) y **contador** (gestiona multiples clientes). Incluye un asistente tributario con inteligencia artificial.
 
-## 🚀 Características Principales
+Proyecto de tesis de grado de **Andres Ontiveros**.
 
-### Módulos Implementados
+## Stack Tecnologico
 
-- **📊 Dashboard**: Panel principal con métricas y estadísticas
-- **💰 Gestión de Ventas**: Registro y control de facturas de venta
-- **🛒 Gestión de Compras**: Administración de facturas de proveedores
-- **📋 Retenciones**: Cálculo y emisión de comprobantes de retención
-- **🧮 Liquidación de Impuestos**: Cálculo automático de IVA y Renta
-- **🏢 Consulta RUC**: Validación y consulta de datos tributarios
-- **👥 Gestión de Usuarios**: Control de acceso y permisos
-- **🤖 Chatbot Tributario**: Asistente virtual para consultas
-- **⚙️ Configuración**: Personalización del sistema
+| Capa | Tecnologias |
+|------|-------------|
+| Framework | Next.js 15.5 (App Router), React 19, TypeScript 5.6 |
+| Estilos | Tailwind CSS v4, shadcn/ui, Radix UI, Lucide React |
+| Base de datos | Supabase (PostgreSQL + Auth + RLS) |
+| IA | OpenAI API (GPT-4o-mini), Tavily (busqueda web) |
+| Graficos | Recharts |
+| Tablas | TanStack Table, TanStack Query |
+| Reportes | xlsx (Excel), @react-pdf/renderer (PDF) |
+| Analytics | PostHog (client + server) |
+| Notificaciones | Sonner (toasts) |
 
-### Tecnologías Utilizadas
+## Modulos
 
-- **Frontend**: Next.js 15, React 19, TypeScript 5
-- **Estilos**: Tailwind CSS 4, shadcn/ui
-- **Componentes**: Radix UI, Lucide React
-- **Tablas**: TanStack Table
-- **Temas**: next-themes (modo claro/oscuro)
-- **Notificaciones**: Sonner
+| Modulo | Ruta | Descripcion |
+|--------|------|-------------|
+| Dashboard | `/dashboard` | Metricas principales, graficos, proximos vencimientos |
+| Ventas | `/modules/ventas` | Registro de facturas de venta, desglose por tarifa IVA (0%, 5%, 8%, 15%), exportacion Excel |
+| Compras | `/modules/compras` | Facturas de proveedores, clasificacion por rubro de gasto personal, importacion XML/TXT, exportacion Excel |
+| Notas de Credito | `/modules/notas-credito` | Notas de credito emitidas, vinculacion con ventas, exportacion Excel |
+| Retenciones | `/modules/retenciones` | Retenciones de IVA y Renta recibidas, importacion XML, exportacion Excel |
+| Liquidacion IVA | `/modules/liquidacion` | Cierre mensual/semestral de IVA, calculo automatico de impuesto causado, credito tributario, IVA diferido. Descarga PDF |
+| Declaracion de Renta | `/modules/declaracion-renta` | Declaracion anual del impuesto a la renta, gastos personales deducibles por categoria con limites legales, tabla progresiva. Descarga PDF |
+| Asistente Tributario | `/modules/assistant` | Agente de IA con streaming (SSE), genera SQL desde lenguaje natural, busqueda web, graficos automaticos |
+| Clientes | `/modules/clientes` | Gestion de clientes asignados (solo rol contador) |
 
-## 📁 Estructura del Proyecto
+## Arquitectura
 
 ```
 src/
 ├── app/
-│   ├── (app)/                 # Rutas protegidas de la aplicación
-│   │   ├── dashboard/         # Panel principal
-│   │   ├── modules/           # Módulos del sistema
-│   │   │   ├── ventas/        # Gestión de ventas
-│   │   │   ├── compras/       # Gestión de compras
-│   │   │   ├── retenciones/   # Retenciones
-│   │   │   ├── liquidacion/   # Liquidación de impuestos
-│   │   │   ├── registro-ruc/  # Consulta RUC
-│   │   │   ├── usuarios/      # Gestión de usuarios
-│   │   │   └── chatbot/       # Asistente virtual
-│   │   └── layout.tsx         # Layout con sidebar
-│   ├── (auth)/                # Rutas de autenticación
-│   │   └── login/             # Página de login
-│   └── logout/                # Página de logout
+│   ├── (auth)/                    # Login, registro, confirmacion email
+│   │   ├── login/
+│   │   ├── registro/
+│   │   ├── confirmar-email/
+│   │   └── auth/callback/         # OAuth callback
+│   ├── (app)/                     # Rutas protegidas (requieren sesion)
+│   │   ├── dashboard/
+│   │   └── modules/
+│   │       ├── ventas/
+│   │       ├── compras/
+│   │       ├── notas-credito/
+│   │       ├── retenciones/
+│   │       ├── liquidacion/
+│   │       ├── declaracion-renta/
+│   │       ├── assistant/
+│   │       └── clientes/
+│   └── api/
+│       ├── auth/registro/         # Registro de usuarios
+│       ├── ai-agent/
+│       │   ├── query-stream/      # Endpoint principal (SSE streaming)
+│       │   ├── query/             # Fallback sin streaming
+│       │   └── import-summary/    # Resumen IA de importaciones
+│       └── import/
+│           ├── process/           # Procesamiento de archivos
+│           └── rubro-suggestions/ # Sugerencias de categoria por IA
 ├── components/
-│   ├── ui/                    # Componentes de shadcn/ui
-│   ├── forms/                 # Componentes de formularios
-│   ├── tables/                # Componentes de tablas
-│   ├── app-sidebar.tsx        # Sidebar principal
-│   ├── mode-toggle.tsx        # Selector de tema
-│   └── theme-provider.tsx     # Proveedor de temas
+│   ├── ui/                        # shadcn/ui base components
+│   ├── ventas/                    # Componentes del modulo ventas
+│   ├── compras/                   # Componentes del modulo compras
+│   ├── retenciones/               # Componentes del modulo retenciones
+│   ├── notas-credito/             # Componentes del modulo notas de credito
+│   ├── liquidacion/               # Componentes del modulo liquidacion
+│   ├── declaracion-renta/         # Componentes del modulo declaracion
+│   ├── assistant/                 # Chat UI, graficos del agente IA
+│   ├── clientes/                  # Gestion de clientes (contador)
+│   └── filters/                   # Filtro de periodo fiscal global
 ├── contexts/
-│   └── app-context.tsx        # Context global de la app
+│   ├── auth-context.tsx           # Autenticacion y multi-rol
+│   └── date-filter-context.tsx    # Filtro de periodo (ano/mes) global
+├── hooks/
+│   ├── use-compras-table.ts       # Query + filtros + paginacion
+│   ├── use-ventas-table.ts
+│   ├── use-retenciones-table.ts
+│   ├── use-notas-credito-table.ts
+│   └── use-available-years.ts
 └── lib/
-    └── utils.ts               # Utilidades
+    ├── supabase.ts                # Cliente browser + tipos de la BD
+    ├── supabase-admin.ts          # Cliente admin (server-side, service role)
+    ├── supabase/
+    │   ├── server.ts              # Cliente server components
+    │   └── middleware.ts          # Refresh de sesion
+    ├── auth-helpers.ts            # getAuthenticatedUser(), verifyRucOwnership()
+    ├── liquidacion.ts             # Logica de calculo de liquidacion IVA
+    ├── declaracion-renta.ts       # Logica de calculo de impuesto a la renta
+    ├── ai-agent/
+    │   ├── intent-router.ts       # Clasificacion de intent (database/web/both/app_help)
+    │   ├── tavily-search.ts       # Busqueda web con cache 24h
+    │   └── ...
+    ├── reports/
+    │   ├── export-excel.ts        # Utilidad generica para generar .xlsx
+    │   ├── compras-excel.ts
+    │   ├── ventas-excel.ts
+    │   ├── retenciones-excel.ts
+    │   ├── notas-credito-excel.ts
+    │   ├── liquidacion-pdf.ts     # PDF de liquidacion IVA
+    │   ├── declaracion-renta-pdf.ts
+    │   └── gastos-personales-pdf.ts
+    └── *-parser.ts                # Parsers para XML/TXT de compras, ventas, retenciones
 ```
 
-## 🎨 Características de UI/UX
+## Autenticacion y Roles
 
-### Diseño Moderno
+El sistema usa **Supabase Auth** con dos tipos de usuario:
 
-- **Interfaz limpia** con componentes de shadcn/ui
-- **Modo oscuro/claro** con transiciones suaves
-- **Responsive design** para todos los dispositivos
-- **Iconografía consistente** con Lucide React
+- **Contribuyente**: Persona natural que gestiona sus propias obligaciones tributarias.
+- **Contador**: Profesional que gestiona multiples contribuyentes como clientes.
 
-### Componentes Reutilizables
+El concepto clave es `contribuyenteEfectivo` (del auth context):
+- Para un contribuyente: es su propio perfil.
+- Para un contador: es el cliente actualmente seleccionado.
 
-- **DataTable**: Tablas con búsqueda, paginación y ordenamiento
-- **FormFieldWrapper**: Wrapper para campos de formulario
-- **Cards informativos** con métricas y estadísticas
-- **Sidebar navegable** con todos los módulos
+Toda la logica de datos filtra por el RUC del `contribuyenteEfectivo`.
 
-### Experiencia de Usuario
+## Asistente Tributario (IA)
 
-- **Navegación intuitiva** con sidebar colapsible
-- **Feedback visual** con notificaciones toast
-- **Estados de carga** y validaciones en tiempo real
-- **Búsqueda y filtrado** en todas las tablas
+Pipeline de 2 etapas con streaming SSE:
 
-## 📊 Funcionalidades por Módulo
+1. **Clasificacion de intent** (GPT-4o-mini): determina si la pregunta requiere consulta a BD, busqueda web, ambas, o es ayuda de la app.
+2. **Generacion de SQL** (si aplica): el modelo genera un `SELECT` seguro, filtrado por RUC, validado contra inyeccion.
+3. **Ejecucion**: el SQL se ejecuta via RPC `execute_sql_query` en Supabase.
+4. **Respuesta formateada**: metadata (highlights, config de grafico, follow-ups) + narrativa en streaming.
 
-### Dashboard
+Seguridad: filtrado por RUC, validacion de SQL (no multi-statement, no operaciones destructivas), rate limiting.
 
-- Métricas principales (ventas, compras, IVA, retenciones)
-- Actividad reciente del sistema
-- Próximos vencimientos tributarios
-- Gráficos y estadísticas visuales
-
-### Ventas
-
-- Registro de facturas y notas de crédito/débito
-- Cálculo automático de IVA
-- Búsqueda y filtrado por cliente
-- Métricas de ventas mensuales
-
-### Compras
-
-- Registro de facturas de proveedores
-- Control de retenciones aplicadas
-- Análisis por tipo de comprobante
-- Estado de conciliación
-
-### Retenciones
-
-- Emisión de comprobantes de retención
-- Calculadora automática de retenciones
-- Códigos de retención frecuentes
-- Validación de porcentajes según tipo
-
-### Liquidación
-
-- Cálculo automático de IVA mensual
-- Liquidación de Impuesto a la Renta
-- Generación de formularios (F104, F103)
-- Control de fechas de vencimiento
-
-### Consulta RUC
-
-- Validación de formato de RUC
-- Consulta de datos tributarios
-- Información de actividades económicas
-- Datos de representante legal
-
-### Usuarios
-
-- Gestión de cuentas de usuario
-- Sistema de roles y permisos
-- Registro de actividad
-- Control de acceso por módulos
-
-### Chatbot
-
-- Asistente virtual tributario
-- Preguntas frecuentes
-- Calculadoras rápidas
-- Respuestas contextuales
-
-## 🚀 Instalación y Configuración
+## Instalacion
 
 ### Prerrequisitos
 
 - Node.js 18+
-- npm o yarn
+- Cuenta en [Supabase](https://supabase.com) con el proyecto configurado
+- API key de [OpenAI](https://platform.openai.com)
 
-### Pasos de instalación
-
-1. **Clonar el repositorio**
+### 1. Clonar e instalar
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/andresuisek/tesis-frontend.git
 cd tesis-frontend
-```
-
-2. **Instalar dependencias**
-
-```bash
 npm install
 ```
 
-3. **Ejecutar en desarrollo**
+### 2. Variables de entorno
+
+Crear `.env.local` en la raiz del proyecto:
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
+
+# OpenAI (requerido para el asistente tributario)
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+
+# Tavily (opcional, habilita busqueda web en el asistente)
+TAVILY_API_KEY=tvly-...
+
+# PostHog (opcional, analytics)
+NEXT_PUBLIC_POSTHOG_KEY=phc_...
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+```
+
+| Variable | Requerida | Descripcion |
+|----------|-----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Si | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Si | Clave anonima (client-side) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Si | Clave admin (server-side, nunca exponer al frontend) |
+| `OPENAI_API_KEY` | Si | API key de OpenAI para el agente IA |
+| `OPENAI_MODEL` | No | Modelo a usar (default: `gpt-4o-mini`) |
+| `TAVILY_API_KEY` | No | Habilita busqueda web en el asistente |
+| `NEXT_PUBLIC_POSTHOG_KEY` | No | Analytics con PostHog |
+| `NEXT_PUBLIC_POSTHOG_HOST` | No | Host de PostHog |
+
+### 3. Ejecutar
 
 ```bash
-npm run dev
+npm run dev        # Desarrollo con Turbopack (http://localhost:3000)
+npm run build      # Build de produccion
+npm run start      # Servir build de produccion
+npm run lint       # Ejecutar ESLint
 ```
 
-4. **Abrir en el navegador**
+## Base de Datos
 
-```
-http://localhost:3000
-```
+El sistema usa PostgreSQL via Supabase con las siguientes tablas principales:
 
-### Configuración del agente inteligente
+| Tabla | Descripcion |
+|-------|-------------|
+| `contribuyentes` | Perfil del contribuyente (PK: `ruc`) |
+| `contadores` | Perfil del contador |
+| `contador_contribuyente` | Relacion N-M entre contadores y contribuyentes |
+| `ventas` | Facturas de venta con desglose por tarifa IVA |
+| `compras` | Facturas de compra con rubro de gasto personal |
+| `notas_credito` | Notas de credito emitidas |
+| `retenciones` | Retenciones de IVA y renta recibidas |
+| `tax_liquidations` | Cierres mensuales/semestrales de IVA |
+| `declaraciones_renta` | Declaraciones anuales de impuesto a la renta |
+| `parametros_anuales` | Limites de gastos personales por ano fiscal |
+| `tramos_impuesto_renta` | Tabla progresiva del impuesto a la renta |
+| `actividades_economicas` | Catalogo de actividades economicas |
+| `archivos_cargados` | Registro de archivos importados |
 
-1. **Definir variables de entorno**
+## Importacion de Datos
 
-   Crea un archivo `.env.local` en la raíz del proyecto con:
+Se soporta importacion de archivos XML y TXT generados por el SRI o facturacion electronica:
 
-   ```
-   OPENAI_API_KEY=sk-xxxx
-   OPENAI_MODEL=gpt-4o-mini
-   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
-   ```
+- **Compras**: XML (clave de acceso) o TXT tabulado
+- **Ventas**: XML de facturacion electronica
+- **Retenciones**: XML de comprobantes de retencion
+- **Notas de Credito**: Parseadas desde XML de ventas
 
-   El `SUPABASE_SERVICE_ROLE_KEY` se obtiene desde la consola de Supabase (Settings → API). No lo expongas en el frontend.
+Flujo: subir archivo -> parseo automatico -> revision por el usuario -> confirmacion e insercion masiva.
 
-2. **Endpoint disponible**
+## Reportes
 
-   Envía solicitudes `POST` a `/api/ai-agent/query` con el cuerpo:
+### Excel
+Todos los modulos transaccionales (compras, ventas, retenciones, notas de credito) pueden exportarse a `.xlsx`. La exportacion respeta los filtros activos e incluye fila de totales.
 
-   ```json
-   {
-     "question": "¿Cuál fue mi total de ventas en marzo?",
-     "contribuyenteRuc": "1790012345001"
-   }
-   ```
+### PDF
+- **Liquidacion de IVA**: Desglose por tarifas, calculo de impuesto causado, credito tributario, resultado final.
+- **Declaracion de Renta**: Ingresos, gastos personales por categoria con limites, base imponible, impuesto causado.
+- **Gastos Personales**: Resumen por rubro con porcentaje de uso del techo maximo deducible.
 
-   El backend generará el SQL, lo ejecutará en Supabase y devolverá únicamente un resumen amigable,
-   viñetas con hallazgos y una sugerencia para continuar la conversación.
+## Autor
 
-### Credenciales de prueba
-
-- **Email**: admin@empresa.com
-- **Contraseña**: 123456
-
-## 🛠️ Scripts Disponibles
-
-```bash
-npm run dev      # Ejecutar en desarrollo con Turbopack
-npm run build    # Construir para producción
-npm run start    # Ejecutar build de producción
-npm run lint     # Ejecutar ESLint
-```
-
-## 📱 Responsive Design
-
-El sistema está optimizado para:
-
-- **Desktop** (1024px+): Experiencia completa con sidebar
-- **Tablet** (768px-1023px): Layout adaptado con navegación colapsible
-- **Mobile** (320px-767px): Interfaz móvil optimizada
-
-## 🔧 Personalización
-
-### Temas
-
-El sistema soporta modo claro y oscuro automático:
-
-- Variables CSS personalizables en `globals.css`
-- Configuración de colores en `tailwind.config.js`
-- Componentes con soporte nativo para dark mode
-
-### Componentes
-
-Todos los componentes son modulares y reutilizables:
-
-- Fácil personalización de estilos
-- Props configurables para diferentes casos de uso
-- Documentación integrada con TypeScript
-
-## 🔒 Seguridad
-
-- **Validación de formularios** en cliente y servidor
-- **Sanitización de datos** de entrada
-- **Control de acceso** basado en roles
-- **Sesiones seguras** con tokens JWT (preparado)
-
-## 📈 Rendimiento
-
-- **Server Components** de React 19
-- **Lazy loading** de componentes pesados
-- **Optimización de imágenes** automática
-- **Bundle splitting** inteligente
-
-## 🧪 Testing (Preparado)
-
-Estructura preparada para:
-
-- Unit tests con Jest
-- Integration tests con React Testing Library
-- E2E tests con Playwright
-
-## 📝 Próximas Funcionalidades
-
-- [ ] Integración con API del SRI
-- [ ] Reportes PDF avanzados
-- [ ] Sincronización con sistemas contables
-- [ ] Notificaciones push
-- [ ] Backup automático de datos
-- [ ] Multi-empresa
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crear rama para feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 👨‍💻 Autor
-
-**Andrés Ontiveros**
-
-- Proyecto de Tesis de Grado
-- Universidad: [Tu Universidad]
-- Año: 2024
-
-## 📞 Soporte
-
-Para soporte técnico o consultas:
-
-- Email: [tu-email@universidad.edu]
-- Issues: [GitHub Issues](link-to-issues)
-
----
-
-⭐ **¡Si te gusta este proyecto, dale una estrella!** ⭐
+**Andres Ontiveros** - Proyecto de Tesis de Grado, 2025
