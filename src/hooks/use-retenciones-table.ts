@@ -44,22 +44,22 @@ function applyFilters<Q extends { eq: any; gte: any; lte: any; or: any }>(
   filters: RetencionesTableFilters,
   debouncedBusqueda: string,
 ): Q {
+  // User-selected date filters override the global period bounds, so picking
+  // a range outside the period still returns results instead of being AND'd
+  // away by the period filter.
+  const effectiveStart = filters.fechaDesde ?? periodStart;
+  const effectiveEnd = filters.fechaHasta ?? periodEnd;
+
   let q = query
     .eq("contribuyente_ruc", ruc)
-    .gte("fecha_emision", periodStart)
-    .lte("fecha_emision", periodEnd) as Q;
+    .gte("fecha_emision", effectiveStart)
+    .lte("fecha_emision", effectiveEnd) as Q;
 
   if (debouncedBusqueda) {
     const term = `%${debouncedBusqueda}%`;
     q = q.or(
       `serie_comprobante.ilike.${term},clave_acceso.ilike.${term}`
     ) as Q;
-  }
-  if (filters.fechaDesde) {
-    q = q.gte("fecha_emision", filters.fechaDesde) as Q;
-  }
-  if (filters.fechaHasta) {
-    q = q.lte("fecha_emision", filters.fechaHasta) as Q;
   }
   return q;
 }

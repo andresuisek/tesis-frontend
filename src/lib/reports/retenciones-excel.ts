@@ -3,10 +3,10 @@ import { exportToExcel, type ExcelColumn } from "./export-excel";
 
 const columns: ExcelColumn<Retencion>[] = [
   { header: "Fecha", key: "fecha_emision", format: "date", width: 12 },
-  { header: "RUC Agente Retencion", key: "ruc_agente_retencion", width: 16 },
+  { header: "RUC Agente Retencion", key: "ruc_agente_retencion", format: "text", width: 16 },
   { header: "Agente de Retencion", key: "razon_social_agente", width: 30 },
-  { header: "Serie Comprobante", key: "serie_comprobante", width: 22 },
-  { header: "Clave de Acceso", key: "clave_acceso", width: 50 },
+  { header: "Serie Comprobante", key: "serie_comprobante", format: "text", width: 22 },
+  { header: "Clave de Acceso", key: "clave_acceso", format: "text", width: 50 },
   { header: "% Ret. IVA", key: "retencion_iva_percent", format: "percent", width: 12 },
   { header: "Valor Ret. IVA", key: "retencion_valor", format: "currency" },
   { header: "% Ret. Renta", key: "retencion_renta_percent", format: "percent", width: 12 },
@@ -30,20 +30,23 @@ export async function exportRetencionesExcel({
   fechaDesde,
   fechaHasta,
 }: FetchRetencionesExportParams, periodoLabel: string) {
+  // User-selected date filters override the global period bounds so that
+  // picking a range outside the period still exports the expected rows.
+  const effectiveStart = fechaDesde ?? periodStart;
+  const effectiveEnd = fechaHasta ?? periodEnd;
+
   let query = supabase
     .from("retenciones")
     .select("*")
     .eq("contribuyente_ruc", ruc)
-    .gte("fecha_emision", periodStart)
-    .lte("fecha_emision", periodEnd)
+    .gte("fecha_emision", effectiveStart)
+    .lte("fecha_emision", effectiveEnd)
     .order("fecha_emision", { ascending: false });
 
   if (busqueda) {
     const term = `%${busqueda}%`;
     query = query.or(`serie_comprobante.ilike.${term},clave_acceso.ilike.${term}`);
   }
-  if (fechaDesde) query = query.gte("fecha_emision", fechaDesde);
-  if (fechaHasta) query = query.lte("fecha_emision", fechaHasta);
 
   const { data, error } = await query;
   if (error) throw error;

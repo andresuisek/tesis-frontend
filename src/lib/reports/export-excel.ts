@@ -29,6 +29,8 @@ function formatValue<T>(value: unknown, format?: ExcelColumn<T>["format"]): stri
     }
     case "percent":
       return typeof value === "number" ? value : 0;
+    case "text":
+      return String(value);
     default:
       return String(value);
   }
@@ -63,6 +65,21 @@ export function exportToExcel<T extends Record<string, any>>({
 
   // Create workbook
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Force columns marked as "text" to be string-typed with the "@" number
+  // format. Without this, Excel renders long digit strings (e.g. clave de
+  // acceso, RUC) in scientific notation and may lose precision.
+  columns.forEach((col, colIdx) => {
+    if (col.format !== "text") return;
+    for (let rowIdx = 1; rowIdx <= data.length; rowIdx++) {
+      const cellRef = XLSX.utils.encode_cell({ r: rowIdx, c: colIdx });
+      const cell = ws[cellRef];
+      if (!cell) continue;
+      cell.t = "s";
+      cell.v = String(cell.v ?? "");
+      cell.z = "@";
+    }
+  });
 
   // Set column widths
   ws["!cols"] = columns.map((col) => ({
